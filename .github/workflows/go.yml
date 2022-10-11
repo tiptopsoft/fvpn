@@ -1,0 +1,53 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Go
+
+on:
+  push:
+    branches: [ "develop" ]
+  pull_request:
+    branches: [ "develop" ]
+
+env:
+  tags: v0.1
+  registry: registry.cn-hangzhou.aliyuncs.com
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.19
+
+    - name: "Login Ali Registry"
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ env.registry }}
+        username: ${{ secrets.REGUSERNAME }}
+        password: ${{ secrets.REGPASSWORD }}
+    - name: "Build and Push"
+      run: make image-push tags=${{env.tags}}
+
+    - name: "Deploy on host"
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        port: ${{ secrets.PORT }}
+        username: ${{ secrets.USERNAME }}
+        password: ${{ secrets.PASSWORD }}
+        script: |
+          cd fvpn
+          docker pull ${{ env.registry}}/fvpn/fvpn:${{ env.tags }}
+          docker-compose up -d
+          docker rmi $(docker images -f "dangling=true" -q)
+          
+          cd bin
+          sh tests.sh
+    
+          
