@@ -1,0 +1,11 @@
+node:
+  registry: 127.0.0.1:4000
+  #  registry: tiptopsoft.cn
+  log:
+    debug: true
+  ipv6:
+    enable: true
+
+#-------------------分害线
+registry:
+  listen: :4000
