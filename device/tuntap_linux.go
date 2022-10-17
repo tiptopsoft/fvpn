@@ -1,6 +1,9 @@
 package device
 
-import "github.com/vishvananda/netlink"
+import (
+	"github.com/vishvananda/netlink"
+	"net"
+)
 
 // Tuntap a device for net
 type Tuntap struct {
@@ -12,15 +15,32 @@ type Attr struct {
 	Mask string
 }
 
-func New() *Tuntap {
+func New() (*Tuntap, error) {
 	la := netlink.NewLinkAttrs()
 	la.Name = "tun1"
 	tap := netlink.Tuntap{
-		LinkAttrs, la,
+		LinkAttrs: la,
+		Mode:      netlink.TUNTAP_MODE_TUN,
 	}
-	err := netlink.LinkAdd(tap)
+
+	err := netlink.LinkAdd(&tap)
 	if err != nil {
 		panic(err)
 	}
-	return &Tuntap{tap}
+	addr := &netlink.Addr{
+		IPNet: &net.IPNet{
+			IP:   []byte("192.168.0.1"),
+			Mask: []byte("255.255.255.0"),
+		},
+	}
+	err = netlink.AddrAdd(&tap, addr)
+	if err != nil {
+		panic(err)
+	}
+	err = netlink.LinkSetUp(&tap)
+	if err != nil {
+		panic(err)
+	}
+
+	return &Tuntap{tap}, nil
 }
