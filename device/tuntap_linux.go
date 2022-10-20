@@ -1,46 +1,97 @@
 package device
 
 import (
-	"github.com/vishvananda/netlink"
+	"fmt"
+	"github.com/interstellar-cloud/star/common"
+	"github.com/interstellar-cloud/star/option"
+	"golang.org/x/sys/unix"
+	"io"
 	"net"
+	"os"
+	"syscall"
+	"unsafe"
 )
 
 // Tuntap a device for net
 type Tuntap struct {
-	netlink.Tuntap
+	Fd   uintptr
+	Name string
+	io.ReadWriteCloser
 }
 
-type Attr struct {
-	IP   string
-	Mask string
+type Ifreq struct {
+	Name  [16]byte
+	Flags uint16
 }
 
-func New() (*Tuntap, error) {
-	la := netlink.NewLinkAttrs()
-	la.Name = "tun1"
-	tap := netlink.Tuntap{
-		LinkAttrs: la,
-		Mode:      netlink.TUNTAP_MODE_TUN,
+// New craete a tuntap
+func New(opts *option.StarConfig) (*Tuntap, error) {
+
+	dev, err := net.InterfaceByName(opts.Name)
+	if err != nil {
+		return nil, err
 	}
 
-	err := netlink.LinkAdd(&tap)
+	var f = "/dev/net/tun"
+	file, err := os.OpenFile(f, os.O_RDWR, 0)
 	if err != nil {
 		panic(err)
-	}
-	addr := &netlink.Addr{
-		IPNet: &net.IPNet{
-			IP:   []byte("192.168.0.1"),
-			Mask: []byte("255.255.255.0"),
-		},
-	}
-	err = netlink.AddrAdd(&tap, addr)
-	if err != nil {
-		panic(err)
-	}
-	err = netlink.LinkSetUp(&tap)
-	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return &Tuntap{tap}, nil
+	var ifr Ifreq
+	copy(ifr.Name[:], opts.Name)
+	ifr.Flags = syscall.IFF_TUN
+
+	_, fd, errno := unix.Syscall(syscall.SYS_IOCTL, file.Fd(), uintptr(syscall.TUNSETIFF), uintptr(unsafe.Pointer(&ifr)))
+	if errno != 0 {
+		return nil, fmt.Errorf("tuntap ioctl TUNSETIFF failed, errno %v", errno)
+	}
+
+	fmt.Println("success exec tunsetiff")
+
+	_, _, errno = unix.Syscall(unix.SYS_IOCTL, file.Fd(), uintptr(unix.TUNSETPERSIST), 1)
+	if errno != 0 {
+		return nil, fmt.Errorf("tuntap ioctl TUNSETPERSIST failed, errno %v", errno)
+	}
+
+	//set euid egid
+	if _, _, errno = unix.Syscall(unix.SYS_IOCTL, file.Fd(), syscall.TUNSETGROUP, uintptr(os.Getegid())); errno < 0 {
+		return nil, fmt.Errorf("tuntap set group error, errno %v", errno)
+	}
+
+	if _, _, errno = unix.Syscall(unix.SYS_IOCTL, file.Fd(), syscall.TUNSETOWNER, uintptr(os.Geteuid())); errno < 0 {
+		return nil, fmt.Errorf("tuntap set group error, errno %v", errno)
+	}
+
+	fmt.Println("success exec set uid")
+	// set tun tap up
+	if err = common.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ip link set %s up", opts.Name)); err != nil {
+		panic(err)
+		return nil, err
+	}
+
+	if dev == nil {
+		if err = common.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ip addr add %s dev %s", opts.IP, opts.Name)); err != nil {
+			panic(err)
+			return nil, err
+		}
+	}
+
+	fmt.Println("Successfully connect to tun/tap interface:", opts.Name)
+
+	return &Tuntap{
+		fd,
+		opts.Name,
+		os.NewFile(fd, opts.Name),
+	}, nil
+}
+
+//Remove delete a tuntap
+func Remove(opts *option.StarConfig) error {
+	if err := common.ExecCommand("/bin/sh", "-c", "ip link delete %s", opts.Name); err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -3,6 +3,7 @@ package common
 import (
 	"errors"
 	"github.com/spf13/pflag"
+	"os"
 	"os/exec"
 )
 
@@ -17,6 +18,10 @@ func ApplyFlags(fs *pflag.FlagSet) {
 
 }
 
-func ExecCommand(name string, commands ...string) *exec.Cmd {
-	return exec.Command(name, commands...)
+func ExecCommand(name string, commands ...string) error {
+	cmd := exec.Command(name, commands...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
 }
