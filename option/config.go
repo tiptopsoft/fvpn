@@ -1,5 +1,10 @@
 package option
 
+const (
+	TCP = iota
+	UDP
+)
+
 // StarConfig conf for running a star up
 type StarConfig struct {
 	Star
