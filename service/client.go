@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/interstellar-cloud/star/option"
 	"net"
-	"time"
 )
 
 const DefaultPort = 3000
@@ -18,7 +17,7 @@ func Conn(opts *option.StarConfig) (net.Conn, error) {
 	}
 	address := fmt.Sprintf("%s:%d", opts.MoonIP, opts.Port)
 	fmt.Println("connect to:", address)
-	conn, err := net.DialTimeout("tcp", address, time.Second*30)
+	conn, err := net.Dial("tcp", address)
 	if err != nil {
 		return nil, err
 	}

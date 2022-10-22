@@ -2,44 +2,52 @@ package service
 
 import (
 	"errors"
-	"fmt"
+	"github.com/interstellar-cloud/star/device"
 	"net"
 )
-
-type Reader interface {
-}
 
 var (
 	Unknown = errors.New("unknown")
 )
 
-func Listen() error {
+type Server struct {
+	Tun *device.Tuntap
+}
+
+func (s *Server) Listen() (net.Conn, error) {
 	listener, err := net.Listen("tcp", ":3000")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	for {
-		handle(listener)
-	}
+	return s.handle(listener)
 
 }
 
-func handle(listener net.Listener) ([]byte, error) {
+func (s *Server) handle(listener net.Listener) (net.Conn, error) {
 
 	conn, err := listener.Accept()
-	defer conn.Close()
+	//defer conn.Close()
 	if err != nil {
 		panic(err)
 	}
 
-	buf := make([]byte, 128)
-	_, err = conn.Read(buf)
-	if err != nil {
-		panic(err)
-	}
+	//go func() {
+	//	for {
+	//		buf := make([]byte, 2000)
+	//		n, err := conn.Read(buf)
+	//		if err != nil {
+	//			panic(err)
+	//		}
+	//		fmt.Println(fmt.Printf("Recevied %d byte from net", n))
+	//		//write to tap
+	//		_, err = s.Tun.Write(buf[:n])
+	//		if err != nil {
+	//			fmt.Println(err)
+	//		}
+	//		fmt.Println(fmt.Printf("write %d byte to tap %s", n, s.Tun.Name))
+	//	}
+	//}()
 
-	fmt.Println("Recived: ", buf)
-
-	return nil, Unknown
+	return conn, nil
 }

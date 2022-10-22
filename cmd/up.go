@@ -6,6 +6,9 @@ import (
 	"github.com/interstellar-cloud/star/option"
 	"github.com/interstellar-cloud/star/service"
 	"github.com/spf13/cobra"
+	"io"
+	"net"
+	"sync"
 )
 
 type upOptions struct {
@@ -52,37 +55,85 @@ func runUp(opts *upOptions) error {
 	}
 	fmt.Println("Create tap success", tun)
 
+	var netfd net.Conn
 	//启动一个server
 	if opts.Server {
-		return service.Listen()
-	}
-
-	//是client
-	if opts.StarConfig.MoonIP != "" {
-		conn, err := service.Conn(&opts.StarConfig)
-		defer conn.Close()
+		s := &service.Server{
+			Tun: tun,
+		}
+		netfd, err = s.Listen()
 		if err != nil {
 			return err
 		}
 
-		for {
-			var buf []byte
-			n, err := tun.Read(buf)
-			if err != nil {
-				return err
-			}
+	}
 
-			fmt.Println("tun received byte: ", n, buf)
-
-			n, err = conn.Write(buf)
-			if err != nil {
-				return err
-			}
-
-			fmt.Println("tun write byte:", n, buf)
+	//是client
+	if opts.StarConfig.MoonIP != "" {
+		netfd, err = service.Conn(&opts.StarConfig)
+		if err != nil {
+			return err
 		}
 	}
 
-	//Read data from tuntap
+	tap2net := 0
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		client(tap2net, netfd, tun)
+	}()
+
+	go func() {
+		defer wg.Done()
+		server(netfd, tun)
+	}()
+
+	wg.Wait()
+
 	return nil
+}
+
+func client(tap2net int, netfd io.ReadWriteCloser, tun *device.Tuntap) {
+
+	for {
+		var buf [2000]byte
+		n, err := tun.Read(buf[:])
+		if err == io.EOF {
+			continue
+		}
+		if err != nil {
+			panic(err)
+		}
+
+		tap2net++
+		fmt.Println(fmt.Printf("tap2net:%d, tun received %d byte from %s: ", tap2net, n, tun.Name))
+
+		/* write packet */
+		n, err = netfd.Write(buf[:n])
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println(fmt.Printf("tap2net:%d,write %d byte to network", tap2net, n))
+	}
+
+}
+
+func server(netfd io.ReadWriteCloser, tun *device.Tuntap) {
+	for {
+		buf := make([]byte, 2000)
+		n, err := netfd.Read(buf)
+		if err == io.EOF {
+			continue
+		}
+		fmt.Println(fmt.Printf("Recevied %d byte from net", n))
+		//write to tap
+		_, err = tun.Write(buf[:n])
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(fmt.Printf("write %d byte to tap %s", n, tun.Name))
+	}
+
 }

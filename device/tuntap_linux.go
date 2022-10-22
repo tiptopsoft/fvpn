@@ -1,6 +1,7 @@
 package device
 
 import (
+	"errors"
 	"fmt"
 	"github.com/interstellar-cloud/star/common"
 	"github.com/interstellar-cloud/star/option"
@@ -24,11 +25,15 @@ type Ifreq struct {
 	Flags uint16
 }
 
+var (
+	NoSuchInterface = errors.New("route ip+net: no such network interface")
+)
+
 // New craete a tuntap
 func New(opts *option.StarConfig) (*Tuntap, error) {
 
 	dev, err := net.InterfaceByName(opts.Name)
-	if err != nil {
+	if err != nil && err.Error() != NoSuchInterface.Error() {
 		return nil, err
 	}
 
@@ -41,14 +46,12 @@ func New(opts *option.StarConfig) (*Tuntap, error) {
 
 	var ifr Ifreq
 	copy(ifr.Name[:], opts.Name)
-	ifr.Flags = syscall.IFF_TUN
+	ifr.Flags = syscall.IFF_TUN | syscall.IFF_NO_PI
 
-	_, fd, errno := unix.Syscall(syscall.SYS_IOCTL, file.Fd(), uintptr(syscall.TUNSETIFF), uintptr(unsafe.Pointer(&ifr)))
+	_, _, errno := unix.Syscall(syscall.SYS_IOCTL, file.Fd(), uintptr(syscall.TUNSETIFF), uintptr(unsafe.Pointer(&ifr)))
 	if errno != 0 {
 		return nil, fmt.Errorf("tuntap ioctl TUNSETIFF failed, errno %v", errno)
 	}
-
-	fmt.Println("success exec tunsetiff")
 
 	_, _, errno = unix.Syscall(unix.SYS_IOCTL, file.Fd(), uintptr(unix.TUNSETPERSIST), 1)
 	if errno != 0 {
@@ -64,7 +67,6 @@ func New(opts *option.StarConfig) (*Tuntap, error) {
 		return nil, fmt.Errorf("tuntap set group error, errno %v", errno)
 	}
 
-	fmt.Println("success exec set uid")
 	// set tun tap up
 	if err = common.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ip link set %s up", opts.Name)); err != nil {
 		panic(err)
@@ -81,15 +83,15 @@ func New(opts *option.StarConfig) (*Tuntap, error) {
 	fmt.Println("Successfully connect to tun/tap interface:", opts.Name)
 
 	return &Tuntap{
-		fd,
+		file.Fd(),
 		opts.Name,
-		os.NewFile(fd, opts.Name),
+		os.NewFile(file.Fd(), opts.Name),
 	}, nil
 }
 
 //Remove delete a tuntap
 func Remove(opts *option.StarConfig) error {
-	if err := common.ExecCommand("/bin/sh", "-c", "ip link delete %s", opts.Name); err != nil {
+	if err := common.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ip link delete %s", opts.Name)); err != nil {
 		return err
 	}
 
