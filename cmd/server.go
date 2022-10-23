@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"github.com/interstellar-cloud/star/common"
 	"github.com/interstellar-cloud/star/option"
 	"github.com/interstellar-cloud/star/user"
@@ -16,17 +15,13 @@ type serverOptions struct {
 func serverCmd() *cobra.Command {
 	var opts serverOptions
 	cmd := &cobra.Command{
-		Use:   "server",
+		Use:   "serve",
 		Short: "remove a device",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) == 0 {
-				return errors.New("should provide at least one name of dev")
-			}
 
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opts.Name = args[0]
 			return runServer(&opts)
 		},
 	}

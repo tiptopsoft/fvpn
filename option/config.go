@@ -21,8 +21,12 @@ type Star struct {
 }
 
 type Config struct {
-	Listen   string
-	User     string
-	Name     string
-	Password string
+	Listen string `mapstructure:"listen"`
+	Mysql  Mysql  `mapstructure:"mysql"`
+}
+
+type Mysql struct {
+	User     string `mapstructure:"user"`
+	Url      string `mapstructure:"url"`
+	Password string `mapstructure:"password"`
 }
