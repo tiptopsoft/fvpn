@@ -14,7 +14,7 @@ type downOptions struct {
 func downCmd() *cobra.Command {
 	var opts downOptions
 	cmd := &cobra.Command{
-		Use:   "down",
+		Use:   "rm",
 		Short: "remove a device",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {

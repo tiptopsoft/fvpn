@@ -6,7 +6,6 @@ import (
 	"github.com/interstellar-cloud/star/option"
 	"github.com/interstellar-cloud/star/service"
 	"github.com/spf13/cobra"
-	"io"
 	"net"
 	"sync"
 )
@@ -43,12 +42,20 @@ func upCmd() *cobra.Command {
 	fs.StringVarP(&opts.MoonIP, "host", "c", "", "tun server")
 	fs.IntVarP(&opts.Port, "port", "p", 3000, "tun server port")
 
+	var t string
+	fs.StringVarP(&t, "type", "t", "udp", "tunnel type 'tcp', 'udp'")
+	if t == "tcp" {
+		opts.Type = option.TCP
+	} else if t == "udp" {
+		opts.Type = option.UDP
+	}
+
 	return cmd
 }
 
 //runUp run a star up
 func runUp(opts *upOptions) error {
-	fmt.Println("server", opts.Server)
+	fmt.Println(fmt.Sprintf("protocol type: %d, tcp: %d, upd: %d", opts.Type, option.TCP, option.UDP))
 	tun, err := device.New(&opts.StarConfig)
 	if err != nil {
 		return err
@@ -57,21 +64,18 @@ func runUp(opts *upOptions) error {
 
 	var netfd net.Conn
 	//启动一个server
+	s := &service.Server{
+		Tun:  tun,
+		Type: opts.Type,
+	}
 	if opts.Server {
-		s := &service.Server{
-			Tun: tun,
-		}
+		s.Serve = true
 		netfd, err = s.Listen()
-		if err != nil {
-			return err
-		}
-
 	}
 
 	//是client
 	if opts.StarConfig.MoonIP != "" {
-		netfd, err = service.Conn(&opts.StarConfig)
-		if err != nil {
+		if netfd, err = s.Dial(&opts.StarConfig); err != nil {
 			return err
 		}
 	}
@@ -81,59 +85,15 @@ func runUp(opts *upOptions) error {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		client(tap2net, netfd, tun)
+		s.Client(tap2net, netfd, tun)
 	}()
 
 	go func() {
 		defer wg.Done()
-		server(netfd, tun)
+		s.Server(netfd, tun)
 	}()
 
 	wg.Wait()
 
 	return nil
-}
-
-func client(tap2net int, netfd io.ReadWriteCloser, tun *device.Tuntap) {
-
-	for {
-		var buf [2000]byte
-		n, err := tun.Read(buf[:])
-		if err == io.EOF {
-			continue
-		}
-		if err != nil {
-			panic(err)
-		}
-
-		tap2net++
-		fmt.Println(fmt.Printf("tap2net:%d, tun received %d byte from %s: ", tap2net, n, tun.Name))
-
-		/* write packet */
-		n, err = netfd.Write(buf[:n])
-		if err != nil {
-			panic(err)
-		}
-
-		fmt.Println(fmt.Printf("tap2net:%d,write %d byte to network", tap2net, n))
-	}
-
-}
-
-func server(netfd io.ReadWriteCloser, tun *device.Tuntap) {
-	for {
-		buf := make([]byte, 2000)
-		n, err := netfd.Read(buf)
-		if err == io.EOF {
-			continue
-		}
-		fmt.Println(fmt.Printf("Recevied %d byte from net", n))
-		//write to tap
-		_, err = tun.Write(buf[:n])
-		if err != nil {
-			fmt.Println(err)
-		}
-		fmt.Println(fmt.Printf("write %d byte to tap %s", n, tun.Name))
-	}
-
 }
