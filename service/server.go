@@ -40,24 +40,6 @@ func (s *Server) handle(listener net.Listener) (net.Conn, error) {
 	if err != nil {
 		panic(err)
 	}
-
-	//go func() {
-	//	for {
-	//		buf := make([]byte, 2000)
-	//		n, err := conn.Read(buf)
-	//		if err != nil {
-	//			panic(err)
-	//		}
-	//		fmt.Println(fmt.Printf("Recevied %d byte from net", n))
-	//		//write to tap
-	//		_, err = s.Tun.Write(buf[:n])
-	//		if err != nil {
-	//			fmt.Println(err)
-	//		}
-	//		fmt.Println(fmt.Printf("write %d byte to tap %s", n, s.Tun.Name))
-	//	}
-	//}()
-
 	return conn, nil
 }
 
