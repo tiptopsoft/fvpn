@@ -19,3 +19,14 @@ type Star struct {
 	Mask string
 	Mode int //0 tun 1 tap
 }
+
+type Config struct {
+	Listen string `mapstructure:"listen"`
+	Mysql  Mysql  `mapstructure:"mysql"`
+}
+
+type Mysql struct {
+	User     string `mapstructure:"user"`
+	Url      string `mapstructure:"url"`
+	Password string `mapstructure:"password"`
+}
