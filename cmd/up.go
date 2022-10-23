@@ -65,41 +65,19 @@ func runUp(opts *upOptions) error {
 	var netfd net.Conn
 	//启动一个server
 	s := &service.Server{
-		Tun: tun,
+		Tun:  tun,
+		Type: opts.Type,
 	}
 	if opts.Server {
 		s.Serve = true
-		if opts.Type == option.TCP {
-			fmt.Println("using tcp server")
-			netfd, err = s.ListenTcp()
-			if err != nil {
-				return err
-			}
-		} else if opts.Type == option.UDP {
-			fmt.Println("using udp server")
-			netfd, err = s.ListenUdp()
-			if err != nil {
-				return err
-			}
-		}
+		netfd, err = s.Listen()
 	}
 
 	//是client
 	if opts.StarConfig.MoonIP != "" {
-		if opts.Type == option.TCP {
-			fmt.Print("using tcp client")
-			if netfd, err = service.Tcp(&opts.StarConfig); err != nil {
-				return err
-			}
+		if netfd, err = s.Dial(&opts.StarConfig); err != nil {
+			return err
 		}
-
-		if opts.Type == option.UDP {
-			fmt.Print("using udp client")
-			if netfd, err = service.Udp(&opts.StarConfig); err != nil {
-				return err
-			}
-		}
-
 	}
 
 	tap2net := 0
@@ -107,22 +85,12 @@ func runUp(opts *upOptions) error {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		if opts.Type == option.TCP {
-			s.Client(tap2net, netfd, tun)
-		}
-
-		if opts.Type == option.UDP {
-			s.UdpClient(tap2net, netfd.(*net.UDPConn), tun)
-		}
+		s.Client(tap2net, netfd, tun)
 	}()
 
 	go func() {
 		defer wg.Done()
-		if opts.Type == option.UDP {
-			s.UdpServer(netfd.(*net.UDPConn), tun)
-		} else {
-			s.Server(netfd, tun)
-		}
+		s.Server(netfd, tun)
 	}()
 
 	wg.Wait()
