@@ -19,3 +19,10 @@ type Star struct {
 	Mask string
 	Mode int //0 tun 1 tap
 }
+
+type Config struct {
+	Listen   string
+	User     string
+	Name     string
+	Password string
+}

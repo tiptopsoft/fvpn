@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/interstellar-cloud/star/device"
 	"github.com/interstellar-cloud/star/option"
-	"github.com/interstellar-cloud/star/service"
 	"github.com/spf13/cobra"
 	"net"
 	"sync"
@@ -64,7 +63,7 @@ func runUp(opts *upOptions) error {
 
 	var netfd net.Conn
 	//启动一个server
-	s := &service.Server{
+	s := &device.StarTunnel{
 		Tun:  tun,
 		Type: opts.Type,
 	}
