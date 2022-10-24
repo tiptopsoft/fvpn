@@ -29,4 +29,5 @@ type Mysql struct {
 	User     string `mapstructure:"user"`
 	Url      string `mapstructure:"url"`
 	Password string `mapstructure:"password"`
+	Name     string `mapstructure:"name"`
 }
