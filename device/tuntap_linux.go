@@ -18,7 +18,15 @@ type Tuntap struct {
 	Fd   uintptr
 	Name string
 	io.ReadWriteCloser
+	Mode Mode
 }
+
+type Mode int
+
+const (
+	TUN Mode = iota
+	TAP
+)
 
 type Ifreq struct {
 	Name  [16]byte
@@ -30,7 +38,7 @@ var (
 )
 
 // New craete a tuntap
-func New(opts *option.StarConfig) (*Tuntap, error) {
+func New(opts *option.StarConfig, mode Mode) (*Tuntap, error) {
 
 	dev, err := net.InterfaceByName(opts.Name)
 	if err != nil && err.Error() != NoSuchInterface.Error() {
@@ -46,11 +54,20 @@ func New(opts *option.StarConfig) (*Tuntap, error) {
 
 	var ifr Ifreq
 	copy(ifr.Name[:], opts.Name)
-	ifr.Flags = syscall.IFF_TUN | syscall.IFF_NO_PI
 
-	_, _, errno := unix.Syscall(syscall.SYS_IOCTL, file.Fd(), uintptr(syscall.TUNSETIFF), uintptr(unsafe.Pointer(&ifr)))
+	var errno syscall.Errno
+	switch mode {
+
+	case TUN:
+		ifr.Flags = syscall.IFF_TUN | syscall.IFF_NO_PI
+		_, _, errno = unix.Syscall(syscall.SYS_IOCTL, file.Fd(), uintptr(syscall.TUNSETIFF), uintptr(unsafe.Pointer(&ifr)))
+
+	case TAP:
+		ifr.Flags = syscall.IFF_TAP | syscall.IFF_NO_PI
+		_, _, errno = unix.Syscall(syscall.SYS_IOCTL, file.Fd(), uintptr(syscall.TUNSETIFF), uintptr(unsafe.Pointer(&ifr)))
+	}
 	if errno != 0 {
-		return nil, fmt.Errorf("tuntap ioctl TUNSETIFF failed, errno %v", errno)
+		return nil, fmt.Errorf("tuntap ioctl failed, errno %v", errno)
 	}
 
 	_, _, errno = unix.Syscall(unix.SYS_IOCTL, file.Fd(), uintptr(unix.TUNSETPERSIST), 1)
@@ -86,6 +103,7 @@ func New(opts *option.StarConfig) (*Tuntap, error) {
 		file.Fd(),
 		opts.Name,
 		os.NewFile(file.Fd(), opts.Name),
+		mode,
 	}, nil
 }
 

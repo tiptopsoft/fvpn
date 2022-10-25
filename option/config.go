@@ -11,6 +11,7 @@ type StarConfig struct {
 	MoonIP string // service for moon server
 	Port   int    // default port is 3000
 	Server bool   // server or client, true: server
+	Mac    string // like "07:00:10:24:55:42"
 }
 
 type Star struct {

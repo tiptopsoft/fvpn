@@ -55,7 +55,7 @@ func upCmd() *cobra.Command {
 //runUp run a star up
 func runUp(opts *upOptions) error {
 	fmt.Println(fmt.Sprintf("protocol type: %d, tcp: %d, upd: %d", opts.Type, option.TCP, option.UDP))
-	tun, err := device.New(&opts.StarConfig)
+	tun, err := device.New(&opts.StarConfig, device.TUN)
 	if err != nil {
 		return err
 	}
