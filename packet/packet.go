@@ -1,4 +1,4 @@
-package device
+package packet
 
 import (
 	"bytes"
@@ -67,7 +67,8 @@ type Packet struct {
 }
 
 // encode transfer packet to byte stream
-func (p Packet) encode() ([]byte, error) {
+func Encode() ([]byte, error) {
+	p := Packet{}
 	var b []byte
 	if bs, err := IntToBytes(int(p.Version)); err != nil {
 		return nil, err
@@ -129,7 +130,7 @@ func (p Packet) encode() ([]byte, error) {
 	return b, nil
 }
 
-func decode(b []byte) (*Packet, error) {
+func Decode(b []byte) (*Packet, error) {
 	p := &Packet{}
 
 	if v, err := BytesToInt(b[0:1]); err != nil {

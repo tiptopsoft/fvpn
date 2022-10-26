@@ -1,5 +1,8 @@
 package device
 
 const (
-	IFNAMSIZ = 0x10
+	TAP_REGISTER = iota
+	TAP_REGISTER_ACK
+	TAP_MESSAGE
+	TAP_BROADCAST
 )
