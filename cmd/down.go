@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"errors"
-	"github.com/interstellar-cloud/star/device"
-	"github.com/interstellar-cloud/star/option"
+	"github.com/interstellar-cloud/star/pkg/device"
+	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/spf13/cobra"
 )
 

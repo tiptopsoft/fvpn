@@ -46,7 +46,7 @@ Now , we just impl ipv4, and have only one group.
 */
 
 const (
-	PACKET_SIZE = 0x24
+	PACKET_SIZE = 0x18 //24
 )
 
 var (
@@ -66,7 +66,7 @@ type Packet struct {
 
 }
 
-// encode transfer packet to byte stream
+// Encode transfer packet to byte stream
 func Encode() ([]byte, error) {
 	p := Packet{}
 	var b []byte

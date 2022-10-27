@@ -3,8 +3,8 @@ package device
 import (
 	"errors"
 	"fmt"
-	"github.com/interstellar-cloud/star/common"
-	"github.com/interstellar-cloud/star/option"
+	"github.com/interstellar-cloud/star/pkg/common"
+	"github.com/interstellar-cloud/star/pkg/option"
 	"golang.org/x/sys/unix"
 	"io"
 	"net"

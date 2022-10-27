@@ -1,15 +1,13 @@
 package device
 
 import (
-	"errors"
 	"fmt"
-	"github.com/interstellar-cloud/star/option"
+	"github.com/interstellar-cloud/star/pkg/option"
 	"io"
 	"net"
 )
 
 var (
-	Unknown     = errors.New("unknown")
 	DefaultPort = 3000
 )
 

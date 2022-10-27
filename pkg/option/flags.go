@@ -1,4 +1,4 @@
-package device
+package option
 
 const (
 	TAP_REGISTER = iota

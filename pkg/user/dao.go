@@ -2,7 +2,7 @@ package user
 
 import (
 	"fmt"
-	"github.com/interstellar-cloud/star/option"
+	"github.com/interstellar-cloud/star/pkg/option"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )

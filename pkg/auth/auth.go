@@ -1,4 +1,4 @@
-package option
+package auth
 
 type StarAuth struct {
 	Type     int

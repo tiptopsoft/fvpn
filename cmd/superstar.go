@@ -1,9 +1,8 @@
 package cmd
 
 import (
-	"github.com/interstellar-cloud/star/common"
-	"github.com/interstellar-cloud/star/option"
-	"github.com/interstellar-cloud/star/user"
+	"github.com/interstellar-cloud/star/pkg/option"
+	"github.com/interstellar-cloud/star/pkg/user"
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +33,7 @@ which star can register to, also super can relay packets when star at a Symetric
 }
 
 func runSuper(opts *superStarOptions) error {
-	config, err := common.InitConfig()
+	config, err := option.InitConfig()
 	if err != nil {
 		return err
 	}

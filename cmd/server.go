@@ -1,9 +1,8 @@
 package cmd
 
 import (
-	"github.com/interstellar-cloud/star/common"
-	"github.com/interstellar-cloud/star/option"
-	"github.com/interstellar-cloud/star/user"
+	"github.com/interstellar-cloud/star/pkg/option"
+	"github.com/interstellar-cloud/star/pkg/user"
 	"github.com/spf13/cobra"
 )
 
@@ -33,7 +32,7 @@ func serverCmd() *cobra.Command {
 }
 
 func runServer(opts *serverOptions) error {
-	config, err := common.InitConfig()
+	config, err := option.InitConfig()
 	if err != nil {
 		return err
 	}

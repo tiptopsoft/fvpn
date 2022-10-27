@@ -1,8 +1,8 @@
-package service
+package super
 
 import (
-	"github.com/interstellar-cloud/star/device"
-	"github.com/interstellar-cloud/star/packet"
+	"github.com/interstellar-cloud/star/pkg/device"
+	"github.com/interstellar-cloud/star/pkg/packet"
 	"io"
 	"net"
 )
@@ -25,7 +25,7 @@ type rdHandler struct {
 
 func (h *rdHandler) Read(p []byte) (int, error) {
 	data := make([]byte, 1024)
-	n, addr, err := h.conn.ReadFromUDP(b)
+	n, addr, err := h.conn.ReadFromUDP(data)
 	if err != nil {
 		return 0, err
 	}
@@ -46,9 +46,7 @@ func (h *rdHandler) Read(p []byte) (int, error) {
 
 func (h *rdHandler) Write(p []byte) (int, error) {
 
-	p1 := make([]byte, 1024)
-	h.conn.WriteToUDP(p1)
-
+	return 0, nil
 }
 
 func (h *rdHandler) Close() error {

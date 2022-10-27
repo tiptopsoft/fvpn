@@ -1,4 +1,4 @@
-package service
+package super
 
 import (
 	"fmt"
@@ -10,6 +10,13 @@ var limitChan = make(chan int, 1000)
 
 // udp key : mac_group value:addr
 var m sync.Map
+
+type InstanceSuper struct {
+}
+
+func (s *InstanceSuper) Start(port int) error {
+	return start(port)
+}
 
 // Node super node for net, and for user create star
 func start(listen int) error {
