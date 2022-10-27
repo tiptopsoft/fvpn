@@ -1,7 +1,8 @@
-package device
+package star
 
 import (
 	"fmt"
+	"github.com/interstellar-cloud/star/pkg/device"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"io"
 	"net"
@@ -12,7 +13,11 @@ var (
 )
 
 type StarServer struct {
+<<<<<<<< HEAD:pkg/device/server.go
 	Tun   *Tuntap
+========
+	Tun   *device.Tuntap
+>>>>>>>> ed0d02b (Refactor):pkg/star/server.go
 	Addr  *net.UDPAddr
 	Type  int
 	Serve bool
@@ -77,7 +82,11 @@ func (s *StarServer) Dial(opts *option.StarConfig) (net.Conn, error) {
 	return conn, nil
 }
 
+<<<<<<<< HEAD:pkg/device/server.go
 func (s *StarServer) Client(tap2net int, netfd io.ReadWriteCloser, tun *Tuntap) {
+========
+func (s *StarServer) Client(tap2net int, netfd io.ReadWriteCloser, tun *device.Tuntap) {
+>>>>>>>> ed0d02b (Refactor):pkg/star/server.go
 
 	for {
 		var buf [2000]byte
@@ -109,7 +118,11 @@ func (s *StarServer) Client(tap2net int, netfd io.ReadWriteCloser, tun *Tuntap) 
 	}
 }
 
+<<<<<<<< HEAD:pkg/device/server.go
 func (s *StarServer) Server(netfd io.ReadWriteCloser, tun *Tuntap) {
+========
+func (s *StarServer) Server(netfd io.ReadWriteCloser, tun *device.Tuntap) {
+>>>>>>>> ed0d02b (Refactor):pkg/star/server.go
 	for {
 		buf := make([]byte, 2000)
 		var n int

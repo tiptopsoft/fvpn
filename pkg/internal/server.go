@@ -10,7 +10,7 @@ type Server interface {
 }
 
 type StarFunc interface {
-	AddHandler(handler ...StarHandler) error
+	AddHandler(handler ...StarHandler)
 }
 
 // StarHandler is a common handler

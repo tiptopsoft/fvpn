@@ -6,3 +6,6 @@ type StarAuth struct {
 	Password string
 	Token    string
 }
+
+type AuthHandler struct {
+}

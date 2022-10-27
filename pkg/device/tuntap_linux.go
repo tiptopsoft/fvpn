@@ -3,7 +3,6 @@ package device
 import (
 	"errors"
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/common"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"golang.org/x/sys/unix"
 	"io"
@@ -85,13 +84,13 @@ func New(opts *option.StarConfig, mode Mode) (*Tuntap, error) {
 	}
 
 	// set tun tap up
-	if err = common.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ip link set %s up", opts.Name)); err != nil {
+	if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ip link set %s up", opts.Name)); err != nil {
 		panic(err)
 		return nil, err
 	}
 
 	if dev == nil {
-		if err = common.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ip addr add %s dev %s", opts.IP, opts.Name)); err != nil {
+		if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ip addr add %s dev %s", opts.IP, opts.Name)); err != nil {
 			panic(err)
 			return nil, err
 		}
@@ -109,7 +108,7 @@ func New(opts *option.StarConfig, mode Mode) (*Tuntap, error) {
 
 //Remove delete a tuntap
 func Remove(opts *option.StarConfig) error {
-	if err := common.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ip link delete %s", opts.Name)); err != nil {
+	if err := option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ip link delete %s", opts.Name)); err != nil {
 		return err
 	}
 
