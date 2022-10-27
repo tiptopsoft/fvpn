@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/interstellar-cloud/star/pkg/auth"
-	device2 "github.com/interstellar-cloud/star/pkg/device"
+	"github.com/interstellar-cloud/star/pkg/device"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/spf13/cobra"
 	"net"
@@ -56,7 +56,7 @@ func upCmd() *cobra.Command {
 //runUp run a star up
 func runUp(opts *upOptions) error {
 	fmt.Println(fmt.Sprintf("protocol type: %d, tcp: %d, upd: %d", opts.Type, option.TCP, option.UDP))
-	tun, err := device2.New(&opts.StarConfig, device2.TUN)
+	tun, err := device.New(&opts.StarConfig, device.TUN)
 	if err != nil {
 		return err
 	}
@@ -64,13 +64,17 @@ func runUp(opts *upOptions) error {
 
 	var netfd net.Conn
 	//启动一个server
-	s := &device2.StarTunnel{
+	s := &device.StarServer{
 		Tun:  tun,
 		Type: opts.Type,
 	}
+	if err := s.Start(opts.Port); err != nil {
+		return err
+	}
+	
 	if opts.Server {
 		s.Serve = true
-		netfd, err = s.Listen()
+		netfd = s.Conn
 	}
 
 	//是client

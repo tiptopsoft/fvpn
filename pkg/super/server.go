@@ -2,6 +2,7 @@ package super
 
 import (
 	"fmt"
+	"github.com/interstellar-cloud/star/pkg/option"
 	"net"
 	"sync"
 )
@@ -11,10 +12,12 @@ var limitChan = make(chan int, 1000)
 // udp key : mac_group value:addr
 var m sync.Map
 
-type InstanceSuper struct {
+//RelayServer use as register
+type RelayServer struct {
+	Config *option.Config
 }
 
-func (s *InstanceSuper) Start(port int) error {
+func (s *RelayServer) Start(port int) error {
 	return start(port)
 }
 

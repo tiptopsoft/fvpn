@@ -38,9 +38,9 @@ func runServer(opts *serverOptions) error {
 	}
 	opts.Config = config
 
-	s := user.Server{
+	s := user.UserServer{
 		Config: config,
 	}
 
-	return s.Start()
+	return s.Start(opts.Port)
 }

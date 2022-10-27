@@ -11,14 +11,25 @@ var (
 	DefaultPort = 3000
 )
 
-type StarTunnel struct {
+type StarServer struct {
 	Tun   *Tuntap
 	Addr  *net.UDPAddr
 	Type  int
 	Serve bool
+	Conn  net.Conn
 }
 
-func (s *StarTunnel) Listen() (net.Conn, error) {
+func (s *StarServer) Start(port int) error {
+	conn, err := s.listen()
+	if err != nil {
+		return nil
+	}
+
+	s.Conn = conn
+	return nil
+}
+
+func (s *StarServer) listen() (net.Conn, error) {
 	var conn net.Conn
 	var err error
 	listener, err := net.Listen("tcp", ":3000")
@@ -42,7 +53,7 @@ func (s *StarTunnel) Listen() (net.Conn, error) {
 	return conn, nil
 }
 
-func (s *StarTunnel) Dial(opts *option.StarConfig) (net.Conn, error) {
+func (s *StarServer) Dial(opts *option.StarConfig) (net.Conn, error) {
 	if opts.Port == 0 {
 		opts.Port = DefaultPort
 	}
@@ -66,7 +77,7 @@ func (s *StarTunnel) Dial(opts *option.StarConfig) (net.Conn, error) {
 	return conn, nil
 }
 
-func (s *StarTunnel) Client(tap2net int, netfd io.ReadWriteCloser, tun *Tuntap) {
+func (s *StarServer) Client(tap2net int, netfd io.ReadWriteCloser, tun *Tuntap) {
 
 	for {
 		var buf [2000]byte
@@ -98,7 +109,7 @@ func (s *StarTunnel) Client(tap2net int, netfd io.ReadWriteCloser, tun *Tuntap) 
 	}
 }
 
-func (s *StarTunnel) Server(netfd io.ReadWriteCloser, tun *Tuntap) {
+func (s *StarServer) Server(netfd io.ReadWriteCloser, tun *Tuntap) {
 	for {
 		buf := make([]byte, 2000)
 		var n int

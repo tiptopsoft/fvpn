@@ -17,3 +17,6 @@ type StarFunc interface {
 type StarHandler interface {
 	Handle(ctx context.Context, p packet.Packet) error
 }
+
+type StarServer struct {
+}

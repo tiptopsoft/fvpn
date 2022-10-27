@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/interstellar-cloud/star/pkg/option"
-	"github.com/interstellar-cloud/star/pkg/user"
+	"github.com/interstellar-cloud/star/pkg/super"
 	"github.com/spf13/cobra"
 )
 
@@ -16,7 +16,7 @@ func superStarCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "super",
 		Short: `super star, using for finding other machine in a group,
-which star can register to, also super can relay packets when star at a Symetric Nat.`,
+which star can register to, also super can super packets when star at a Symetric Nat.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 
 			return nil
@@ -39,9 +39,9 @@ func runSuper(opts *superStarOptions) error {
 	}
 	opts.Config = config
 
-	s := user.Server{
+	s := super.RelayServer{
 		Config: config,
 	}
 
-	return s.Start()
+	return s.Start(opts.Listen)
 }

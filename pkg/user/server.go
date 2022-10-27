@@ -5,12 +5,12 @@ import (
 	"github.com/interstellar-cloud/star/pkg/option"
 )
 
-type Server struct {
+type UserServer struct {
 	Config *option.Config
 	db     *Db
 }
 
-func (s *Server) Start() error {
+func (s UserServer) Start(port int) error {
 
 	db := &Db{
 		Config: s.Config,
@@ -31,7 +31,7 @@ func (s *Server) Start() error {
 }
 
 // register register user
-func (s Server) register() gin.HandlerFunc {
+func (s UserServer) register() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
 		var u User
@@ -50,7 +50,7 @@ func (s Server) register() gin.HandlerFunc {
 }
 
 // uesrs user list
-func (s Server) users() gin.HandlerFunc {
+func (s UserServer) users() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		var u User
 
@@ -64,7 +64,7 @@ func (s Server) users() gin.HandlerFunc {
 }
 
 // getUser get user by user id
-func (s Server) getUser() gin.HandlerFunc {
+func (s UserServer) getUser() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		var u User
 		var err error
