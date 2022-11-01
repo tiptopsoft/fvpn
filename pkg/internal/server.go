@@ -5,8 +5,16 @@ import (
 	"github.com/interstellar-cloud/star/pkg/packet"
 )
 
+type Protocol int
+
+const (
+	TCP Protocol = iota
+	UDP
+)
+
 type Server interface {
 	Start(port int) error
+	Stop() error
 }
 
 type StarFunc interface {
@@ -19,4 +27,5 @@ type StarHandler interface {
 }
 
 type StarServer struct {
+	Protocol Protocol
 }
