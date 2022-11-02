@@ -56,43 +56,58 @@ func handleUdp(conn *net.UDPConn) {
 		fmt.Println(err)
 	}
 
-	p, _ := packet.Decode(data[:24])
-	switch p.Flags {
+	frame, _ := packet.Decode(data[:24])
+	switch frame.Flags {
 	case option.TAP_REGISTER:
-		if err := register(p); err != nil {
+		if err := register(frame); err != nil {
 			fmt.Println(err)
 		}
-		_, err = conn.WriteToUDP(data[25:], addr)
+
+		// build a ack
+		f, err := ackBuilder(frame)
+		if err != nil {
+			fmt.Println("build resp frame failed.")
+		}
+		copy(data[0:24], f)
+		_, err = conn.WriteToUDP(data, addr)
 		if err != nil {
 			fmt.Println("super write failed.")
 		}
 		<-limitChan
+		break
+	case option.TAP_UNREGISTER:
+		unRegister(frame)
+		break
+
+	case option.TAP_MESSAGE:
 		break
 	}
 
 }
 
 // register star node register to super
-func register(pack *packet.Packet) error {
+func register(pack *packet.Frame) error {
 
-	ips, err := packet.IntToBytes(int(pack.IPv4))
-	if err != nil {
-		return err
-	}
+	ips := pack.IPv4
 
 	m.Store(pack.SourceMac, &net.UDPAddr{
-		IP: net.IPv4(byte2int(ips[:8]), byte2int(ips[9:16]), byte2int(ips[17:24]), byte2int(ips[25:])), Port: int(pack.UdpPort),
+		IP: net.IPv4(ips[0], ips[1], ips[2], ips[3]), Port: int(pack.UdpPort),
 	})
 
 	return nil
 }
 
-func byte2int(b []byte) byte {
-	a, _ := packet.BytesToInt(b)
-	return byte(a)
+func ackBuilder(orginPacket *packet.Frame) ([]byte, error) {
+	p := packet.NewPacket()
+
+	p.SourceMac = orginPacket.DestMac
+	p.DestMac = orginPacket.SourceMac
+	p.Flags = option.TAP_REGISTER_ACK
+
+	return packet.Encode(p)
 }
 
 // unRegister star node unregister from super
-func unRegister() error {
-	return nil
+func unRegister(pack *packet.Frame) {
+	m.Delete(pack.SourceMac)
 }

@@ -23,7 +23,7 @@ type StarFunc interface {
 
 // StarHandler is a common handler
 type StarHandler interface {
-	Handle(ctx context.Context, p packet.Packet) error
+	Handle(ctx context.Context, p packet.Frame) error
 }
 
 type StarServer struct {

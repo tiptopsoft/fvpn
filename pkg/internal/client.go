@@ -6,5 +6,5 @@ import (
 )
 
 type Client interface {
-	Request(ctx context.Context, packet packet.Packet)
+	Request(ctx context.Context, packet packet.Frame)
 }

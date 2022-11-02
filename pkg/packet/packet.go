@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"github.com/interstellar-cloud/star/pkg/option"
 )
 
-// Packet star's Packet
+// Frame star's Frame
 /**
   As learn from star, our packet is form of below:
  Version 1
@@ -46,92 +47,85 @@ Now , we just impl ipv4, and have only one group.
 */
 
 const (
-	PACKET_SIZE = 0x18 //24
+	FRAME_SIZE = 0x18 //24
 )
 
 var (
-	INVALIED_PACKET = errors.New("invalid packet")
+	INVALIED_FRAME = errors.New("invalid frame")
 )
 
-type Packet struct {
-	Version     uint8  //1
-	TTL         uint8  //1
-	Flags       uint16 //2
-	Group       uint32 //4 every group 4 byte
-	SourceMac   uint32 //4
-	DestMac     uint32 //4
-	SocketFlags uint16 //2
-	IPv4        uint32 //4
-	UdpPort     uint16 //2
+type Frame struct {
+	Version     uint8   //1
+	TTL         uint8   //1
+	Flags       uint16  //2
+	Group       uint32  //4 every group 4 byte
+	SourceMac   [4]byte //4
+	DestMac     [4]byte //4
+	SocketFlags uint16  //2 user v4 or v6
+	IPv4        [4]byte //4
+	UdpPort     uint16  //2
+}
 
+func NewPacket() *Frame {
+	return &Frame{
+		Version: uint8(option.Version),
+		TTL:     uint8(option.DefaultTTL),
+	}
 }
 
 // Encode transfer packet to byte stream
-func Encode() ([]byte, error) {
-	p := Packet{}
-	var b []byte
-	if bs, err := IntToBytes(int(p.Version)); err != nil {
+func Encode(frame *Frame) ([]byte, error) {
+	var b [24]byte
+	if bs, err := IntToBytes(int(frame.Version)); err != nil {
 		return nil, err
 	} else {
-		b = append(b, bs...)
+		copy(b[:1], bs)
 	}
 
-	if bs, err := IntToBytes(int(p.TTL)); err != nil {
+	if bs, err := IntToBytes(int(frame.TTL)); err != nil {
 		return nil, err
 	} else {
-		b = append(b, bs...)
+		copy(b[1:2], bs)
 	}
 
-	if bs, err := IntToBytes(int(p.Flags)); err != nil {
+	if bs, err := IntToBytes(int(frame.Flags)); err != nil {
 		return nil, err
 	} else {
-		b = append(b, bs...)
+		copy(b[2:4], bs)
 	}
 
-	if bs, err := IntToBytes(int(p.Group)); err != nil {
+	if bs, err := IntToBytes(int(frame.Group)); err != nil {
 		return nil, err
 	} else {
-		b = append(b, bs...)
+		copy(b[4:8], bs)
 	}
 
-	if bs, err := IntToBytes(int(p.SourceMac)); err != nil {
+	copy(b[8:12], frame.SourceMac[:])
+
+	copy(b[12:16], frame.DestMac[:])
+
+	if bs, err := IntToBytes(int(frame.SocketFlags)); err != nil {
 		return nil, err
 	} else {
-		b = append(b, bs...)
+		copy(b[16:18], bs)
 	}
 
-	if bs, err := IntToBytes(int(p.DestMac)); err != nil {
+	copy(b[18:22], frame.IPv4[:])
+
+	if bs, err := IntToBytes(int(frame.UdpPort)); err != nil {
 		return nil, err
 	} else {
-		b = append(b, bs...)
+		copy(b[22:24], bs)
 	}
 
-	if bs, err := IntToBytes(int(p.SocketFlags)); err != nil {
-		return nil, err
-	} else {
-		b = append(b, bs...)
-	}
-
-	if bs, err := IntToBytes(int(p.IPv4)); err != nil {
-		return nil, err
-	} else {
-		b = append(b, bs...)
-	}
-
-	if bs, err := IntToBytes(int(p.UdpPort)); err != nil {
-		return nil, err
-	} else {
-		b = append(b, bs...)
-	}
-
-	if len(b) > 20 {
-		return nil, INVALIED_PACKET
-	}
-	return b, nil
+	return b[:], nil
 }
 
-func Decode(b []byte) (*Packet, error) {
-	p := &Packet{}
+func Decode(b []byte) (*Frame, error) {
+	if len(b) < FRAME_SIZE {
+		return nil, INVALIED_FRAME
+	}
+	p := &Frame{}
 
 	if v, err := BytesToInt(b[0:1]); err != nil {
 		return nil, err
@@ -157,17 +151,8 @@ func Decode(b []byte) (*Packet, error) {
 		p.Group = uint32(group)
 	}
 
-	if sMac, err := BytesToInt(b[8:12]); err != nil {
-		return nil, err
-	} else {
-		p.SourceMac = uint32(sMac)
-	}
-
-	if dMac, err := BytesToInt(b[12:16]); err != nil {
-		return nil, err
-	} else {
-		p.DestMac = uint32(dMac)
-	}
+	copy(p.SourceMac[:], b[8:12])
+	copy(p.DestMac[:], b[12:16])
 
 	if sFlags, err := BytesToInt(b[16:18]); err != nil {
 		return nil, err
@@ -175,17 +160,8 @@ func Decode(b []byte) (*Packet, error) {
 		p.SocketFlags = uint16(sFlags)
 	}
 
-	if ipv4, err := BytesToInt(b[18:22]); err != nil {
-		return nil, err
-	} else {
-		p.IPv4 = uint32(ipv4)
-	}
-
-	if udpPort, err := BytesToInt(b[22:24]); err != nil {
-		return nil, err
-	} else {
-		p.DestMac = uint32(udpPort)
-	}
+	copy(p.IPv4[:], b[18:22])
+	copy(p.DestMac[:], b[22:24])
 
 	return p, nil
 }
