@@ -56,31 +56,40 @@ func handleUdp(conn *net.UDPConn) {
 		fmt.Println(err)
 	}
 
-	_, err = conn.WriteToUDP(data, addr)
-	if err != nil {
-		fmt.Println("super write failed.")
+	p, _ := packet.Decode(data[:24])
+	switch p.Flags {
+	case option.TAP_REGISTER:
+		if err := register(p); err != nil {
+			fmt.Println(err)
+		}
+		_, err = conn.WriteToUDP(data[25:], addr)
+		if err != nil {
+			fmt.Println("super write failed.")
+		}
+		<-limitChan
+		break
 	}
 
-	<-limitChan
 }
 
 // register star node register to super
-func register(p []byte) error {
-	pack, err := packet.Decode(p)
-	if err != nil {
-		return err
-	}
+func register(pack *packet.Packet) error {
+
 	ips, err := packet.IntToBytes(int(pack.IPv4))
 	if err != nil {
 		return err
 	}
 
 	m.Store(pack.SourceMac, &net.UDPAddr{
-
-		IP: net.IPv4(ips[:8], byte(pack.IPv4[9:16]), byte(pack.IPv4[17:24]), byte(pack.IPv4[25:])), Port: int(pack.UdpPort),
+		IP: net.IPv4(byte2int(ips[:8]), byte2int(ips[9:16]), byte2int(ips[17:24]), byte2int(ips[25:])), Port: int(pack.UdpPort),
 	})
 
 	return nil
+}
+
+func byte2int(b []byte) byte {
+	a, _ := packet.BytesToInt(b)
+	return byte(a)
 }
 
 // unRegister star node unregister from super
