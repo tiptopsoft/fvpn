@@ -1,49 +1,59 @@
 package star
 
 import (
+	"errors"
 	"fmt"
 	"github.com/interstellar-cloud/star/pkg/device"
 	"github.com/interstellar-cloud/star/pkg/option"
+	"github.com/interstellar-cloud/star/pkg/pack"
 	"io"
 	"net"
 )
 
 var (
-	DefaultPort = 3000
+	DefaultPort uint16 = 3000
 )
 
-type StarServer struct {
-	Tun   *device.Tuntap
+type EdgeStar struct {
+	Tap   *device.Tuntap
 	Addr  *net.UDPAddr
 	Type  int
 	Serve bool
 	Conn  net.Conn
 }
 
-func (s *StarServer) Start(port int) error {
-	conn, err := s.listen()
+func (es *EdgeStar) Start(port int) error {
+	if port == 0 {
+		port = int(DefaultPort)
+	}
+	conn, err := es.listen(fmt.Sprintf(":%d", port))
 	if err != nil {
 		return nil
 	}
+	es.Conn = conn
 
-	s.Conn = conn
+	if err := es.register(); err != nil {
+		return errors.New("register to register star failed")
+	}
+
+	//get group edgestarlist
 	return nil
 }
 
-func (s *StarServer) listen() (net.Conn, error) {
+func (es *EdgeStar) listen(address string) (net.Conn, error) {
 	var conn net.Conn
 	var err error
-	listener, err := net.Listen("tcp", ":3000")
-	if err != nil {
-		return nil, err
-	}
 
-	switch s.Type {
+	switch es.Type {
 	case option.TCP:
+		listener, err := net.Listen("tcp", address)
+		if err != nil {
+			return nil, err
+		}
 		conn, err = listener.Accept()
 	case option.UDP:
 		conn, err = net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4(0, 0, 0, 0),
-			Port: DefaultPort})
+			Port: int(DefaultPort)})
 	}
 
 	//defer conn.Close()
@@ -54,21 +64,72 @@ func (s *StarServer) listen() (net.Conn, error) {
 	return conn, nil
 }
 
-func (s *StarServer) Dial(opts *option.StarConfig) (net.Conn, error) {
+// register register a edgestar to center.
+func (es *EdgeStar) register() error {
+	p := pack.NewPacket()
+	p.Flags = option.TAP_REGISTER
+	p.TTL = option.DefaultTTL
+
+	mac, err := option.GetLocalMac(es.Tap.Name)
+	if err != nil {
+		return option.ErrGetMac
+	}
+	copy(p.SourceMac[:], mac[:])
+
+	data, err := pack.Encode(p)
+	if err != nil {
+		return errors.New("encode packet failed")
+	}
+
+	switch es.Type {
+	case option.UDP:
+		if _, err := es.Conn.(*net.UDPConn).Write(data); err != nil {
+			return err
+		}
+		break
+	}
+	return nil
+}
+
+// listEdgeStar get all group star from super and connect to them.
+func (es *EdgeStar) listEdgeStar() ([]EdgeStar, error) {
+
+	p := pack.NewPacket()
+	p.Flags = option.TAP_LIST_EDGE_STAR
+
+	var err error
+	data, err := pack.Encode(p)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := es.Conn.Write(data); err != nil {
+		return nil, err
+	}
+
+	var bs = make([]byte, pack.FRAME_SIZE)
+	if _, _, err = es.Conn.(*net.UDPConn).ReadFromUDP(bs[:]); err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+func (es *EdgeStar) Dial(opts *option.StarConfig) (net.Conn, error) {
 	if opts.Port == 0 {
-		opts.Port = DefaultPort
+		opts.Port = int(DefaultPort)
 	}
 	address := fmt.Sprintf("%s:%d", opts.MoonIP, opts.Port)
 	fmt.Println("connect to:", address)
 	var conn net.Conn
 	var err error
-	switch s.Type {
+	switch es.Type {
 	case option.TCP:
 		conn, err = net.Dial("tcp", address)
 	case option.UDP:
 		ip := net.ParseIP(opts.MoonIP)
 		conn, err = net.DialUDP("udp", nil, &net.UDPAddr{IP: ip,
-			Port: DefaultPort})
+			Port: int(DefaultPort)})
 	}
 
 	if err != nil {
@@ -78,7 +139,7 @@ func (s *StarServer) Dial(opts *option.StarConfig) (net.Conn, error) {
 	return conn, nil
 }
 
-func (s *StarServer) Client(tap2net int, netfd io.ReadWriteCloser, tun *device.Tuntap) {
+func (es *EdgeStar) Client(tap2net int, netfd io.ReadWriteCloser, tun *device.Tuntap) {
 
 	for {
 		var buf [2000]byte
@@ -94,9 +155,9 @@ func (s *StarServer) Client(tap2net int, netfd io.ReadWriteCloser, tun *device.T
 		fmt.Println(fmt.Printf("tap2net:%d, tun received %d byte from %s: ", tap2net, n, tun.Name))
 
 		/* write pack */
-		if s.Type == option.UDP && s.Serve {
+		if es.Type == option.UDP && es.Serve {
 			fmt.Println("using write 2 udp")
-			netfd.(*net.UDPConn).WriteToUDP(buf[:], s.Addr)
+			netfd.(*net.UDPConn).WriteToUDP(buf[:], es.Addr)
 		} else {
 			fmt.Println("using write udp")
 			n, err = netfd.Write(buf[:n])
@@ -110,16 +171,16 @@ func (s *StarServer) Client(tap2net int, netfd io.ReadWriteCloser, tun *device.T
 	}
 }
 
-func (s *StarServer) Server(netfd io.ReadWriteCloser, tun *device.Tuntap) {
+func (es *EdgeStar) Server(netfd io.ReadWriteCloser, tun *device.Tuntap) {
 
 	for {
 		buf := make([]byte, 2000)
 		var n int
 		var addr *net.UDPAddr
 		var err error
-		if s.Type == option.UDP {
+		if es.Type == option.UDP {
 			n, addr, err = netfd.(*net.UDPConn).ReadFromUDP(buf)
-			s.Addr = addr
+			es.Addr = addr
 		} else {
 			n, err = netfd.Read(buf)
 		}

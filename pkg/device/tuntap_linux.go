@@ -17,7 +17,8 @@ type Tuntap struct {
 	Fd   uintptr
 	Name string
 	io.ReadWriteCloser
-	Mode Mode
+	Mode    Mode
+	MacAddr string
 }
 
 type Mode int
@@ -102,7 +103,7 @@ func New(opts *option.StarConfig, mode Mode) (*Tuntap, error) {
 		file.Fd(),
 		opts.Name,
 		os.NewFile(file.Fd(), opts.Name),
-		mode,
+		mode, "",
 	}, nil
 }
 

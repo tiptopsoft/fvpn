@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"github.com/interstellar-cloud/star/pkg/option"
+	"github.com/interstellar-cloud/star/pkg/star"
 )
 
 // Packet star's Packet
@@ -68,8 +69,10 @@ type Packet struct {
 
 func NewPacket() *Packet {
 	return &Packet{
-		Version: uint8(option.Version),
-		TTL:     uint8(option.DefaultTTL),
+		Version:     option.Version,
+		TTL:         option.DefaultTTL,
+		SocketFlags: option.IPV4,
+		UdpPort:     star.DefaultPort,
 	}
 }
 

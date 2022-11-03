@@ -39,7 +39,7 @@ func runSuper(opts *superStarOptions) error {
 	}
 	opts.Config = config
 
-	s := super.Registry{
+	s := super.RegistryStar{
 		Config: config,
 	}
 

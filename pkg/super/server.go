@@ -21,22 +21,22 @@ type Node struct {
 	Addr  *net.UDPAddr
 }
 
-//Registry use as register
-type Registry struct {
+//RegistryStar use as register
+type RegistryStar struct {
 	Config   *option.Config
 	Handlers []internal.Handler
 }
 
-func (r *Registry) Start(port int) error {
+func (r *RegistryStar) Start(port int) error {
 	return r.start(port)
 }
 
-func (r *Registry) AddHandler(handler internal.Handler) {
+func (r *RegistryStar) AddHandler(handler internal.Handler) {
 	r.Handlers = append(r.Handlers, handler)
 }
 
 // Node super node for net, and for user create star
-func (r *Registry) start(listen int) error {
+func (r *RegistryStar) start(listen int) error {
 
 	conn, err := net.ListenUDP("udp", &net.UDPAddr{
 		IP:   net.IPv4(0, 0, 0, 0),
@@ -55,7 +55,7 @@ func (r *Registry) start(listen int) error {
 
 }
 
-func (r *Registry) handleUdp(conn *net.UDPConn) {
+func (r *RegistryStar) handleUdp(conn *net.UDPConn) {
 
 	data := make([]byte, 1024)
 	_, addr, err := conn.ReadFromUDP(data)
@@ -98,8 +98,7 @@ func (r *Registry) handleUdp(conn *net.UDPConn) {
 }
 
 // register star node register to super
-func (r *Registry) register(p *pack.Packet) error {
-
+func (r *RegistryStar) register(p *pack.Packet) error {
 	ips := p.IPv4
 	m[p.SourceMac] = &Node{
 		Addr: &net.UDPAddr{
@@ -126,7 +125,7 @@ func unRegister(pack *pack.Packet) {
 	delete(m, pack.SourceMac)
 }
 
-func (r *Registry) Execute(ctx context.Context, p pack.Packet) error {
+func (r *RegistryStar) Execute(ctx context.Context, p pack.Packet) error {
 	handlers := r.Handlers
 	for _, h := range handlers {
 		if err := h.Handle(ctx, p); err != nil {

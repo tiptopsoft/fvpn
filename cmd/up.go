@@ -65,8 +65,8 @@ func runUp(opts *upOptions) error {
 
 	var netfd net.Conn
 	//启动一个server
-	s := &star.StarServer{
-		Tun:  tun,
+	s := &star.EdgeStar{
+		Tap:  tun,
 		Type: opts.Type,
 	}
 	if err := s.Start(opts.Port); err != nil {
