@@ -1,35 +1,42 @@
 package super
 
 import (
+	"context"
 	"fmt"
 	"github.com/interstellar-cloud/star/pkg/internal"
 	"github.com/interstellar-cloud/star/pkg/option"
-	"github.com/interstellar-cloud/star/pkg/packet"
+	"github.com/interstellar-cloud/star/pkg/pack"
 	"net"
-	"sync"
 )
 
 var limitChan = make(chan int, 1000)
 
 // udp key : mac_group value:addr
-var m sync.Map
+var m map[[4]byte]interface{}
 
-//RelayServer use as register
-type RelayServer struct {
+type Node struct {
+	Mac   [4]byte
+	Proto internal.Protocol
+	Conn  net.Conn
+	Addr  *net.UDPAddr
+}
+
+//Registry use as register
+type Registry struct {
 	Config   *option.Config
-	Handlers []internal.StarHandler
+	Handlers []internal.Handler
 }
 
-func (s *RelayServer) Start(port int) error {
-	return start(port)
+func (r *Registry) Start(port int) error {
+	return r.start(port)
 }
 
-func (s *RelayServer) AddHandler(handler internal.StarHandler) {
-	s.Handlers = append(s.Handlers, handler)
+func (r *Registry) AddHandler(handler internal.Handler) {
+	r.Handlers = append(r.Handlers, handler)
 }
 
 // Node super node for net, and for user create star
-func start(listen int) error {
+func (r *Registry) start(listen int) error {
 
 	conn, err := net.ListenUDP("udp", &net.UDPAddr{
 		IP:   net.IPv4(0, 0, 0, 0),
@@ -43,12 +50,12 @@ func start(listen int) error {
 	defer conn.Close()
 	for {
 		limitChan <- 1
-		go handleUdp(conn)
+		go r.handleUdp(conn)
 	}
 
 }
 
-func handleUdp(conn *net.UDPConn) {
+func (r *Registry) handleUdp(conn *net.UDPConn) {
 
 	data := make([]byte, 1024)
 	_, addr, err := conn.ReadFromUDP(data)
@@ -56,17 +63,18 @@ func handleUdp(conn *net.UDPConn) {
 		fmt.Println(err)
 	}
 
-	frame, _ := packet.Decode(data[:24])
-	switch frame.Flags {
+	p, _ := pack.Decode(data[:24])
+
+	switch p.Flags {
 	case option.TAP_REGISTER:
-		if err := register(frame); err != nil {
+		if err := r.register(p); err != nil {
 			fmt.Println(err)
 		}
 
 		// build a ack
-		f, err := ackBuilder(frame)
+		f, err := ackBuilder(p)
 		if err != nil {
-			fmt.Println("build resp frame failed.")
+			fmt.Println("build resp p failed.")
 		}
 		copy(data[0:24], f)
 		_, err = conn.WriteToUDP(data, addr)
@@ -76,38 +84,55 @@ func handleUdp(conn *net.UDPConn) {
 		<-limitChan
 		break
 	case option.TAP_UNREGISTER:
-		unRegister(frame)
+		unRegister(p)
 		break
 
 	case option.TAP_MESSAGE:
+		addr, _ := m[p.SourceMac]
+		if _, err := conn.WriteToUDP(data, addr.(*net.UDPAddr)); err != nil {
+			fmt.Println(err)
+		}
 		break
 	}
 
 }
 
 // register star node register to super
-func register(pack *packet.Frame) error {
+func (r *Registry) register(p *pack.Packet) error {
 
-	ips := pack.IPv4
-
-	m.Store(pack.SourceMac, &net.UDPAddr{
-		IP: net.IPv4(ips[0], ips[1], ips[2], ips[3]), Port: int(pack.UdpPort),
-	})
+	ips := p.IPv4
+	m[p.SourceMac] = &Node{
+		Addr: &net.UDPAddr{
+			IP: net.IPv4(ips[0], ips[1], ips[2], ips[3]), Port: int(p.UdpPort),
+		},
+		Proto: r.Config.Proto,
+	}
 
 	return nil
 }
 
-func ackBuilder(orginPacket *packet.Frame) ([]byte, error) {
-	p := packet.NewPacket()
+func ackBuilder(orginPacket *pack.Packet) ([]byte, error) {
+	p := pack.NewPacket()
 
 	p.SourceMac = orginPacket.DestMac
 	p.DestMac = orginPacket.SourceMac
 	p.Flags = option.TAP_REGISTER_ACK
 
-	return packet.Encode(p)
+	return pack.Encode(p)
 }
 
 // unRegister star node unregister from super
-func unRegister(pack *packet.Frame) {
-	m.Delete(pack.SourceMac)
+func unRegister(pack *pack.Packet) {
+	delete(m, pack.SourceMac)
+}
+
+func (r *Registry) Execute(ctx context.Context, p pack.Packet) error {
+	handlers := r.Handlers
+	for _, h := range handlers {
+		if err := h.Handle(ctx, p); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

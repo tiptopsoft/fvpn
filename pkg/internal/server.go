@@ -2,7 +2,7 @@ package internal
 
 import (
 	"context"
-	"github.com/interstellar-cloud/star/pkg/packet"
+	"github.com/interstellar-cloud/star/pkg/pack"
 )
 
 type Protocol int
@@ -18,12 +18,12 @@ type Server interface {
 }
 
 type StarFunc interface {
-	AddHandler(handler ...StarHandler)
+	AddHandler(ctx context.Context, handler ...Handler)
 }
 
-// StarHandler is a common handler
-type StarHandler interface {
-	Handle(ctx context.Context, p packet.Frame) error
+// Handler is a common handler
+type Handler interface {
+	Handle(ctx context.Context, p pack.Packet) error
 }
 
 type StarServer struct {

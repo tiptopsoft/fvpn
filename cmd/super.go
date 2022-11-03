@@ -39,7 +39,7 @@ func runSuper(opts *superStarOptions) error {
 	}
 	opts.Config = config
 
-	s := super.RelayServer{
+	s := super.Registry{
 		Config: config,
 	}
 

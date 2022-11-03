@@ -3,9 +3,9 @@ package option
 import (
 	"context"
 	"fmt"
+	"github.com/interstellar-cloud/star/pkg/internal"
 	"github.com/spf13/viper"
 	"math/rand"
-	"net"
 )
 
 const (
@@ -36,6 +36,7 @@ type Star struct {
 type Config struct {
 	Listen string `mapstructure:"listen"`
 	Mysql  Mysql  `mapstructure:"mysql"`
+	Proto  internal.Protocol
 }
 
 type Mysql struct {
@@ -43,17 +44,6 @@ type Mysql struct {
 	Url      string `mapstructure:"url"`
 	Password string `mapstructure:"password"`
 	Name     string `mapstructure:"name"`
-}
-
-// PeerInfo star info in a machine
-// containes a socket bind it, can register to superNode or to star
-type PeerInfo struct {
-	Mac     string
-	IP      string
-	Port    int
-	Fd      net.Conn
-	ExtIP   string
-	ExtPort int
 }
 
 // RandMac rand gen a mac

@@ -93,7 +93,7 @@ func (s *StarServer) Client(tap2net int, netfd io.ReadWriteCloser, tun *device.T
 		tap2net++
 		fmt.Println(fmt.Printf("tap2net:%d, tun received %d byte from %s: ", tap2net, n, tun.Name))
 
-		/* write packet */
+		/* write pack */
 		if s.Type == option.UDP && s.Serve {
 			fmt.Println("using write 2 udp")
 			netfd.(*net.UDPConn).WriteToUDP(buf[:], s.Addr)

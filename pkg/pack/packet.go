@@ -1,4 +1,4 @@
-package packet
+package pack
 
 import (
 	"bytes"
@@ -7,9 +7,9 @@ import (
 	"github.com/interstellar-cloud/star/pkg/option"
 )
 
-// Frame star's Frame
+// Packet star's Packet
 /**
-  As learn from star, our packet is form of below:
+  As learn from star, our pack is form of below:
  Version 1
 
     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -51,10 +51,10 @@ const (
 )
 
 var (
-	INVALIED_FRAME = errors.New("invalid frame")
+	INVALIED_FRAME = errors.New("invalid pack")
 )
 
-type Frame struct {
+type Packet struct {
 	Version     uint8   //1
 	TTL         uint8   //1
 	Flags       uint16  //2
@@ -66,53 +66,53 @@ type Frame struct {
 	UdpPort     uint16  //2
 }
 
-func NewPacket() *Frame {
-	return &Frame{
+func NewPacket() *Packet {
+	return &Packet{
 		Version: uint8(option.Version),
 		TTL:     uint8(option.DefaultTTL),
 	}
 }
 
-// Encode transfer packet to byte stream
-func Encode(frame *Frame) ([]byte, error) {
+// Encode transfer pack to byte stream
+func Encode(p *Packet) ([]byte, error) {
 	var b [24]byte
-	if bs, err := IntToBytes(int(frame.Version)); err != nil {
+	if bs, err := IntToBytes(int(p.Version)); err != nil {
 		return nil, err
 	} else {
 		copy(b[:1], bs)
 	}
 
-	if bs, err := IntToBytes(int(frame.TTL)); err != nil {
+	if bs, err := IntToBytes(int(p.TTL)); err != nil {
 		return nil, err
 	} else {
 		copy(b[1:2], bs)
 	}
 
-	if bs, err := IntToBytes(int(frame.Flags)); err != nil {
+	if bs, err := IntToBytes(int(p.Flags)); err != nil {
 		return nil, err
 	} else {
 		copy(b[2:4], bs)
 	}
 
-	if bs, err := IntToBytes(int(frame.Group)); err != nil {
+	if bs, err := IntToBytes(int(p.Group)); err != nil {
 		return nil, err
 	} else {
 		copy(b[4:8], bs)
 	}
 
-	copy(b[8:12], frame.SourceMac[:])
+	copy(b[8:12], p.SourceMac[:])
 
-	copy(b[12:16], frame.DestMac[:])
+	copy(b[12:16], p.DestMac[:])
 
-	if bs, err := IntToBytes(int(frame.SocketFlags)); err != nil {
+	if bs, err := IntToBytes(int(p.SocketFlags)); err != nil {
 		return nil, err
 	} else {
 		copy(b[16:18], bs)
 	}
 
-	copy(b[18:22], frame.IPv4[:])
+	copy(b[18:22], p.IPv4[:])
 
-	if bs, err := IntToBytes(int(frame.UdpPort)); err != nil {
+	if bs, err := IntToBytes(int(p.UdpPort)); err != nil {
 		return nil, err
 	} else {
 		copy(b[22:24], bs)
@@ -121,11 +121,11 @@ func Encode(frame *Frame) ([]byte, error) {
 	return b[:], nil
 }
 
-func Decode(b []byte) (*Frame, error) {
+func Decode(b []byte) (*Packet, error) {
 	if len(b) < FRAME_SIZE {
 		return nil, INVALIED_FRAME
 	}
-	p := &Frame{}
+	p := &Packet{}
 
 	if v, err := BytesToInt(b[0:1]); err != nil {
 		return nil, err
