@@ -3,6 +3,7 @@ package pack
 import (
 	"fmt"
 	"testing"
+	"unsafe"
 )
 
 func TestCommonPacket_Decode(t *testing.T) {
@@ -10,7 +11,7 @@ func TestCommonPacket_Decode(t *testing.T) {
 }
 
 func TestCommonPacket_Encode(t *testing.T) {
-	bs, _ := IntToBytes(20000)
+	bs := EncodeUint32(20000)
 	var b [4]byte
 	copy(b[:], bs[:])
 	cp := &CommonPacket{
@@ -26,5 +27,7 @@ func TestCommonPacket_Encode(t *testing.T) {
 	cp1 := &CommonPacket{}
 	cp1, _ = cp1.Decode(result)
 	fmt.Println(cp1)
+
+	fmt.Println(unsafe.Sizeof(cp1))
 
 }

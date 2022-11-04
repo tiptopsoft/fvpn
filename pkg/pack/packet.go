@@ -1,7 +1,6 @@
 package pack
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 )
@@ -74,46 +73,46 @@ func NewPacket() *Packet {
 }
 
 // Encode transfer pack to byte stream
-func Encode(p *Packet) ([]byte, error) {
-	var b [24]byte
-	if bs, err := IntToBytes(int(p.Version)); err != nil {
-		return nil, err
-	} else {
-		copy(b[:1], bs)
-	}
-
-	if bs, err := IntToBytes(int(p.TTL)); err != nil {
-		return nil, err
-	} else {
-		copy(b[1:2], bs)
-	}
-
-	if bs, err := IntToBytes(int(p.Flags)); err != nil {
-		return nil, err
-	} else {
-		copy(b[2:4], bs)
-	}
-
-	copy(b[4:8], p.Group[:])
-	copy(b[8:12], p.SourceMac[:])
-	copy(b[12:16], p.DestMac[:])
-
-	if bs, err := IntToBytes(int(p.SocketFlags)); err != nil {
-		return nil, err
-	} else {
-		copy(b[16:18], bs)
-	}
-
-	copy(b[18:22], p.IPv4[:])
-
-	if bs, err := IntToBytes(int(p.UdpPort)); err != nil {
-		return nil, err
-	} else {
-		copy(b[22:24], bs)
-	}
-
-	return b[:], nil
-}
+//func Encode(p *Packet) ([]byte, error) {
+//	var b [24]byte
+//	if bs, err := IntToBytes(int(p.Version)); err != nil {
+//		return nil, err
+//	} else {
+//		copy(b[:1], bs)
+//	}
+//
+//	if bs, err := IntToBytes(int(p.TTL)); err != nil {
+//		return nil, err
+//	} else {
+//		copy(b[1:2], bs)
+//	}
+//
+//	if bs, err := IntToBytes(int(p.Flags)); err != nil {
+//		return nil, err
+//	} else {
+//		copy(b[2:4], bs)
+//	}
+//
+//	copy(b[4:8], p.Group[:])
+//	copy(b[8:12], p.SourceMac[:])
+//	copy(b[12:16], p.DestMac[:])
+//
+//	if bs, err := IntToBytes(int(p.SocketFlags)); err != nil {
+//		return nil, err
+//	} else {
+//		copy(b[16:18], bs)
+//	}
+//
+//	copy(b[18:22], p.IPv4[:])
+//
+//	if bs, err := IntToBytes(int(p.UdpPort)); err != nil {
+//		return nil, err
+//	} else {
+//		copy(b[22:24], bs)
+//	}
+//
+//	return b[:], nil
+//}
 
 //
 //func Decode(b []byte) (*Packet, error) {
@@ -151,8 +150,22 @@ func Encode(p *Packet) ([]byte, error) {
 //	return p, nil
 //}
 
-func IntToBytes(n int) ([]byte, error) {
-	return encode(n)
+func EncodeUint16(data uint16) []byte {
+	var b = make([]byte, 2)
+	binary.BigEndian.PutUint16(b, data)
+	return b
+}
+
+func EncodeUint32(data uint32) []byte {
+	var b = make([]byte, 4)
+	binary.BigEndian.PutUint32(b, data)
+	return b
+}
+
+func EncodeUint64(data uint64) []byte {
+	var b = make([]byte, 8)
+	binary.BigEndian.PutUint64(b, data)
+	return b
 }
 
 func BytesToUint32(b []byte) uint32 {
@@ -161,13 +174,4 @@ func BytesToUint32(b []byte) uint32 {
 
 func BytesToInt16(b []byte) uint16 {
 	return binary.BigEndian.Uint16(b)
-}
-
-func encode(data int) ([]byte, error) {
-	d := int32(data)
-	bytesBuf := bytes.NewBuffer([]byte{})
-	if err := binary.Write(bytesBuf, binary.BigEndian, d); err != nil {
-		return nil, err
-	}
-	return bytesBuf.Bytes(), nil
 }

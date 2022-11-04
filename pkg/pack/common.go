@@ -31,12 +31,7 @@ func (cp *CommonPacket) Encode() ([]byte, error) {
 	var b [8]byte
 	b[0] = cp.Version
 	copy(b[1:2], []byte{cp.TTL})
-	if bs, err := IntToBytes(int(cp.Flags)); err != nil {
-		return nil, err
-	} else {
-		copy(b[2:4], bs[2:4])
-	}
-
+	copy(b[2:4], EncodeUint16(cp.Flags))
 	copy(b[4:8], cp.Group[:])
 	return b[:], nil
 }

@@ -57,22 +57,29 @@ func (r *RegistryStar) start(listen int) error {
 
 func (r *RegistryStar) handleUdp(conn *net.UDPConn) {
 
-	data := make([]byte, 1024)
+	data := make([]byte, 2048)
 	_, addr, err := conn.ReadFromUDP(data)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	p, _ := pack.Decode(data[:24])
+	p := &pack.CommonPacket{}
+	p, err = p.Decode(data[:24])
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	rp := &pack.RegisterPacket{}
+	rp.Decode(data[25:])
 
 	switch p.Flags {
 	case pack.TAP_REGISTER:
-		if err := r.register(p); err != nil {
+		if err := r.register(rp); err != nil {
 			fmt.Println(err)
 		}
 
 		// build a ack
-		f, err := ackBuilder(p)
+		f, err := ackBuilder()
 		if err != nil {
 			fmt.Println("build resp p failed.")
 		}
@@ -84,40 +91,34 @@ func (r *RegistryStar) handleUdp(conn *net.UDPConn) {
 		<-limitChan
 		break
 	case pack.TAP_UNREGISTER:
-		unRegister(p)
+		//unRegister(p)
 		break
 
 	case pack.TAP_MESSAGE:
-		addr, _ := m[p.SourceMac]
-		if _, err := conn.WriteToUDP(data, addr.(*net.UDPAddr)); err != nil {
-			fmt.Println(err)
-		}
+		//addr, _ := m[p.]
+		//if _, err := conn.WriteToUDP(data, addr.(*net.UDPAddr)); err != nil {
+		//	fmt.Println(err)
+		//}
 		break
 	}
 
 }
 
 // register star node register to super
-func (r *RegistryStar) register(p *pack.Packet) error {
-	ips := p.IPv4
-	m[p.SourceMac] = &Node{
-		Addr: &net.UDPAddr{
-			IP: net.IPv4(ips[0], ips[1], ips[2], ips[3]), Port: int(p.UdpPort),
-		},
-		Proto: r.Config.Proto,
-	}
+func (r *RegistryStar) register(p *pack.RegisterPacket) error {
+	//ips := p.IPv4
+	//m[p.SrcMac] = &Node{
+	//	Addr: &net.UDPAddr{
+	//		IP: net.IPv4(ips[0], ips[1], ips[2], ips[3]), Port: int(p.UdpPort),
+	//	},
+	//	Proto: r.Config.Proto,
+	//}
 
 	return nil
 }
 
-func ackBuilder(orginPacket *pack.Packet) ([]byte, error) {
-	p := pack.NewPacket()
-
-	p.SourceMac = orginPacket.DestMac
-	p.DestMac = orginPacket.SourceMac
-	p.Flags = pack.TAP_REGISTER_ACK
-
-	return pack.Encode(p)
+func ackBuilder() ([]byte, error) {
+	return nil, nil
 }
 
 // unRegister star node unregister from super
