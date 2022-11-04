@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"github.com/interstellar-cloud/star/pkg/option"
-	"github.com/interstellar-cloud/star/pkg/star"
 )
 
 // Packet star's Packet
@@ -56,10 +54,7 @@ var (
 )
 
 type Packet struct {
-	Version     uint8   //1
-	TTL         uint8   //1
-	Flags       uint16  //2
-	Group       uint32  //4 every group 4 byte
+	*CommonPacket
 	SourceMac   [4]byte //4
 	DestMac     [4]byte //4
 	SocketFlags uint16  //2 user v4 or v6
@@ -69,10 +64,12 @@ type Packet struct {
 
 func NewPacket() *Packet {
 	return &Packet{
-		Version:     option.Version,
-		TTL:         option.DefaultTTL,
-		SocketFlags: option.IPV4,
-		UdpPort:     star.DefaultPort,
+		CommonPacket: &CommonPacket{
+			Version: Version,
+			TTL:     DefaultTTL,
+		},
+		SocketFlags: IPV4,
+		UdpPort:     DefaultPort,
 	}
 }
 
@@ -97,14 +94,8 @@ func Encode(p *Packet) ([]byte, error) {
 		copy(b[2:4], bs)
 	}
 
-	if bs, err := IntToBytes(int(p.Group)); err != nil {
-		return nil, err
-	} else {
-		copy(b[4:8], bs)
-	}
-
+	copy(b[4:8], p.Group[:])
 	copy(b[8:12], p.SourceMac[:])
-
 	copy(b[12:16], p.DestMac[:])
 
 	if bs, err := IntToBytes(int(p.SocketFlags)); err != nil {
@@ -124,66 +115,59 @@ func Encode(p *Packet) ([]byte, error) {
 	return b[:], nil
 }
 
-func Decode(b []byte) (*Packet, error) {
-	if len(b) < FRAME_SIZE {
-		return nil, INVALIED_FRAME
-	}
-	p := &Packet{}
-
-	if v, err := BytesToInt(b[0:1]); err != nil {
-		return nil, err
-	} else {
-		p.Version = uint8(v)
-	}
-
-	if ttl, err := BytesToInt(b[1:2]); err != nil {
-		return nil, err
-	} else {
-		p.TTL = uint8(ttl)
-	}
-
-	if flags, err := BytesToInt(b[2:4]); err != nil {
-		return nil, err
-	} else {
-		p.Flags = uint16(flags)
-	}
-
-	if group, err := BytesToInt(b[4:8]); err != nil {
-		return nil, err
-	} else {
-		p.Group = uint32(group)
-	}
-
-	copy(p.SourceMac[:], b[8:12])
-	copy(p.DestMac[:], b[12:16])
-
-	if sFlags, err := BytesToInt(b[16:18]); err != nil {
-		return nil, err
-	} else {
-		p.SocketFlags = uint16(sFlags)
-	}
-
-	copy(p.IPv4[:], b[18:22])
-	copy(p.DestMac[:], b[22:24])
-
-	return p, nil
-}
+//
+//func Decode(b []byte) (*Packet, error) {
+//	if len(b) < FRAME_SIZE {
+//		return nil, INVALIED_FRAME
+//	}
+//	p := &Packet{}
+//
+//	if v, err := BytesToInt(b[0:1]); err != nil {
+//		return nil, err
+//	} else {
+//		p.Version = uint8(v)
+//	}
+//
+//	if ttl, err := BytesToInt(b[1:2]); err != nil {
+//		return nil, err
+//	} else {
+//		p.TTL = uint8(ttl)
+//	}
+//
+//	if flags, err := BytesToInt(b[2:4]); err != nil {
+//		return nil, err
+//	} else {
+//		p.Flags = uint16(flags)
+//	}
+//	copy(p.Group[:], b[4:8])
+//	copy(p.SourceMac[:], b[8:12])
+//	copy(p.DestMac[:], b[12:16])
+//
+//		p.SocketFlags = uint16(sFlags)
+//
+//	copy(p.IPv4[:], b[18:22])
+//	copy(p.DestMac[:], b[22:24])
+//
+//	return p, nil
+//}
 
 func IntToBytes(n int) ([]byte, error) {
-	data := int32(n)
+	return encode(n)
+}
+
+func BytesToUint32(b []byte) uint32 {
+	return binary.BigEndian.Uint32(b)
+}
+
+func BytesToInt16(b []byte) uint16 {
+	return binary.BigEndian.Uint16(b)
+}
+
+func encode(data int) ([]byte, error) {
+	d := int32(data)
 	bytesBuf := bytes.NewBuffer([]byte{})
-	if err := binary.Write(bytesBuf, binary.BigEndian, data); err != nil {
+	if err := binary.Write(bytesBuf, binary.BigEndian, d); err != nil {
 		return nil, err
 	}
 	return bytesBuf.Bytes(), nil
-}
-
-func BytesToInt(b []byte) (int, error) {
-	bytesBuffer := bytes.NewBuffer(b)
-	var data int32
-	if err := binary.Read(bytesBuffer, binary.BigEndian, &data); err != nil {
-		return 0, err
-	}
-
-	return int(data), nil
 }

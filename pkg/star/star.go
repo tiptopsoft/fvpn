@@ -10,10 +10,6 @@ import (
 	"net"
 )
 
-var (
-	DefaultPort uint16 = 3000
-)
-
 type EdgeStar struct {
 	Tap   *device.Tuntap
 	Addr  *net.UDPAddr
@@ -24,7 +20,7 @@ type EdgeStar struct {
 
 func (es *EdgeStar) Start(port int) error {
 	if port == 0 {
-		port = int(DefaultPort)
+		port = int(pack.DefaultPort)
 	}
 	conn, err := es.listen(fmt.Sprintf(":%d", port))
 	if err != nil {
@@ -53,7 +49,7 @@ func (es *EdgeStar) listen(address string) (net.Conn, error) {
 		conn, err = listener.Accept()
 	case option.UDP:
 		conn, err = net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4(0, 0, 0, 0),
-			Port: int(DefaultPort)})
+			Port: int(pack.DefaultPort)})
 	}
 
 	//defer conn.Close()
@@ -67,8 +63,8 @@ func (es *EdgeStar) listen(address string) (net.Conn, error) {
 // register register a edgestar to center.
 func (es *EdgeStar) register() error {
 	p := pack.NewPacket()
-	p.Flags = option.TAP_REGISTER
-	p.TTL = option.DefaultTTL
+	p.Flags = pack.TAP_REGISTER
+	p.TTL = pack.DefaultTTL
 
 	mac, err := option.GetLocalMac(es.Tap.Name)
 	if err != nil {
@@ -95,7 +91,7 @@ func (es *EdgeStar) register() error {
 func (es *EdgeStar) listEdgeStar() ([]EdgeStar, error) {
 
 	p := pack.NewPacket()
-	p.Flags = option.TAP_LIST_EDGE_STAR
+	p.Flags = pack.TAP_LIST_EDGE_STAR
 
 	var err error
 	data, err := pack.Encode(p)
@@ -117,7 +113,7 @@ func (es *EdgeStar) listEdgeStar() ([]EdgeStar, error) {
 
 func (es *EdgeStar) Dial(opts *option.StarConfig) (net.Conn, error) {
 	if opts.Port == 0 {
-		opts.Port = int(DefaultPort)
+		opts.Port = int(pack.DefaultPort)
 	}
 	address := fmt.Sprintf("%s:%d", opts.MoonIP, opts.Port)
 	fmt.Println("connect to:", address)
@@ -129,7 +125,7 @@ func (es *EdgeStar) Dial(opts *option.StarConfig) (net.Conn, error) {
 	case option.UDP:
 		ip := net.ParseIP(opts.MoonIP)
 		conn, err = net.DialUDP("udp", nil, &net.UDPAddr{IP: ip,
-			Port: int(DefaultPort)})
+			Port: int(pack.DefaultPort)})
 	}
 
 	if err != nil {

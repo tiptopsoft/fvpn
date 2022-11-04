@@ -66,7 +66,7 @@ func (r *RegistryStar) handleUdp(conn *net.UDPConn) {
 	p, _ := pack.Decode(data[:24])
 
 	switch p.Flags {
-	case option.TAP_REGISTER:
+	case pack.TAP_REGISTER:
 		if err := r.register(p); err != nil {
 			fmt.Println(err)
 		}
@@ -83,11 +83,11 @@ func (r *RegistryStar) handleUdp(conn *net.UDPConn) {
 		}
 		<-limitChan
 		break
-	case option.TAP_UNREGISTER:
+	case pack.TAP_UNREGISTER:
 		unRegister(p)
 		break
 
-	case option.TAP_MESSAGE:
+	case pack.TAP_MESSAGE:
 		addr, _ := m[p.SourceMac]
 		if _, err := conn.WriteToUDP(data, addr.(*net.UDPAddr)); err != nil {
 			fmt.Println(err)
@@ -115,7 +115,7 @@ func ackBuilder(orginPacket *pack.Packet) ([]byte, error) {
 
 	p.SourceMac = orginPacket.DestMac
 	p.DestMac = orginPacket.SourceMac
-	p.Flags = option.TAP_REGISTER_ACK
+	p.Flags = pack.TAP_REGISTER_ACK
 
 	return pack.Encode(p)
 }
