@@ -1,13 +1,23 @@
-package pack
+package register
 
 import (
 	"errors"
+	"github.com/interstellar-cloud/star/pkg/pack/common"
+	"net"
 )
 
 type RegisterPacket struct {
-	*CommonPacket
+	*common.CommonPacket
 	SrcMac  [4]byte
 	DestMac [4]byte
+	Addr    *net.UDPConn
+}
+
+func NewPacket() *RegisterPacket {
+	cp := common.NewPacket()
+	return &RegisterPacket{
+		CommonPacket: cp,
+	}
 }
 
 func (cp *RegisterPacket) Encode() ([]byte, error) {
@@ -26,7 +36,7 @@ func (cp *RegisterPacket) Encode() ([]byte, error) {
 func (cp *RegisterPacket) Decode(udpBytes []byte) (interface{}, error) {
 
 	res := &RegisterPacket{}
-	cm := &CommonPacket{}
+	cm := &common.CommonPacket{}
 	cm, err := cm.Decode(udpBytes[0:20])
 	if err != nil {
 		return nil, errors.New("decode common packets failed")

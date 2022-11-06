@@ -6,6 +6,8 @@ import (
 	"github.com/interstellar-cloud/star/pkg/device"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/pack"
+	"github.com/interstellar-cloud/star/pkg/pack/common"
+	"github.com/interstellar-cloud/star/pkg/pack/register"
 	"io"
 	"net"
 )
@@ -20,7 +22,7 @@ type EdgeStar struct {
 
 func (es *EdgeStar) Start(port int) error {
 	if port == 0 {
-		port = int(pack.DefaultPort)
+		port = int(common.DefaultPort)
 	}
 	conn, err := es.listen(fmt.Sprintf(":%d", port))
 	if err != nil {
@@ -49,7 +51,7 @@ func (es *EdgeStar) listen(address string) (net.Conn, error) {
 		conn, err = listener.Accept()
 	case option.UDP:
 		conn, err = net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4(0, 0, 0, 0),
-			Port: int(pack.DefaultPort)})
+			Port: int(common.DefaultPort)})
 	}
 
 	//defer conn.Close()
@@ -62,17 +64,21 @@ func (es *EdgeStar) listen(address string) (net.Conn, error) {
 
 // register register a edgestar to center.
 func (es *EdgeStar) register() error {
-	p := pack.NewPacket()
-	p.Flags = pack.TAP_REGISTER
-	p.TTL = pack.DefaultTTL
+	p := common.NewPacket()
+	p.Flags = common.TAP_REGISTER
+	p.TTL = common.DefaultTTL
+
+	rp := register.NewPacket()
+	rp.CommonPacket = p
 
 	mac, err := option.GetLocalMac(es.Tap.Name)
 	if err != nil {
 		return option.ErrGetMac
 	}
-	copy(p.SourceMac[:], mac[:])
 
-	data, err := pack.Encode(p)
+	copy(rp.SrcMac[:], mac[:])
+
+	data, err := p.Encode()
 	if err != nil {
 		return errors.New("encode packet failed")
 	}
@@ -91,7 +97,7 @@ func (es *EdgeStar) register() error {
 func (es *EdgeStar) listEdgeStar() ([]EdgeStar, error) {
 
 	p := pack.NewPacket()
-	p.Flags = pack.TAP_LIST_EDGE_STAR
+	p.Flags = common.TAP_LIST_EDGE_STAR
 
 	var err error
 	data, err := pack.Encode(p)
@@ -113,7 +119,7 @@ func (es *EdgeStar) listEdgeStar() ([]EdgeStar, error) {
 
 func (es *EdgeStar) Dial(opts *option.StarConfig) (net.Conn, error) {
 	if opts.Port == 0 {
-		opts.Port = int(pack.DefaultPort)
+		opts.Port = int(common.DefaultPort)
 	}
 	address := fmt.Sprintf("%s:%d", opts.MoonIP, opts.Port)
 	fmt.Println("connect to:", address)
@@ -125,7 +131,7 @@ func (es *EdgeStar) Dial(opts *option.StarConfig) (net.Conn, error) {
 	case option.UDP:
 		ip := net.ParseIP(opts.MoonIP)
 		conn, err = net.DialUDP("udp", nil, &net.UDPAddr{IP: ip,
-			Port: int(pack.DefaultPort)})
+			Port: int(common.DefaultPort)})
 	}
 
 	if err != nil {

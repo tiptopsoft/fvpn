@@ -6,6 +6,8 @@ import (
 	"github.com/interstellar-cloud/star/pkg/internal"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/pack"
+	"github.com/interstellar-cloud/star/pkg/pack/common"
+	"github.com/interstellar-cloud/star/pkg/pack/register"
 	"net"
 )
 
@@ -63,17 +65,17 @@ func (r *RegistryStar) handleUdp(conn *net.UDPConn) {
 		fmt.Println(err)
 	}
 
-	p := &pack.CommonPacket{}
+	p := &common.CommonPacket{}
 	p, err = p.Decode(data[:24])
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	rp := &pack.RegisterPacket{}
+	rp := &register.RegisterPacket{}
 	rp.Decode(data[25:])
 
 	switch p.Flags {
-	case pack.TAP_REGISTER:
+	case common.TAP_REGISTER:
 		if err := r.register(rp); err != nil {
 			fmt.Println(err)
 		}
@@ -90,11 +92,11 @@ func (r *RegistryStar) handleUdp(conn *net.UDPConn) {
 		}
 		<-limitChan
 		break
-	case pack.TAP_UNREGISTER:
+	case common.TAP_UNREGISTER:
 		//unRegister(p)
 		break
 
-	case pack.TAP_MESSAGE:
+	case common.TAP_MESSAGE:
 		//addr, _ := m[p.]
 		//if _, err := conn.WriteToUDP(data, addr.(*net.UDPAddr)); err != nil {
 		//	fmt.Println(err)
@@ -105,7 +107,7 @@ func (r *RegistryStar) handleUdp(conn *net.UDPConn) {
 }
 
 // register star node register to super
-func (r *RegistryStar) register(p *pack.RegisterPacket) error {
+func (r *RegistryStar) register(p *register.RegisterPacket) error {
 	//ips := p.IPv4
 	//m[p.SrcMac] = &Node{
 	//	Addr: &net.UDPAddr{

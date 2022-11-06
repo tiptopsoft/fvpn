@@ -3,6 +3,7 @@ package pack
 import (
 	"encoding/binary"
 	"errors"
+	"github.com/interstellar-cloud/star/pkg/pack/common"
 )
 
 // Packet star's Packet
@@ -53,7 +54,7 @@ var (
 )
 
 type Packet struct {
-	*CommonPacket
+	*common.CommonPacket
 	SourceMac   [4]byte //4
 	DestMac     [4]byte //4
 	SocketFlags uint16  //2 user v4 or v6
@@ -63,12 +64,12 @@ type Packet struct {
 
 func NewPacket() *Packet {
 	return &Packet{
-		CommonPacket: &CommonPacket{
-			Version: Version,
-			TTL:     DefaultTTL,
+		CommonPacket: &common.CommonPacket{
+			Version: common.Version,
+			TTL:     common.DefaultTTL,
 		},
-		SocketFlags: IPV4,
-		UdpPort:     DefaultPort,
+		SocketFlags: common.IPV4,
+		UdpPort:     common.DefaultPort,
 	}
 }
 

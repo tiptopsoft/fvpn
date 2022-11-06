@@ -1,4 +1,6 @@
-package pack
+package common
+
+import "github.com/interstellar-cloud/star/pkg/pack"
 
 const (
 	TAP_REGISTER       = 10
@@ -26,12 +28,21 @@ type CommonPacket struct {
 	Group   [4]byte //4
 }
 
+func NewPacket() *CommonPacket {
+	return &CommonPacket{
+		Version: Version,
+		TTL:     DefaultTTL,
+		Flags:   0,
+		Group:   [4]byte{},
+	}
+}
+
 func (cp *CommonPacket) Encode() ([]byte, error) {
 
 	var b [8]byte
 	b[0] = cp.Version
 	copy(b[1:2], []byte{cp.TTL})
-	copy(b[2:4], EncodeUint16(cp.Flags))
+	copy(b[2:4], pack.EncodeUint16(cp.Flags))
 	copy(b[4:8], cp.Group[:])
 	return b[:], nil
 }
@@ -39,7 +50,7 @@ func (cp *CommonPacket) Encode() ([]byte, error) {
 func (cp *CommonPacket) Decode(udpByte []byte) (*CommonPacket, error) {
 	cp.Version = udpByte[0]
 	cp.TTL = udpByte[1]
-	cp.Flags = BytesToInt16(udpByte[2:4])
+	cp.Flags = pack.BytesToInt16(udpByte[2:4])
 	copy(cp.Group[:], udpByte[4:8])
 
 	return cp, nil

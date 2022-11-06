@@ -1,7 +1,8 @@
-package pack
+package common
 
 import (
 	"fmt"
+	"github.com/interstellar-cloud/star/pkg/pack"
 	"testing"
 	"unsafe"
 )
@@ -11,7 +12,7 @@ func TestCommonPacket_Decode(t *testing.T) {
 }
 
 func TestCommonPacket_Encode(t *testing.T) {
-	bs := EncodeUint32(20000)
+	bs := pack.EncodeUint32(20000)
 	var b [4]byte
 	copy(b[:], bs[:])
 	cp := &CommonPacket{
