@@ -37,7 +37,7 @@ func (r *RegistryStar) AddHandler(handler internal.Handler) {
 	r.Handlers = append(r.Handlers, handler)
 }
 
-// Node super node for net, and for user create star
+// Node super node for net, and for user create edge
 func (r *RegistryStar) start(listen int) error {
 
 	conn, err := net.ListenUDP("udp", &net.UDPAddr{
@@ -71,7 +71,7 @@ func (r *RegistryStar) handleUdp(conn *net.UDPConn) {
 		fmt.Println(err)
 	}
 
-	rp := &register.RegisterPacket{}
+	rp := &register.RegPacket{}
 	rp.Decode(data[25:])
 
 	switch p.Flags {
@@ -106,8 +106,8 @@ func (r *RegistryStar) handleUdp(conn *net.UDPConn) {
 
 }
 
-// register star node register to super
-func (r *RegistryStar) register(p *register.RegisterPacket) error {
+// register edge node register to super
+func (r *RegistryStar) register(p *register.RegPacket) error {
 	//ips := p.IPv4
 	//m[p.SrcMac] = &Node{
 	//	Addr: &net.UDPAddr{
@@ -123,7 +123,7 @@ func ackBuilder() ([]byte, error) {
 	return nil, nil
 }
 
-// unRegister star node unregister from super
+// unRegister edge node unregister from super
 func unRegister(pack *pack.Packet) {
 	delete(m, pack.SourceMac)
 }

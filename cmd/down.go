@@ -11,7 +11,7 @@ type downOptions struct {
 	option.StarConfig
 }
 
-func downCmd() *cobra.Command {
+func RmCmd() *cobra.Command {
 	var opts downOptions
 	cmd := &cobra.Command{
 		Use:   "rm",

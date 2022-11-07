@@ -1,4 +1,4 @@
-package option
+package edge
 
 import (
 	"context"
@@ -8,19 +8,25 @@ import (
 	"math/rand"
 )
 
+// EdgeConfig read from a config file or cmd flags, or can be assgined from a registry after got the register ack.
+type EdgeConfig struct {
+	Registry string `mapstructure:"registies"`
+	Listen   string `mapstructure:"listen"`
+	TapName  string
+	TapIP    string
+	TapMask  string
+	MacAddr  string
+	Protocol int
+}
+
+func EdgeDefault() *EdgeConfig {
+	return &EdgeConfig{}
+}
+
 const (
 	TCP = iota
 	UDP
 )
-
-// StarConfig conf for running a star up
-type StarConfig struct {
-	Star
-	MoonIP string // super for moon server
-	Port   int    // default port is 3000
-	Server bool   // server or client, true: server
-	Mac    string // like "07:00:10:24:55:42"
-}
 
 type SuperStar struct {
 	Listen int
@@ -62,8 +68,8 @@ func RandMac(ctx context.Context) (string, error) {
 func InitConfig() (config *Config, err error) {
 	viper.SetConfigName("app")                  // name of config file (without extension)
 	viper.SetConfigType("yaml")                 // REQUIRED if the config file does not have the extension in the name
-	viper.AddConfigPath("/etc/star/")           // path to look for the config file in
-	viper.AddConfigPath("$HOME/.star")          // call multiple times to add many search paths
+	viper.AddConfigPath("/etc/edge/")           // path to look for the config file in
+	viper.AddConfigPath("$HOME/.edge")          // call multiple times to add many search paths
 	viper.AddConfigPath(".")                    // optionally look for config in the working directory
 	if err = viper.ReadInConfig(); err != nil { // Handle errors reading the config file
 		panic(fmt.Errorf("fatal error config file: %w", err))

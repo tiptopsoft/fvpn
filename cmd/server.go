@@ -11,7 +11,7 @@ type serverOptions struct {
 	*option.Config
 }
 
-func serverCmd() *cobra.Command {
+func SuperCmd() *cobra.Command {
 	var opts serverOptions
 	cmd := &cobra.Command{
 		Use:   "serve",

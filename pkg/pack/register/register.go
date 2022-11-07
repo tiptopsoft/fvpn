@@ -3,47 +3,38 @@ package register
 import (
 	"errors"
 	"github.com/interstellar-cloud/star/pkg/pack/common"
-	"net"
+	"unsafe"
 )
 
-type RegisterPacket struct {
+// RegPacket register a edge to register
+type RegPacket struct {
 	*common.CommonPacket
-	SrcMac  [4]byte
-	DestMac [4]byte
-	Addr    *net.UDPConn
+	SrcMac [4]byte
 }
 
-func NewPacket() *RegisterPacket {
-	cp := common.NewPacket()
-	return &RegisterPacket{
-		CommonPacket: cp,
-	}
+func NewPacket() *RegPacket {
+	return &RegPacket{}
 }
 
-func (cp *RegisterPacket) Encode() ([]byte, error) {
-	b := make([]byte, 28)
-
-	cmBytes, err := cp.CommonPacket.Encode()
+func (cp *RegPacket) Encode() ([]byte, error) {
+	b := make([]byte, unsafe.Sizeof(RegPacket{}))
+	commonBytes, err := cp.CommonPacket.Encode()
 	if err != nil {
-		return nil, errors.New("invalid common packets")
+		return nil, errors.New("encode common packet failed")
 	}
-	copy(b[0:20], cmBytes)
+	copy(b[0:20], commonBytes)
 	copy(b[20:24], cp.SrcMac[:])
-	copy(b[24:28], cp.DestMac[:])
 	return b, nil
 }
 
-func (cp *RegisterPacket) Decode(udpBytes []byte) (interface{}, error) {
+func (reg *RegPacket) Decode(udpBytes []byte) (*RegPacket, error) {
 
-	res := &RegisterPacket{}
-	cm := &common.CommonPacket{}
-	cm, err := cm.Decode(udpBytes[0:20])
+	res := &RegPacket{}
+	cp, err := common.NewPacket().Decode(udpBytes[0:20])
 	if err != nil {
-		return nil, errors.New("decode common packets failed")
+		return nil, errors.New("decode common packet failed")
 	}
-
+	res.CommonPacket = cp
 	copy(res.SrcMac[:], udpBytes[20:24])
-	copy(res.DestMac[:], udpBytes[25:28])
-	res.CommonPacket = cm
 	return res, nil
 }

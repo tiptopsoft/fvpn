@@ -2,15 +2,6 @@ package common
 
 import "github.com/interstellar-cloud/star/pkg/pack"
 
-const (
-	TAP_REGISTER       = 10
-	TAP_REGISTER_ACK   = 11
-	TAP_MESSAGE        = 12
-	TAP_LIST_EDGE_STAR = 13
-	TAP_BROADCAST      = 14
-	TAP_UNREGISTER     = 15
-)
-
 var (
 	Version          uint8  = 1
 	DefaultTTL       uint8  = 100

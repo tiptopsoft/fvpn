@@ -1,5 +1,5 @@
 listen: 3000
 mysql:
-  url: localhost:3306?star
+  url: localhost:3306?edge
   user: root
   password: 123456

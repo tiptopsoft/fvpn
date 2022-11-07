@@ -15,8 +15,8 @@ func superStarCmd() *cobra.Command {
 	var opts superStarOptions
 	cmd := &cobra.Command{
 		Use: "super",
-		Short: `super star, using for finding other machine in a group,
-which star can register to, also super can super packets when star at a Symetric Nat.`,
+		Short: `super edge, using for finding other machine in a group,
+which edge can register to, also super can super packets when edge at a Symetric Nat.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 
 			return nil

@@ -8,12 +8,12 @@ import (
 var rootCmd = &cobra.Command{
 	Use:          "star [command]",
 	SilenceUsage: true,
-	Short:        "Start a star, use which can visit private net.",
-	Long:         `Start a star, use which can visit private net.`,
+	Short:        "Start a edge, use which can visit private net.",
+	Long:         `Start a edge, use which can visit private net.`,
 }
 
 func Execute() {
-	rootCmd.AddCommand(upCmd(), downCmd(), serverCmd())
+	rootCmd.AddCommand(EdgeCmd(), RmCmd(), SuperCmd())
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(-1)
 	}
