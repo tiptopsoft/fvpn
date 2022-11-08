@@ -2,7 +2,6 @@ package packet
 
 import (
 	"encoding/binary"
-	"errors"
 )
 
 // Packet edge's Packet
@@ -43,14 +42,6 @@ import (
 
 Now , we just impl ipv4, and have only one group.
 */
-
-const (
-	FRAME_SIZE = 0x18 //24
-)
-
-var (
-	INVALIED_FRAME = errors.New("invalid packet")
-)
 
 type Packet interface {
 	NewPacket() interface{}

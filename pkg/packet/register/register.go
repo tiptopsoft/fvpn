@@ -22,19 +22,19 @@ func (cp RegPacket) Encode() ([]byte, error) {
 	if err != nil {
 		return nil, errors.New("encode common packet failed")
 	}
-	copy(b[0:20], commonBytes)
-	copy(b[20:24], cp.SrcMac[:])
+	copy(b[0:8], commonBytes)
+	copy(b[8:12], cp.SrcMac[:])
 	return b, nil
 }
 
 func (reg RegPacket) Decode(udpBytes []byte) (RegPacket, error) {
 
 	res := RegPacket{}
-	cp, err := common.NewPacket().Decode(udpBytes[0:20])
+	cp, err := common.NewPacket().Decode(udpBytes[0:8])
 	if err != nil {
 		return RegPacket{}, errors.New("decode common packet failed")
 	}
 	res.CommonPacket = cp
-	copy(res.SrcMac[:], udpBytes[20:24])
+	copy(res.SrcMac[:], udpBytes[8:12])
 	return res, nil
 }

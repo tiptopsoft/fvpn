@@ -7,4 +7,5 @@ var (
 	ErrUnsupported    = errors.New("unsupported")
 	ErrUnknow         = errors.New("unknown")
 	ErrGetMac         = errors.New("invalid mac addr")
+	ErrPacket         = errors.New("invalid packet")
 )
