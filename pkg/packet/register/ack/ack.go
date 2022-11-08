@@ -22,10 +22,10 @@ func (regAck RegPacketAck) Encode(reg RegPacketAck) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	copy(b[:24], cp)
-	copy(b[20:24], reg.RegMac[:])
-	copy(b[24:28], reg.AutoIP[:])
-	copy(b[28:32], reg.Mask[:])
+	copy(b[:8], cp)
+	copy(b[8:12], reg.RegMac[:])
+	copy(b[12:16], reg.AutoIP[:])
+	copy(b[16:20], reg.Mask[:])
 	return b, nil
 }
 
