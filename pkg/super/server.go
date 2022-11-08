@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"github.com/interstellar-cloud/star/pkg/internal"
 	"github.com/interstellar-cloud/star/pkg/option"
-	"github.com/interstellar-cloud/star/pkg/pack"
-	"github.com/interstellar-cloud/star/pkg/pack/common"
-	"github.com/interstellar-cloud/star/pkg/pack/register"
+	"github.com/interstellar-cloud/star/pkg/packet"
+	"github.com/interstellar-cloud/star/pkg/packet/common"
+	"github.com/interstellar-cloud/star/pkg/packet/register"
 	"net"
+	"sync"
 )
 
 var limitChan = make(chan int, 1000)
 
-// udp key : mac_group value:addr
-var m map[[4]byte]interface{}
+// mac:Pub
+var m sync.Map
 
 type Node struct {
 	Mac   [4]byte
@@ -23,41 +24,49 @@ type Node struct {
 	Addr  *net.UDPAddr
 }
 
-//RegistryStar use as register
-type RegistryStar struct {
-	Config   *option.Config
+//RegStar use as register
+type RegStar struct {
+	*RegConfig
 	Handlers []internal.Handler
+	conn     net.Conn
 }
 
-func (r *RegistryStar) Start(port int) error {
+func (r *RegStar) Start(port int) error {
 	return r.start(port)
 }
 
-func (r *RegistryStar) AddHandler(handler internal.Handler) {
+func (r *RegStar) AddHandler(handler internal.Handler) {
 	r.Handlers = append(r.Handlers, handler)
 }
 
 // Node super node for net, and for user create edge
-func (r *RegistryStar) start(listen int) error {
+func (r *RegStar) start(listen int) error {
 
-	conn, err := net.ListenUDP("udp", &net.UDPAddr{
-		IP:   net.IPv4(0, 0, 0, 0),
-		Port: listen,
-	})
+	var err error
+	var conn net.Conn
+	switch r.Protocol {
+	case internal.UDP:
+		conn, err = net.ListenUDP("udp", &net.UDPAddr{
+			IP:   net.IPv4(0, 0, 0, 0),
+			Port: listen,
+		})
 
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
+		defer conn.Close()
+		for {
+			limitChan <- 1
+			go r.handleUdp(conn.(*net.UDPConn))
+		}
+	default:
+		fmt.Println("this is a tcp server")
 	}
 
-	defer conn.Close()
-	for {
-		limitChan <- 1
-		go r.handleUdp(conn)
-	}
-
+	return nil
 }
 
-func (r *RegistryStar) handleUdp(conn *net.UDPConn) {
+func (r *RegStar) handleUdp(conn *net.UDPConn) {
 
 	data := make([]byte, 2048)
 	_, addr, err := conn.ReadFromUDP(data)
@@ -65,18 +74,14 @@ func (r *RegistryStar) handleUdp(conn *net.UDPConn) {
 		fmt.Println(err)
 	}
 
-	p := &common.CommonPacket{}
-	p, err = p.Decode(data[:24])
+	p, err := common.NewPacket().Decode(data[:24])
 	if err != nil {
 		fmt.Println(err)
 	}
-
-	rp := &register.RegPacket{}
-	rp.Decode(data[25:])
-
 	switch p.Flags {
-	case common.TAP_REGISTER:
-		if err := r.register(rp); err != nil {
+	case option.MSG_TYPE_RE_REGISTER_SUPER:
+		rpacket, err := register.NewPacket().Decode(data)
+		if err := r.register(addr, rpacket); err != nil {
 			fmt.Println(err)
 		}
 
@@ -92,30 +97,19 @@ func (r *RegistryStar) handleUdp(conn *net.UDPConn) {
 		}
 		<-limitChan
 		break
-	case common.TAP_UNREGISTER:
-		//unRegister(p)
-		break
 
-	case common.TAP_MESSAGE:
-		//addr, _ := m[p.]
-		//if _, err := conn.WriteToUDP(data, addr.(*net.UDPAddr)); err != nil {
-		//	fmt.Println(err)
-		//}
-		break
 	}
 
 }
 
 // register edge node register to super
-func (r *RegistryStar) register(p *register.RegPacket) error {
-	//ips := p.IPv4
-	//m[p.SrcMac] = &Node{
-	//	Addr: &net.UDPAddr{
-	//		IP: net.IPv4(ips[0], ips[1], ips[2], ips[3]), Port: int(p.UdpPort),
-	//	},
-	//	Proto: r.Config.Proto,
-	//}
+func (r *RegStar) register(addr *net.UDPAddr, packet *register.RegPacket) error {
+	m.Store(packet.SrcMac, addr)
+	return nil
+}
 
+func (r *RegStar) unRegister(packet *register.RegPacket) error {
+	m.Delete(packet.SrcMac)
 	return nil
 }
 
@@ -123,12 +117,7 @@ func ackBuilder() ([]byte, error) {
 	return nil, nil
 }
 
-// unRegister edge node unregister from super
-func unRegister(pack *pack.Packet) {
-	delete(m, pack.SourceMac)
-}
-
-func (r *RegistryStar) Execute(ctx context.Context, p pack.Packet) error {
+func (r *RegStar) Execute(ctx context.Context, p packet.Packet) error {
 	handlers := r.Handlers
 	for _, h := range handlers {
 		if err := h.Handle(ctx, p); err != nil {

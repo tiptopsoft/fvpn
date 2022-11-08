@@ -2,7 +2,7 @@ package register
 
 import (
 	"errors"
-	"github.com/interstellar-cloud/star/pkg/pack/common"
+	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"unsafe"
 )
 

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/interstellar-cloud/star/pkg/device"
 	"github.com/interstellar-cloud/star/pkg/option"
-	"github.com/interstellar-cloud/star/pkg/pack/common"
-	"github.com/interstellar-cloud/star/pkg/pack/register"
-	"github.com/interstellar-cloud/star/pkg/pack/register/ack"
+	"github.com/interstellar-cloud/star/pkg/packet/common"
+	"github.com/interstellar-cloud/star/pkg/packet/register"
+	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
 	"net"
 )
 
@@ -122,7 +122,8 @@ func (es *EdgeStar) process(conn net.Conn) error {
 				return err
 			} else {
 				//设置IP
-				if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ip addr add %s dev %s", regAck.AutoIP, tap.Name)); err != nil {
+				address := fmt.Sprintf("%d:%d:%d:%d", regAck.AutoIP[0], regAck.AutoIP[1], regAck.AutoIP[2], regAck.AutoIP[3])
+				if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ip addr add %s dev %s", address, tap.Name)); err != nil {
 					return err
 				}
 			}

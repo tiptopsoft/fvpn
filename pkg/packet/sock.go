@@ -1,4 +1,4 @@
-package pack
+package packet
 
 type StarSock struct {
 	Family uint8
