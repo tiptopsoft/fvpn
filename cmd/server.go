@@ -7,7 +7,6 @@ import (
 )
 
 type serverOptions struct {
-	option.StarConfig
 	*option.Config
 }
 
@@ -25,8 +24,8 @@ func SuperCmd() *cobra.Command {
 		},
 	}
 
-	fs := cmd.Flags()
-	fs.IntVarP(&opts.Port, "port", "p", 3000, "tun server port")
+	//fs := cmd.Flags()
+	//fs.IntVarP(&opts.Port, "port", "p", 3000, "tun server port")
 
 	return cmd
 }
@@ -42,5 +41,5 @@ func runServer(opts *serverOptions) error {
 		Config: config,
 	}
 
-	return s.Start(opts.Port)
+	return s.Start(3000)
 }

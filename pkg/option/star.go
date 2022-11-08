@@ -1,4 +1,4 @@
-package internal
+package option
 
 import (
 	"context"
@@ -7,4 +7,9 @@ import (
 
 type Client interface {
 	Request(ctx context.Context, packet packet.Packet)
+}
+
+type Server interface {
+	Start(port int) error
+	Stop() error
 }

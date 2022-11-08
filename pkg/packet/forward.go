@@ -1,6 +1,6 @@
 package packet
 
-// Forward forward byte from super to edge
+// Forward forward byte from register to edge
 func Forward(updBytes []byte) error {
 	return nil
 }

@@ -6,8 +6,8 @@ require (
 	github.com/gin-gonic/gin v1.8.1
 	github.com/spf13/cobra v1.6.0
 	github.com/spf13/viper v1.13.0
+	go.uber.org/zap v1.17.0
 	golang.org/x/sys v0.0.0-20221010170243-090e33056c14
-	gorm.io/driver/mysql v1.4.3
 	gorm.io/gorm v1.24.0
 )
 
@@ -17,7 +17,6 @@ require (
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-playground/validator/v10 v10.10.0 // indirect
-	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/goccy/go-json v0.9.7 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
@@ -38,6 +37,8 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
+	go.uber.org/atomic v1.7.0 // indirect
+	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
 	golang.org/x/text v0.3.7 // indirect

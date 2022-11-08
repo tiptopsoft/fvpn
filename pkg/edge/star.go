@@ -2,7 +2,7 @@ package edge
 
 import (
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/device"
+	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"github.com/interstellar-cloud/star/pkg/packet/register"
@@ -11,12 +11,12 @@ import (
 )
 
 type EdgeStar struct {
-	*EdgeConfig
+	*option.EdgeConfig
 }
 
 /**
  * Start logic: start to:
-1. PING to super node 2. register to super 3. auto ip config tuntap 4.
+1. PING to register node 2. register to register 3. auto ip config tuntap 4.
 */
 func (edge EdgeStar) Start() error {
 	//init connect to registry
@@ -46,37 +46,35 @@ func (es *EdgeStar) conn(address string) (net.Conn, error) {
 	var err error
 
 	switch es.Protocol {
-	case TCP:
-		listener, err := net.Listen("tcp", address)
-		if err != nil {
-			return nil, err
-		}
-		conn, err = listener.Accept()
-	case UDP:
-		conn, err = net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4(0, 0, 0, 0),
-			Port: int(common.DefaultPort)})
+	case option.UDP:
+		conn, err = net.Dial("udp", es.Registry)
 	}
 
 	//defer conn.Close()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
+	log.Logger.Info("star connected to server: %s", es.Registry)
 	return conn, nil
 }
 
 // register register a edgestar to center.
 func (es *EdgeStar) register(conn net.Conn) error {
+	var err error
 	p := common.NewPacket()
-	p.Flags = option.MSG_TYPE_REGISTER
+	p.Flags = option.MSG_TYPE_REGISTER_SUPER
 	p.TTL = common.DefaultTTL
 
 	rp := register.NewPacket()
 
-	mac, err := option.GetLocalMac(es.TapName)
-	if err != nil {
-		return option.ErrGetMac
-	}
+	mac := es.MacAddr
+	//if mac == "" {
+	//	mac, err = option.GetLocalMac(es.TapName)
+	//	if err != nil {
+	//		return option.ErrGetMac
+	//	}
+	//}
 
 	copy(rp.SrcMac[:], mac[:])
 
@@ -86,7 +84,8 @@ func (es *EdgeStar) register(conn net.Conn) error {
 	}
 
 	switch es.Protocol {
-	case UDP:
+	case option.UDP:
+		log.Logger.Infof("star start to register self to registry: %v", rp)
 		if _, err := conn.(*net.UDPConn).Write(data); err != nil {
 			return err
 		}
@@ -96,14 +95,14 @@ func (es *EdgeStar) register(conn net.Conn) error {
 }
 
 func (es *EdgeStar) process(conn net.Conn) error {
-	if es.Protocol == UDP {
+	if es.Protocol == option.UDP {
 		udpBytes := make([]byte, 2048)
 		_, _, err := conn.(*net.UDPConn).ReadFromUDP(udpBytes)
 		if err != nil {
 			fmt.Println(err)
 		}
 
-		cp := &common.CommonPacket{}
+		cp := common.CommonPacket{}
 		cp, err = cp.Decode(udpBytes)
 
 		if err != nil {
@@ -116,17 +115,17 @@ func (es *EdgeStar) process(conn net.Conn) error {
 			if err != nil {
 				return err
 			}
-
+			log.Logger.Infof("got registry register ack: %v", regAck)
 			//create tap device
-			if tap, err := device.New(device.TAP); err != nil {
-				return err
-			} else {
-				//设置IP
-				address := fmt.Sprintf("%d:%d:%d:%d", regAck.AutoIP[0], regAck.AutoIP[1], regAck.AutoIP[2], regAck.AutoIP[3])
-				if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ip addr add %s dev %s", address, tap.Name)); err != nil {
-					return err
-				}
-			}
+			//if tap, err := device.New(device.TAP); err != nil {
+			//	return err
+			//} else {
+			//	//设置IP
+			//	address := fmt.Sprintf("%d:%d:%d:%d", regAck.AutoIP[0], regAck.AutoIP[1], regAck.AutoIP[2], regAck.AutoIP[3])
+			//	if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ip addr add %s dev %s", address, tap.Name)); err != nil {
+			//		return err
+			//	}
+			//}
 
 			break
 

@@ -1,5 +1,7 @@
 package auth
 
+import "context"
+
 type StarAuth struct {
 	Type     int
 	Username string
@@ -8,4 +10,8 @@ type StarAuth struct {
 }
 
 type AuthHandler struct {
+}
+
+func (ah *AuthHandler) Handle(ctx context.Context) error {
+	return nil
 }

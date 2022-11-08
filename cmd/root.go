@@ -13,7 +13,7 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() {
-	rootCmd.AddCommand(EdgeCmd(), RmCmd(), SuperCmd())
+	rootCmd.AddCommand(EdgeCmd(), RegCmd())
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(-1)
 	}

@@ -19,8 +19,8 @@ type CommonPacket struct {
 	Group   [4]byte //4
 }
 
-func NewPacket() *CommonPacket {
-	return &CommonPacket{
+func NewPacket() CommonPacket {
+	return CommonPacket{
 		Version: Version,
 		TTL:     DefaultTTL,
 		Flags:   0,
@@ -28,7 +28,7 @@ func NewPacket() *CommonPacket {
 	}
 }
 
-func (cp *CommonPacket) Encode() ([]byte, error) {
+func (cp CommonPacket) Encode() ([]byte, error) {
 
 	var b [8]byte
 	b[0] = cp.Version
@@ -38,7 +38,7 @@ func (cp *CommonPacket) Encode() ([]byte, error) {
 	return b[:], nil
 }
 
-func (cp *CommonPacket) Decode(udpByte []byte) (*CommonPacket, error) {
+func (cp CommonPacket) Decode(udpByte []byte) (CommonPacket, error) {
 	cp.Version = udpByte[0]
 	cp.TTL = udpByte[1]
 	cp.Flags = packet.BytesToInt16(udpByte[2:4])

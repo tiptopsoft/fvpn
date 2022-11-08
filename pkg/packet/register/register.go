@@ -8,15 +8,15 @@ import (
 
 // RegPacket register a edge to register
 type RegPacket struct {
-	*common.CommonPacket
+	common.CommonPacket
 	SrcMac [4]byte
 }
 
-func NewPacket() *RegPacket {
-	return &RegPacket{}
+func NewPacket() RegPacket {
+	return RegPacket{}
 }
 
-func (cp *RegPacket) Encode() ([]byte, error) {
+func (cp RegPacket) Encode() ([]byte, error) {
 	b := make([]byte, unsafe.Sizeof(RegPacket{}))
 	commonBytes, err := cp.CommonPacket.Encode()
 	if err != nil {
@@ -27,12 +27,12 @@ func (cp *RegPacket) Encode() ([]byte, error) {
 	return b, nil
 }
 
-func (reg *RegPacket) Decode(udpBytes []byte) (*RegPacket, error) {
+func (reg RegPacket) Decode(udpBytes []byte) (RegPacket, error) {
 
-	res := &RegPacket{}
+	res := RegPacket{}
 	cp, err := common.NewPacket().Decode(udpBytes[0:20])
 	if err != nil {
-		return nil, errors.New("decode common packet failed")
+		return RegPacket{}, errors.New("decode common packet failed")
 	}
 	res.CommonPacket = cp
 	copy(res.SrcMac[:], udpBytes[20:24])

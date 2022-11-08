@@ -23,7 +23,7 @@ func (s UserServer) Start(port int) error {
 	engine.POST("register", s.register())
 	engine.GET("users", s.users())
 	engine.GET("user/:id", s.getUser())
-	err := engine.Run(s.Config.Listen)
+	err := engine.Run(":8080")
 	if err != nil {
 		return err
 	}

@@ -2,21 +2,21 @@ package cmd
 
 import (
 	"github.com/interstellar-cloud/star/pkg/option"
-	"github.com/interstellar-cloud/star/pkg/super"
+	"github.com/interstellar-cloud/star/pkg/register"
 	"github.com/spf13/cobra"
 )
 
-type superStarOptions struct {
-	Config *option.Config
+type RegStarOptions struct {
 	Listen int
 }
 
-func superStarCmd() *cobra.Command {
-	var opts superStarOptions
+func RegCmd() *cobra.Command {
+	var opts RegStarOptions
 	cmd := &cobra.Command{
-		Use: "super",
-		Short: `super edge, using for finding other machine in a group,
-which edge can register to, also super can super packets when edge at a Symetric Nat.`,
+		Use:   "registry",
+		Short: "reg",
+		Long: `register edge, using for finding other machine in a group,
+which edge can register to, also register can register packets when edge at a Symetric Nat.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 
 			return nil
@@ -32,16 +32,15 @@ which edge can register to, also super can super packets when edge at a Symetric
 	return cmd
 }
 
-func runSuper(opts *superStarOptions) error {
+func runSuper(opts *RegStarOptions) error {
+
 	config, err := option.InitConfig()
 	if err != nil {
 		return err
 	}
-	opts.Config = config
-
-	s := super.RegStar{
-		Config: config,
+	s := register.RegStar{
+		RegConfig: config.Reg,
 	}
 
-	return s.Start(opts.Listen)
+	return s.Start(config.Reg.Listen)
 }
