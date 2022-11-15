@@ -16,7 +16,7 @@ type upOptions struct {
 func EdgeCmd() *cobra.Command {
 	var opts upOptions
 	var cmd = &cobra.Command{
-		Use:          "up",
+		Use:          "edge",
 		SilenceUsage: true,
 		Short:        "start up a edge, for net proxy",
 		Long:         `Start up a edge, for private net proxy`,

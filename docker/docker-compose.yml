@@ -1,0 +1,17 @@
+version: "2.2"
+
+services:
+
+  registry:
+    image: star:0.1
+    ports:
+      - "3001:3000"
+    command:
+      - "star edge"
+
+  edge:
+    image: star:0.1
+    ports:
+      - "3002:3000"
+    command:
+      - "star edge"
