@@ -43,10 +43,6 @@ import (
 Now , we just impl ipv4, and have only one group.
 */
 
-type Packet interface {
-	NewPacket() interface{}
-}
-
 type Encoder interface {
 	Encode() ([]byte, error)
 }

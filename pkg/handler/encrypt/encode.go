@@ -1,11 +1,13 @@
 package encrypt
 
-import "context"
+import (
+	"context"
+)
 
 type StarEncrypt struct {
 }
 
-func (se *StarEncrypt) Handle(ctx context.Context) error {
+func (se *StarEncrypt) Handle(ctx context.Context, udpBytes []byte) error {
 
 	return nil
 }

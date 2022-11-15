@@ -1,6 +1,9 @@
 package auth
 
-import "context"
+import (
+	"context"
+	"github.com/interstellar-cloud/star/pkg/packet/common"
+)
 
 type StarAuth struct {
 	Type     int
@@ -10,8 +13,9 @@ type StarAuth struct {
 }
 
 type AuthHandler struct {
+	packet common.CommonPacket
 }
 
-func (ah *AuthHandler) Handle(ctx context.Context) error {
+func (ah *AuthHandler) Handle(ctx context.Context, udpBytes []byte) error {
 	return nil
 }

@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/interstellar-cloud/star/pkg/handler"
+	"github.com/interstellar-cloud/star/pkg/handler/auth"
+	"github.com/interstellar-cloud/star/pkg/handler/encrypt"
 	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/option"
-	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"github.com/interstellar-cloud/star/pkg/packet/register"
 	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
@@ -29,21 +30,27 @@ type Node struct {
 //RegStar use as register
 type RegStar struct {
 	*option.RegConfig
-	Handlers []handler.Handler
-	conn     net.Conn
+	handler.Executor
+	conn net.Conn
 }
 
 func (r *RegStar) Start(address string) error {
 	return r.start(address)
 }
 
-func (r *RegStar) AddHandler(handler handler.Handler) {
-	r.Handlers = append(r.Handlers, handler)
-}
-
 // Node register node for net, and for user create edge
 func (r *RegStar) start(address string) error {
+	var ctx = context.Background()
 	var conn net.Conn
+	r.Executor = handler.NewExecutor()
+	if r.OpenAuth {
+		r.AddHandler(ctx, &auth.AuthHandler{})
+	}
+
+	if r.OpenEncrypt {
+		r.AddHandler(ctx, &encrypt.StarEncrypt{})
+	}
+
 	switch r.Protocol {
 	case option.UDP:
 		addr, err := ResolveAddr(address)
@@ -61,7 +68,7 @@ func (r *RegStar) start(address string) error {
 		defer conn.Close()
 		for {
 			limitChan <- 1
-			go r.handleUdp(conn.(*net.UDPConn))
+			go r.handleUdp(ctx, conn.(*net.UDPConn))
 		}
 	default:
 		log.Logger.Info("this is a tcp server")
@@ -70,7 +77,7 @@ func (r *RegStar) start(address string) error {
 	return nil
 }
 
-func (r *RegStar) handleUdp(conn *net.UDPConn) {
+func (r *RegStar) handleUdp(ctx context.Context, conn *net.UDPConn) {
 
 	data := make([]byte, 2048)
 	_, addr, err := conn.ReadFromUDP(data)
@@ -80,6 +87,11 @@ func (r *RegStar) handleUdp(conn *net.UDPConn) {
 
 	p, err := common.NewPacket().Decode(data[:24])
 	if err != nil {
+		fmt.Println(err)
+	}
+
+	//exec executor
+	if err := r.Execute(ctx, data); err != nil {
 		fmt.Println(err)
 	}
 	switch p.Flags {
@@ -136,17 +148,6 @@ func ackBuilder(cp common.CommonPacket) ([]byte, error) {
 	p.CommonPacket = cp
 
 	return p.Encode(p)
-}
-
-func (r *RegStar) Execute(ctx context.Context, p packet.Packet) error {
-	handlers := r.Handlers
-	for _, h := range handlers {
-		if err := h.Handle(ctx, p); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func ResolveAddr(address string) (*net.UDPAddr, error) {
