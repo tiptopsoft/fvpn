@@ -55,7 +55,7 @@ func (es *EdgeStar) conn(address string) (net.Conn, error) {
 		return nil, err
 	}
 
-	log.Logger.Info("star connected to server: %s", es.Registry)
+	log.Logger.Info("star connected to server:", es.Registry)
 	return conn, nil
 }
 

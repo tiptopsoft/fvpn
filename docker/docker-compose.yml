@@ -5,13 +5,17 @@ services:
   registry:
     image: star:0.1
     ports:
-      - "3001:3000"
+      - "3001:3000/udp"
     command:
-      - "star edge"
+      - "edge"
+    volumes:
+      - /Users/francis/workspc/star/conf/app.yaml:/etc/star/app.yaml
 
   edge:
     image: star:0.1
     ports:
-      - "3002:3000"
+      - "4000:4000/udp"
     command:
-      - "star edge"
+      - "registry"
+    volumes:
+      - /Users/francis/workspc/star/conf/app.yaml:/etc/star/app.yaml

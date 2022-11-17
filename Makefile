@@ -21,4 +21,4 @@ build:
 	GOPROXY=https://goproxy.cn,direct CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/star main.go
 
 image: build
-	cd ${shell pwd}/bin/ && docker buildx build --platform linux/amd64  -t star:${tags} -f ${shell pwd}/docker/Dockerfile .
+	cd ${shell pwd}/bin/ && docker buildx build  -t star:${tags} -f ${shell pwd}/docker/Dockerfile .
