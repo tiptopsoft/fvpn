@@ -44,11 +44,11 @@ func New(mode Mode) (*Tuntap, error) {
 	var err error
 	var file *os.File
 	for {
-		name = fmt.Sprintf("tap%s", i)
+		name = fmt.Sprintf("tap%d", i)
 		_, err = net.InterfaceByName(name)
 		if err != nil && err.Error() == NoSuchInterface.Error() {
 			//build
-			var f = "/dev/net/tun"
+			var f = "/dev/tun"
 			file, err = os.OpenFile(f, os.O_RDWR, 0)
 			if err != nil {
 				panic(err)
@@ -62,28 +62,28 @@ func New(mode Mode) (*Tuntap, error) {
 			switch mode {
 
 			case TUN:
-				ifr.Flags = syscall.IFF_TUN | syscall.IFF_NO_PI
-				_, _, errno = unix.Syscall(syscall.SYS_IOCTL, file.Fd(), uintptr(syscall.TUNSETIFF), uintptr(unsafe.Pointer(&ifr)))
+				ifr.Flags = IFF_TUN | IFF_NO_PI
+				_, _, errno = unix.Syscall(syscall.SYS_IOCTL, file.Fd(), uintptr(TUNSETIFF), uintptr(unsafe.Pointer(&ifr)))
 
 			case TAP:
-				ifr.Flags = syscall.IFF_TAP | syscall.IFF_NO_PI
-				_, _, errno = unix.Syscall(syscall.SYS_IOCTL, file.Fd(), uintptr(syscall.TUNSETIFF), uintptr(unsafe.Pointer(&ifr)))
+				ifr.Flags = IFF_TAP | IFF_NO_PI
+				_, _, errno = unix.Syscall(syscall.SYS_IOCTL, file.Fd(), uintptr(TUNSETIFF), uintptr(unsafe.Pointer(&ifr)))
 			}
 			if errno != 0 {
 				return nil, fmt.Errorf("tuntap ioctl failed, errno %v", errno)
 			}
 
-			_, _, errno = unix.Syscall(unix.SYS_IOCTL, file.Fd(), uintptr(unix.TUNSETPERSIST), 1)
+			_, _, errno = unix.Syscall(unix.SYS_IOCTL, file.Fd(), uintptr(TUNSETPERSIST), 1)
 			if errno != 0 {
 				return nil, fmt.Errorf("tuntap ioctl TUNSETPERSIST failed, errno %v", errno)
 			}
 
 			//set euid egid
-			if _, _, errno = unix.Syscall(unix.SYS_IOCTL, file.Fd(), syscall.TUNSETGROUP, uintptr(os.Getegid())); errno < 0 {
+			if _, _, errno = unix.Syscall(unix.SYS_IOCTL, file.Fd(), TUNSETGROUP, uintptr(os.Getegid())); errno < 0 {
 				return nil, fmt.Errorf("tuntap set group error, errno %v", errno)
 			}
 
-			if _, _, errno = unix.Syscall(unix.SYS_IOCTL, file.Fd(), syscall.TUNSETOWNER, uintptr(os.Geteuid())); errno < 0 {
+			if _, _, errno = unix.Syscall(unix.SYS_IOCTL, file.Fd(), TUNSETOWNER, uintptr(os.Geteuid())); errno < 0 {
 				return nil, fmt.Errorf("tuntap set group error, errno %v", errno)
 			}
 

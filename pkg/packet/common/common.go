@@ -31,7 +31,7 @@ func NewPacket() CommonPacket {
 	}
 }
 
-func (cp CommonPacket) Encode() ([]byte, error) {
+func Encode(cp CommonPacket) ([]byte, error) {
 
 	idx := 0
 	b := make([]byte, unsafe.Sizeof(CommonPacket{}))
@@ -42,7 +42,8 @@ func (cp CommonPacket) Encode() ([]byte, error) {
 	return b, nil
 }
 
-func (cp CommonPacket) Decode(udpByte []byte) (CommonPacket, error) {
+func Decode(udpByte []byte) (CommonPacket, error) {
+	cp := NewPacket()
 	idx := 0
 	idx = packet.DecodeUint8(&cp.Version, udpByte, idx)
 	idx = packet.DecodeUint8(&cp.TTL, udpByte, idx)

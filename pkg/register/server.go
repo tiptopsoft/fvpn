@@ -85,7 +85,7 @@ func (r *RegStar) handleUdp(ctx context.Context, conn *net.UDPConn) {
 			fmt.Println(err)
 		}
 
-		p, err := common.NewPacket().Decode(data)
+		p, err := common.Decode(data)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -94,24 +94,11 @@ func (r *RegStar) handleUdp(ctx context.Context, conn *net.UDPConn) {
 		if err := r.Execute(ctx, data); err != nil {
 			fmt.Println(err)
 		}
-		switch p.Flags {
-		case option.MSG_TYPE_REGISTER_SUPER:
-			rpacket, err := register.NewPacket().Decode(data)
-			if err := r.register(addr, rpacket); err != nil {
-				fmt.Println(err)
-			}
 
-			// build a ack
-			f, err := ackBuilder(p)
-			log.Logger.Infof("build a register ack: %v", f)
-			if err != nil {
-				fmt.Println("build resp p failed.")
-			}
-			_, err = conn.WriteToUDP(f, addr)
-			if err != nil {
-				fmt.Println("register write failed.")
-			}
-			<-limitChan
+		switch p.Flags {
+
+		case option.MSG_TYPE_REGISTER_SUPER:
+			r.processRegister(addr, conn, data)
 			break
 
 		}
@@ -152,7 +139,7 @@ func ackBuilder(cp common.CommonPacket) ([]byte, error) {
 	cp.Flags = option.MSG_TYPE_REGISTER_ACK
 	p.CommonPacket = cp
 
-	return p.Encode(p)
+	return ack.Encode(p)
 }
 
 func ResolveAddr(address string) (*net.UDPAddr, error) {

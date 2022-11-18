@@ -19,9 +19,9 @@ func NewPacket() RegPacket {
 	return RegPacket{}
 }
 
-func (cp RegPacket) Encode() ([]byte, error) {
+func Encode(cp RegPacket) ([]byte, error) {
 	b := make([]byte, unsafe.Sizeof(reflect.ValueOf(cp)))
-	commonBytes, err := cp.CommonPacket.Encode()
+	commonBytes, err := common.Encode(cp.CommonPacket)
 	if err != nil {
 		return nil, errors.New("encode common packet failed")
 	}
@@ -31,13 +31,25 @@ func (cp RegPacket) Encode() ([]byte, error) {
 	return b, nil
 }
 
-func (reg RegPacket) Decode(udpBytes []byte) (RegPacket, error) {
+func Decode(udpBytes []byte) (RegPacket, error) {
 
-	res := RegPacket{}
-	cp, err := common.NewPacket().Decode(udpBytes)
+	res := NewPacket()
+	cp, err := common.Decode(udpBytes)
 	if err != nil {
 		return RegPacket{}, errors.New("decode common packet failed")
 	}
+	idx := 0
+	res.CommonPacket = cp
+	idx += int(unsafe.Sizeof(common.NewPacket()))
+	var mac = make([]byte, 6)
+	packet.DecodeBytes(&mac, udpBytes, idx)
+	res.SrcMac = mac
+	return res, nil
+}
+
+func DecodeWithCommonPacket(udpBytes []byte, cp common.CommonPacket) (RegPacket, error) {
+
+	res := NewPacket()
 	idx := 0
 	res.CommonPacket = cp
 	idx += int(unsafe.Sizeof(common.NewPacket()))

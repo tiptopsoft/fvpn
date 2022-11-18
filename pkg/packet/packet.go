@@ -56,32 +56,6 @@ type EnDecoder interface {
 	Decode(bs []byte) (interface{}, error)
 }
 
-//func EncodeUint16(data uint16) []byte {
-//	var b = make([]byte, 2)
-//	binary.BigEndian.PutUint16(b, data)
-//	return b
-//}
-
-//func EncodeUint32(data uint32) []byte {
-//	var b = make([]byte, 4)
-//	binary.BigEndian.PutUint32(b, data)
-//	return b
-//}
-
-//func EncodeUint64(data uint64) []byte {
-//	var b = make([]byte, 8)
-//	binary.BigEndian.PutUint64(b, data)
-//	return b
-//}
-
-//func BytesToUint32(b []byte) uint32 {
-//	return binary.BigEndian.Uint32(b)
-//}
-//
-//func BytesToInt16(b []byte) uint16 {
-//	return binary.BigEndian.Uint16(b)
-//}
-
 func EncodeBytes(dst, src []byte, idx int) int {
 	copy(dst[idx:idx+len(src)], src[:])
 	idx += len(src)

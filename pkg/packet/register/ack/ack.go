@@ -18,9 +18,9 @@ func NewPacket() RegPacketAck {
 	return RegPacketAck{}
 }
 
-func (regAck RegPacketAck) Encode(reg RegPacketAck) ([]byte, error) {
+func Encode(reg RegPacketAck) ([]byte, error) {
 	b := make([]byte, unsafe.Sizeof(RegPacketAck{}))
-	cp, err := reg.CommonPacket.Encode()
+	cp, err := common.Encode(reg.CommonPacket)
 	if err != nil {
 		return nil, err
 	}
@@ -32,9 +32,9 @@ func (regAck RegPacketAck) Encode(reg RegPacketAck) ([]byte, error) {
 	return b, nil
 }
 
-func (regAck RegPacketAck) Decode(udpBytes []byte) (RegPacketAck, error) {
+func Decode(udpBytes []byte) (RegPacketAck, error) {
 	res := RegPacketAck{}
-	p, err := common.NewPacket().Decode(udpBytes[:8])
+	p, err := common.Decode(udpBytes[:8])
 	if err != nil {
 		return RegPacketAck{}, err
 	}

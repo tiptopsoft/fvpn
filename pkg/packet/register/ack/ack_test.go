@@ -35,5 +35,5 @@ func TestNewPacket(t *testing.T) {
 	cp.Flags = option.MSG_TYPE_REGISTER_ACK
 	p.CommonPacket = cp
 
-	fmt.Println(p.Encode(p))
+	fmt.Println(Encode(p))
 }
