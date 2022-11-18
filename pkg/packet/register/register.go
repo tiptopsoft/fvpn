@@ -2,13 +2,17 @@ package register
 
 import (
 	"errors"
+	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
+	"net"
+	"reflect"
+	"unsafe"
 )
 
 // RegPacket register a edge to register
 type RegPacket struct {
 	common.CommonPacket
-	SrcMac []byte
+	SrcMac net.HardwareAddr
 }
 
 func NewPacket() RegPacket {
@@ -16,24 +20,29 @@ func NewPacket() RegPacket {
 }
 
 func (cp RegPacket) Encode() ([]byte, error) {
-	b := make([]byte, 2048)
+	b := make([]byte, unsafe.Sizeof(reflect.ValueOf(cp)))
 	commonBytes, err := cp.CommonPacket.Encode()
 	if err != nil {
 		return nil, errors.New("encode common packet failed")
 	}
-	copy(b[0:8], commonBytes)
-	copy(b[8:], cp.SrcMac[:])
+	idx := 0
+	idx = packet.EncodeBytes(b, commonBytes, idx)
+	idx = packet.EncodeBytes(b, cp.SrcMac[:], idx)
 	return b, nil
 }
 
 func (reg RegPacket) Decode(udpBytes []byte) (RegPacket, error) {
 
 	res := RegPacket{}
-	cp, err := common.NewPacket().Decode(udpBytes[0:8])
+	cp, err := common.NewPacket().Decode(udpBytes)
 	if err != nil {
 		return RegPacket{}, errors.New("decode common packet failed")
 	}
+	idx := 0
 	res.CommonPacket = cp
-	copy(res.SrcMac[:], udpBytes[8:])
+	idx += int(unsafe.Sizeof(common.NewPacket()))
+	var mac = make([]byte, 6)
+	packet.DecodeBytes(&mac, udpBytes, idx)
+	res.SrcMac = mac
 	return res, nil
 }

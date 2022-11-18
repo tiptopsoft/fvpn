@@ -102,20 +102,21 @@ func EncodeUint16(dst []byte, src uint16, idx int) int {
 	return idx
 }
 
-func DecodeUint8(dst byte, src []byte, idx int) int {
-	dst = src[idx]
+func DecodeUint8(dst *byte, src []byte, idx int) int {
+	*dst = src[idx]
 	idx += 1
 	return idx
 }
 
-func DecodeUint16(dst uint16, src []byte, idx int) int {
-	dst = binary.BigEndian.Uint16(src[idx : idx+2])
+func DecodeUint16(dst *uint16, src []byte, idx int) int {
+	v := binary.BigEndian.Uint16(src[idx : idx+2])
+	*dst = v
 	idx += 2
 	return idx
 }
 
-func DecodeBytes(dst, src []byte, idx int) int {
-	copy(dst[:], src[idx:idx+len(dst)])
-	idx += len(dst)
+func DecodeBytes(dst *[]byte, src []byte, idx int) int {
+	copy(*dst, src[idx:idx+len(*dst)])
+	idx += len(*dst)
 	return idx
 }

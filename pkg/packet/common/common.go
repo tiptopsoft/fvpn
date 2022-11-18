@@ -34,7 +34,7 @@ func NewPacket() CommonPacket {
 func (cp CommonPacket) Encode() ([]byte, error) {
 
 	idx := 0
-	b := make([]byte, unsafe.Sizeof(cp))
+	b := make([]byte, unsafe.Sizeof(CommonPacket{}))
 	idx = packet.EncodeUint8(b, cp.Version, idx)
 	idx = packet.EncodeUint8(b, cp.TTL, idx)
 	idx = packet.EncodeUint16(b, cp.Flags, idx)
@@ -44,9 +44,10 @@ func (cp CommonPacket) Encode() ([]byte, error) {
 
 func (cp CommonPacket) Decode(udpByte []byte) (CommonPacket, error) {
 	idx := 0
-	idx = packet.DecodeUint8(cp.Version, udpByte, idx)
-	idx = packet.DecodeUint8(cp.TTL, udpByte, idx)
-	idx = packet.DecodeUint16(cp.Flags, udpByte, idx)
-	idx = packet.DecodeBytes(cp.Group[:], udpByte, idx)
+	idx = packet.DecodeUint8(&cp.Version, udpByte, idx)
+	idx = packet.DecodeUint8(&cp.TTL, udpByte, idx)
+	idx = packet.DecodeUint16(&cp.Flags, udpByte, idx)
+	a := cp.Group[:]
+	idx = packet.DecodeBytes(&a, udpByte, idx)
 	return cp, nil
 }

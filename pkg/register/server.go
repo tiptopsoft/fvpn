@@ -78,49 +78,50 @@ func (r *RegStar) start(address string) error {
 }
 
 func (r *RegStar) handleUdp(ctx context.Context, conn *net.UDPConn) {
-
-	data := make([]byte, 2048)
-	_, addr, err := conn.ReadFromUDP(data)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	p, err := common.NewPacket().Decode(data[:24])
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	//exec executor
-	if err := r.Execute(ctx, data); err != nil {
-		fmt.Println(err)
-	}
-	switch p.Flags {
-	case option.MSG_TYPE_REGISTER_SUPER:
-		rpacket, err := register.NewPacket().Decode(data)
-		if err := r.register(addr, rpacket); err != nil {
+	for {
+		data := make([]byte, 2048)
+		_, addr, err := conn.ReadFromUDP(data)
+		if err != nil {
 			fmt.Println(err)
 		}
 
-		// build a ack
-		f, err := ackBuilder(p)
-		log.Logger.Infof("build a register ack: %v", f)
+		p, err := common.NewPacket().Decode(data)
 		if err != nil {
-			fmt.Println("build resp p failed.")
+			fmt.Println(err)
 		}
-		_, err = conn.WriteToUDP(f, addr)
-		if err != nil {
-			fmt.Println("register write failed.")
-		}
-		<-limitChan
-		break
 
+		//exec executor
+		if err := r.Execute(ctx, data); err != nil {
+			fmt.Println(err)
+		}
+		switch p.Flags {
+		case option.MSG_TYPE_REGISTER_SUPER:
+			rpacket, err := register.NewPacket().Decode(data)
+			if err := r.register(addr, rpacket); err != nil {
+				fmt.Println(err)
+			}
+
+			// build a ack
+			f, err := ackBuilder(p)
+			log.Logger.Infof("build a register ack: %v", f)
+			if err != nil {
+				fmt.Println("build resp p failed.")
+			}
+			_, err = conn.WriteToUDP(f, addr)
+			if err != nil {
+				fmt.Println("register write failed.")
+			}
+			<-limitChan
+			break
+
+		}
 	}
 
 }
 
 // register edge node register to register
 func (r *RegStar) register(addr *net.UDPAddr, packet register.RegPacket) error {
-	m.Store(packet.SrcMac, addr)
+	m.Store(packet.SrcMac.String(), addr)
 	m.Range(func(key, value any) bool {
 		log.Logger.Infof("registry data key: %s, value: %v", key, value)
 		return true

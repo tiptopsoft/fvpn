@@ -41,8 +41,8 @@ func (regAck RegPacketAck) Decode(udpBytes []byte) (RegPacketAck, error) {
 	var idx = 0
 	res.CommonPacket = p
 	idx += int(unsafe.Sizeof(p))
-	idx = packet.DecodeBytes(udpBytes, res.RegMac, idx)
-	idx = packet.DecodeBytes(udpBytes, res.AutoIP, idx)
-	idx = packet.DecodeBytes(udpBytes, res.Mask, idx)
+	idx = packet.DecodeBytes(&udpBytes, res.RegMac, idx)
+	idx = packet.DecodeBytes(&udpBytes, res.AutoIP, idx)
+	idx = packet.DecodeBytes(&udpBytes, res.Mask, idx)
 	return res, nil
 }

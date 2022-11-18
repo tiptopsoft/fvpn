@@ -85,20 +85,14 @@ func (es *EdgeStar) register(conn net.Conn) error {
 	p := common.NewPacket()
 	p.Flags = option.MSG_TYPE_REGISTER_SUPER
 	p.TTL = common.DefaultTTL
-
 	rp := register.NewPacket()
+	hw, _ := net.ParseMAC(es.MacAddr)
 
-	mac := es.MacAddr
-	//if mac == "" {
-	//	mac, err = option.GetLocalMac(es.TapName)
-	//	if err != nil {
-	//		return option.ErrGetMac
-	//	}
-	//}
+	rp.SrcMac = hw
 
-	copy(rp.SrcMac[:], mac[:])
-
-	data, err := p.Encode()
+	rp.CommonPacket = p
+	data, err := rp.Encode()
+	fmt.Println("sending data: ", data)
 	if err != nil {
 		return err
 	}
@@ -124,7 +118,7 @@ func (es *EdgeStar) process(conn net.Conn) error {
 				continue
 			}
 
-			cp := common.CommonPacket{}
+			cp := common.NewPacket()
 			cp, err = cp.Decode(udpBytes)
 
 			if err != nil {

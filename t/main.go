@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"net"
+	"github.com/interstellar-cloud/star/pkg/packet/common"
+	"unsafe"
 )
 
 func main() {
@@ -38,18 +39,20 @@ func main() {
 	//fmt.Println(sbb[0])
 	//fmt.Print(string([]rune{39761}))
 
-	RecMac := "01:01:03:02:03:01"
-	var a [32]byte
-	copy(a[:], RecMac)
-	fmt.Println(len(RecMac))
-	fmt.Println(string(a[:]))
-	hw, err := net.ParseMAC(RecMac)
-	if err != nil {
-		panic(err)
-	}
+	//RecMac := "01:01:03:02:03:01"
+	//var a [32]byte
+	//copy(a[:], RecMac)
+	//fmt.Println(len(RecMac))
+	//fmt.Println(string(a[:]))
+	//hw, err := net.ParseMAC(RecMac)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//fmt.Println("len: ", len(hw), hw)
 
-	fmt.Println("len: ", len(hw), hw)
-
+	cp := common.NewPacket()
+	fmt.Println(unsafe.Sizeof(cp))
 }
 
 func IntToBytes(n int) []byte {
