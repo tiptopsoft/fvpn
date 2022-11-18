@@ -1,6 +1,9 @@
 package common
 
-import "github.com/interstellar-cloud/star/pkg/packet"
+import (
+	"github.com/interstellar-cloud/star/pkg/packet"
+	"unsafe"
+)
 
 var (
 	Version          uint8  = 1
@@ -30,19 +33,20 @@ func NewPacket() CommonPacket {
 
 func (cp CommonPacket) Encode() ([]byte, error) {
 
-	var b [8]byte
-	b[0] = cp.Version
-	copy(b[1:2], []byte{cp.TTL})
-	copy(b[2:4], packet.EncodeUint16(cp.Flags))
-	copy(b[4:8], cp.Group[:])
-	return b[:], nil
+	idx := 0
+	b := make([]byte, unsafe.Sizeof(cp))
+	idx = packet.EncodeUint8(b, cp.Version, idx)
+	idx = packet.EncodeUint8(b, cp.TTL, idx)
+	idx = packet.EncodeUint16(b, cp.Flags, idx)
+	packet.EncodeBytes(b, cp.Group[:], idx)
+	return b, nil
 }
 
 func (cp CommonPacket) Decode(udpByte []byte) (CommonPacket, error) {
-	cp.Version = udpByte[0]
-	cp.TTL = udpByte[1]
-	cp.Flags = packet.BytesToInt16(udpByte[2:4])
-	copy(cp.Group[:], udpByte[4:8])
-
+	idx := 0
+	idx = packet.DecodeUint8(cp.Version, udpByte, idx)
+	idx = packet.DecodeUint8(cp.TTL, udpByte, idx)
+	idx = packet.DecodeUint16(cp.Flags, udpByte, idx)
+	idx = packet.DecodeBytes(cp.Group[:], udpByte, idx)
 	return cp, nil
 }

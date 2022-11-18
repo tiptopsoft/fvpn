@@ -103,11 +103,11 @@ func (r *RegStar) handleUdp(ctx context.Context, conn *net.UDPConn) {
 
 		// build a ack
 		f, err := ackBuilder(p)
+		log.Logger.Infof("build a register ack: %v", f)
 		if err != nil {
 			fmt.Println("build resp p failed.")
 		}
-		copy(data[0:24], f)
-		_, err = conn.WriteToUDP(data, addr)
+		_, err = conn.WriteToUDP(f, addr)
 		if err != nil {
 			fmt.Println("register write failed.")
 		}
@@ -140,10 +140,14 @@ func ackBuilder(cp common.CommonPacket) ([]byte, error) {
 	Mask := "255.255.255.0"
 
 	p := ack.NewPacket()
-	copy(p.Mask[:], Mask)
-	copy(p.AutoIP[:], ip)
-	copy(p.RegMac[:], RecMac)
+	mac, err := net.ParseMAC(RecMac)
+	if err != nil {
+		log.Logger.Errorf("invalid mac:%s", RecMac)
+	}
 
+	p.RegMac = mac
+	p.AutoIP = net.ParseIP(ip)
+	p.Mask = net.ParseIP(Mask)
 	cp.Flags = option.MSG_TYPE_REGISTER_ACK
 	p.CommonPacket = cp
 

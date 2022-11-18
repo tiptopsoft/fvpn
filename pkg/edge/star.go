@@ -7,12 +7,16 @@ import (
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"github.com/interstellar-cloud/star/pkg/packet/register"
 	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
+	"io"
 	"net"
+	"os"
 )
 
 type EdgeStar struct {
 	*option.EdgeConfig
 }
+
+var stopCh = make(chan int, 1)
 
 /**
  * Start logic: start to:
@@ -22,6 +26,7 @@ func (edge EdgeStar) Start() error {
 	//init connect to registry
 	var conn net.Conn
 	var err error
+
 	conn, err = edge.conn(edge.Registry)
 	if err != nil {
 		return err
@@ -33,10 +38,25 @@ func (edge EdgeStar) Start() error {
 		return err
 	}
 
-	//run loop process udp
 	err = edge.process(conn)
 	if err != nil {
-		return err
+		log.Logger.Errorf("process failed, err:%v", err)
+		// re start a goroutine.
+	}
+
+	//run loop process udp
+	//time.Sleep(1000 * 3)
+	//go func() {
+	//	err = edge.process(conn)
+	//	if err != nil {
+	//		log.Logger.Errorf("process failed, err:%v", err)
+	//		// re start a goroutine.
+	//	}
+	//}()
+
+	if <-stopCh > 0 {
+		log.Logger.Infof("edge stop success")
+		os.Exit(-1)
 	}
 	return nil
 }
@@ -96,40 +116,44 @@ func (es *EdgeStar) register(conn net.Conn) error {
 
 func (es *EdgeStar) process(conn net.Conn) error {
 	if es.Protocol == option.UDP {
-		udpBytes := make([]byte, 2048)
-		_, _, err := conn.(*net.UDPConn).ReadFromUDP(udpBytes)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		cp := common.CommonPacket{}
-		cp, err = cp.Decode(udpBytes)
-
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		switch cp.Flags {
-		case option.MSG_TYPE_REGISTER_ACK:
-			regAck, err := ack.NewPacket().Decode(udpBytes)
-			if err != nil {
-				return err
+		for {
+			udpBytes := make([]byte, 2048)
+			_, _, err := conn.(*net.UDPConn).ReadFromUDP(udpBytes)
+			if err != io.EOF {
+				//no data exists, continue read next frame.
+				continue
 			}
-			log.Logger.Infof("got registry register ack: %v", regAck)
-			//create tap device
-			//if tap, err := device.New(device.TAP); err != nil {
-			//	return err
-			//} else {
-			//	//设置IP
-			//	address := fmt.Sprintf("%d:%d:%d:%d", regAck.AutoIP[0], regAck.AutoIP[1], regAck.AutoIP[2], regAck.AutoIP[3])
-			//	if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ip addr add %s dev %s", address, tap.Name)); err != nil {
-			//		return err
-			//	}
-			//}
 
-			break
+			cp := common.CommonPacket{}
+			cp, err = cp.Decode(udpBytes)
 
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			switch cp.Flags {
+			case option.MSG_TYPE_REGISTER_ACK:
+				regAck, err := ack.NewPacket().Decode(udpBytes)
+				if err != nil {
+					return err
+				}
+				log.Logger.Infof("got registry register ack: %v", regAck)
+				//create tap device
+				//if tap, err := device.New(device.TAP); err != nil {
+				//	return err
+				//} else {
+				//	//设置IP
+				//	address := fmt.Sprintf("%d:%d:%d:%d", regAck.AutoIP[0], regAck.AutoIP[1], regAck.AutoIP[2], regAck.AutoIP[3])
+				//	if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ip addr add %s dev %s", address, tap.Name)); err != nil {
+				//		return err
+				//	}
+				//}
+
+				break
+
+			}
 		}
+
 	}
 	return nil
 }

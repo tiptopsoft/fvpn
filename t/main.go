@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"reflect"
+	"net"
 )
 
 func main() {
@@ -23,20 +23,33 @@ func main() {
 	//b2 := IntToBytes(257)
 	//fmt.Println("b2:", b2)
 
-	s := "魑"
+	//s := "魑"
 	//for i, j := range s {
 	//	fmt.Println(reflect.TypeOf(s[i]))
 	//	fmt.Println(i)
 	//	fmt.Println(reflect.TypeOf(j))
 	//}
-	sb := []byte(s)
-	fmt.Println(sb)
-	sbb := []rune(s)
-	fmt.Println(sbb)
-	fmt.Println(reflect.TypeOf(s[0]))
+	//sb := []byte(s)
+	//fmt.Println(sb)
+	//sbb := []rune(s)
+	//fmt.Println(sbb)
+	//fmt.Println(reflect.TypeOf(s[0]))
+	//
+	//fmt.Println(sbb[0])
+	//fmt.Print(string([]rune{39761}))
 
-	fmt.Println(sbb[0])
-	fmt.Print(string([]rune{39761}))
+	RecMac := "01:01:03:02:03:01"
+	var a [32]byte
+	copy(a[:], RecMac)
+	fmt.Println(len(RecMac))
+	fmt.Println(string(a[:]))
+	hw, err := net.ParseMAC(RecMac)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("len: ", len(hw), hw)
+
 }
 
 func IntToBytes(n int) []byte {
