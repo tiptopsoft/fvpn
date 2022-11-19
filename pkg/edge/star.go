@@ -42,7 +42,11 @@ func (edge EdgeStar) Start() error {
 		}
 		break
 	case 2: //after register, send query
-		edge.queryPeer(conn)
+		err = edge.queryPeer(conn)
+		if err != nil {
+			return err
+		}
+		break
 	}
 
 	err = edge.process(conn)
