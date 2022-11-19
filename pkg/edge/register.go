@@ -1,7 +1,6 @@
 package edge
 
 import (
-	"fmt"
 	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
@@ -21,7 +20,7 @@ func (es *EdgeStar) register(conn net.Conn) error {
 	rp.SrcMac = hw
 	rp.CommonPacket = p
 	data, err := register.Encode(rp)
-	fmt.Println("sending data: ", data)
+	log.Logger.Info("sending data: %v", data)
 	if err != nil {
 		return err
 	}

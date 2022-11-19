@@ -3,6 +3,7 @@ package device
 import (
 	"errors"
 	"fmt"
+	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"golang.org/x/sys/unix"
 	"io"
@@ -110,7 +111,7 @@ func New(mode Mode) (*Tuntap, error) {
 	//	}
 	//}
 
-	fmt.Println("Successfully connect to tun/tap interface:", name)
+	log.Logger.Infof("Successfully connect to tun/tap interface: %v", name)
 
 	return &Tuntap{
 		file.Fd(),

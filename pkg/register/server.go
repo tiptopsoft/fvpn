@@ -98,7 +98,7 @@ func (r *RegStar) handleUdp(ctx context.Context, conn *net.UDPConn) {
 		switch p.Flags {
 
 		case option.MSG_TYPE_REGISTER_SUPER:
-			r.processRegister(addr, conn, data)
+			r.processRegister(addr, conn, data, nil)
 			break
 
 		}

@@ -28,7 +28,7 @@ func (es *EdgeStar) process(conn net.Conn) error {
 			cp, err := common.Decode(udpBytes)
 
 			if err != nil {
-				fmt.Println(err)
+				log.Logger.Errorf("decode err: %v", err)
 			}
 
 			switch cp.Flags {
