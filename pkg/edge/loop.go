@@ -6,12 +6,17 @@ import (
 	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
+	peerack "github.com/interstellar-cloud/star/pkg/packet/peer/ack"
 	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
 	"io"
 	"net"
+	"sync"
 )
 
+var m sync.Map
+
 func (es *EdgeStar) process(conn net.Conn) error {
+
 	if es.Protocol == option.UDP {
 		for {
 			udpBytes := make([]byte, 2048)
@@ -52,6 +57,23 @@ func (es *EdgeStar) process(conn net.Conn) error {
 				ch <- 2
 				break
 			case option.MSG_TYPE_PEER_INFO:
+				//get peerInfo
+				peerPacketAck, err := peerack.Decode(udpBytes)
+				if err != nil {
+					return err
+				}
+
+				infos := peerPacketAck.PeerInfos
+				for _, v := range infos {
+					addr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", v.Host.String(), v.Port))
+					if err != nil {
+						log.Logger.Errorf("resolve addr failed. err: %v", err)
+					}
+					m.Store(v.Mac.String(), addr)
+				}
+
+				ch <- 3
+
 				break
 			}
 

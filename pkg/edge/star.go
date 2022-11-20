@@ -47,6 +47,12 @@ func (edge EdgeStar) Start() error {
 			return err
 		}
 		break
+	case 3: // start to init connect to dst
+		m.Range(func(key, value any) bool {
+
+			return true
+		})
+		break
 	}
 
 	err = edge.process(conn)
