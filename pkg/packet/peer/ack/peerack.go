@@ -12,6 +12,7 @@ type PeerInfo struct {
 	Mac  net.HardwareAddr
 	Host net.IP
 	Port uint16
+	P2p  uint8 //1: 是2：否
 }
 
 // PeerPacketAck ack for size of PeerInfo

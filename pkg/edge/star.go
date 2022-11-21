@@ -49,7 +49,7 @@ func (edge EdgeStar) Start() error {
 		break
 	case 3: // start to init connect to dst
 		m.Range(func(key, value any) bool {
-
+			
 			return true
 		})
 		break
@@ -92,6 +92,6 @@ func (es *EdgeStar) conn(address string) (net.Conn, error) {
 		return nil, err
 	}
 
-	log.Logger.Info("star connected to server:", es.Registry)
+	log.Logger.Info("star connected to registry:", es.Registry)
 	return conn, nil
 }

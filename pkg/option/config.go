@@ -12,6 +12,10 @@ const (
 	UDP Protocol = "udp"
 )
 
+var (
+	STAR_PKT_BUFF_SIZE = 2048
+)
+
 type SuperStar struct {
 	Listen int
 }
