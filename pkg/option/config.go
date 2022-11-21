@@ -29,7 +29,7 @@ type Star struct {
 
 type Config struct {
 	Star *EdgeConfig `mapstructure:"star"`
-	Reg  *RegConfig  `mapstructure:"register"`
+	Reg  *RegConfig  `mapstructure:"registry"`
 }
 
 type Mysql struct {

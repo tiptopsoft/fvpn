@@ -19,11 +19,14 @@ func (s UserServer) Start(port int) error {
 		return err
 	}
 	s.db = db
-	var engine = gin.Default()
-	engine.POST("register", s.register())
-	engine.GET("users", s.users())
-	engine.GET("user/:id", s.getUser())
-	err := engine.Run(":8080")
+	var router = gin.Default()
+	router.POST("registry", s.register())
+	router.GET("users", s.users())
+	router.GET("user/:id", s.getUser())
+
+	router.GET("/registry/list", s.getResource())
+
+	err := router.Run(":8080")
 	if err != nil {
 		return err
 	}
@@ -41,7 +44,7 @@ func (s UserServer) register() gin.HandlerFunc {
 		}
 
 		if err := u.Create(s.db); err != nil {
-			ctx.JSON(500, "failed to register.")
+			ctx.JSON(500, "failed to registry.")
 			return
 		}
 
@@ -55,7 +58,7 @@ func (s UserServer) users() gin.HandlerFunc {
 		var u User
 
 		if users, err := u.ListUser(s.db); err != nil {
-			ctx.JSON(500, "failed to register.")
+			ctx.JSON(500, "failed to registry.")
 			return
 		} else {
 			ctx.JSON(200, users)
@@ -69,10 +72,16 @@ func (s UserServer) getUser() gin.HandlerFunc {
 		var u User
 		var err error
 		if u, err = u.Get(s.db); err != nil {
-			ctx.JSON(500, "failed to register.")
+			ctx.JSON(500, "failed to registry.")
 			return
 		} else {
 			ctx.JSON(200, u)
 		}
+	}
+}
+
+func (s UserServer) getResource() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+
 	}
 }

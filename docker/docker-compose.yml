@@ -15,6 +15,7 @@ services:
     image: star:0.1
     ports:
       - "4000:4000/udp"
+      - "4009:4009"
     command:
       - "registry"
     volumes:

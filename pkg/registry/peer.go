@@ -1,4 +1,4 @@
-package register
+package registry
 
 import (
 	"errors"
@@ -31,7 +31,7 @@ func (r *RegStar) processPeer(addr *net.UDPAddr, conn *net.UDPConn, data []byte,
 
 	_, err = conn.WriteToUDP(f, addr)
 	if err != nil {
-		log.Logger.Errorf("register write failed. err: %v", err)
+		log.Logger.Errorf("registry write failed. err: %v", err)
 	}
 	<-limitChan
 }

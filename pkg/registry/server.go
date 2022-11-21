@@ -1,4 +1,4 @@
-package register
+package registry
 
 import (
 	"context"
@@ -27,7 +27,7 @@ type Node struct {
 	Addr  *net.UDPAddr
 }
 
-//RegStar use as register
+//RegStar use as registry
 type RegStar struct {
 	*option.RegConfig
 	handler.Executor
@@ -61,6 +61,16 @@ func (r *RegStar) start(address string) error {
 		conn, err = net.ListenUDP("udp", addr)
 
 		log.Logger.Infof("registry start at: %s", address)
+
+		//start http
+		rs := RegistryServer{
+			r.RegConfig,
+		}
+		go func() {
+			if err := rs.Start(rs.HttpListen); err != nil {
+				log.Logger.Errorf("listen http failed.")
+			}
+		}()
 
 		if err != nil {
 			return err

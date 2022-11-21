@@ -20,7 +20,7 @@ var (
 
 /**
  * Start logic: start to:
-1. PING to register node 2. register to register 3. auto ip config tuntap 4.
+1. PING to registry node 2. registry to registry 3. auto ip config tuntap 4.
 */
 func (edge EdgeStar) Start() error {
 	//init connect to registry
@@ -35,13 +35,13 @@ func (edge EdgeStar) Start() error {
 	ch <- 1
 	// registry to registry
 	switch <-ch {
-	case 1: //register
+	case 1: //registry
 		err = edge.register(conn)
 		if err != nil {
 			return err
 		}
 		break
-	case 2: //after register, send query
+	case 2: //after registry, send query
 		err = edge.queryPeer(conn)
 		if err != nil {
 			return err
@@ -49,7 +49,7 @@ func (edge EdgeStar) Start() error {
 		break
 	case 3: // start to init connect to dst
 		m.Range(func(key, value any) bool {
-			
+
 			return true
 		})
 		break

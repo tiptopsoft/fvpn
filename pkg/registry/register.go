@@ -1,4 +1,4 @@
-package register
+package registry
 
 import (
 	"github.com/interstellar-cloud/star/pkg/log"
@@ -17,17 +17,17 @@ func (r *RegStar) processRegister(addr *net.UDPAddr, conn *net.UDPConn, data []b
 	}
 
 	if err := r.register(addr, regPacket); err != nil {
-		log.Logger.Errorf("register failed. err: %v", err)
+		log.Logger.Errorf("registry failed. err: %v", err)
 	}
 	// build a ack
 	f, err := ackBuilder(regPacket.CommonPacket)
-	log.Logger.Infof("build a register ack: %v", f)
+	log.Logger.Infof("build a registry ack: %v", f)
 	if err != nil {
 		log.Logger.Errorf("build resp p failed. err: %v", err)
 	}
 	_, err = conn.WriteToUDP(f, addr)
 	if err != nil {
-		log.Logger.Errorf("register write failed. err: %v", err)
+		log.Logger.Errorf("registry write failed. err: %v", err)
 	}
 
 	<-limitChan

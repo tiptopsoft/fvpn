@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/interstellar-cloud/star/pkg/option"
-	"github.com/interstellar-cloud/star/pkg/register"
+	"github.com/interstellar-cloud/star/pkg/registry"
 	"github.com/spf13/cobra"
 )
 
@@ -15,8 +15,8 @@ func RegCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "registry",
 		Short: "reg",
-		Long: `register edge, using for finding other machine in a group,
-which edge can register to, also register can register packets when edge at a Symetric Nat.`,
+		Long: `registry edge, using for finding other machine in a group,
+which edge can registry to, also registry can registry packets when edge at a Symetric Nat.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 
 			return nil
@@ -38,7 +38,7 @@ func runSuper(opts *RegStarOptions) error {
 	if err != nil {
 		return err
 	}
-	s := register.RegStar{
+	s := registry.RegStar{
 		RegConfig: config.Reg,
 	}
 

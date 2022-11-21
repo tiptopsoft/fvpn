@@ -42,7 +42,7 @@ func (es *EdgeStar) process(conn net.Conn) error {
 				if err != nil {
 					return err
 				}
-				log.Logger.Infof("got registry register ack: %v", regAck)
+				log.Logger.Infof("got registry registry ack: %v", regAck)
 				//create tap device
 				if tap, err := device.New(device.TAP); err != nil {
 					return err

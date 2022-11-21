@@ -9,7 +9,7 @@ import (
 	"unsafe"
 )
 
-// RegPacket register a edge to register
+// RegPacket registry a edge to registry
 type RegPacket struct {
 	common.CommonPacket
 	SrcMac net.HardwareAddr

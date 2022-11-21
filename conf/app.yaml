@@ -8,6 +8,7 @@ star:
   type: udp
 
 #-------------------分害线
-register:
+registry:
   listen: 127.0.0.1:4000
+  httpListen: :4009
   type: udp

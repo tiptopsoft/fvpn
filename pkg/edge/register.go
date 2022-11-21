@@ -27,7 +27,7 @@ func (es *EdgeStar) register(conn net.Conn) error {
 
 	switch es.Protocol {
 	case option.UDP:
-		log.Logger.Infof("star start to register self to registry: %v", rp)
+		log.Logger.Infof("star start to registry self to registry: %v", rp)
 		if _, err := conn.(*net.UDPConn).Write(data); err != nil {
 			return err
 		}
