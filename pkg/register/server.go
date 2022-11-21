@@ -100,7 +100,12 @@ func (r *RegStar) handleUdp(ctx context.Context, conn *net.UDPConn) {
 		case option.MSG_TYPE_REGISTER_SUPER:
 			r.processRegister(addr, conn, data, nil)
 			break
-
+		case option.MSG_TYPE_QUERY_PEER:
+			r.processPeer(addr, conn, data, &p)
+			break
+		case option.MSG_TYPE_PACKET:
+			r.forward(data, &p)
+			break
 		}
 	}
 

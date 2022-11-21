@@ -5,7 +5,6 @@ import (
 	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"net"
-	"reflect"
 	"unsafe"
 )
 
@@ -19,7 +18,7 @@ func NewPacket() PeerPacket {
 }
 
 func Encode(cp PeerPacket) ([]byte, error) {
-	b := make([]byte, unsafe.Sizeof(reflect.ValueOf(cp)))
+	b := make([]byte, unsafe.Sizeof(PeerPacket{}))
 	commonBytes, err := common.Encode(cp.CommonPacket)
 	if err != nil {
 		return nil, errors.New("encode common packet failed")

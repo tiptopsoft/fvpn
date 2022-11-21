@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/option"
+	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
+	"github.com/interstellar-cloud/star/pkg/packet/forward"
 	"github.com/interstellar-cloud/star/pkg/packet/peer/ack"
 	"os"
 )
@@ -34,9 +36,21 @@ func TapHandle(fd uintptr, name string) {
 		}
 
 		if dst.P2p == 2 {
-			// supernode
+			// through supernode
 			cp := common.NewPacket()
 			cp.Flags = option.MSG_TYPE_PACKET
+
+			fp := forward.NewPacket()
+			fp.CommonPacket = cp
+			bs, err := forward.Encode(fp)
+			if err != nil {
+				log.Logger.Errorf("encode forward failed. err: %v", err)
+			}
+
+			idx := 0
+			packet.EncodeBytes(b, bs, idx)
+
+			packet.SendPacket(b, mac)
 		}
 
 	}
