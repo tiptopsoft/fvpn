@@ -3,6 +3,7 @@ package registry
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/interstellar-cloud/star/pkg/option"
+	"net"
 )
 
 type RegistryServer struct {
@@ -26,7 +27,7 @@ func (s RegistryServer) list() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		var resp = make(map[string]string)
 		m.Range(func(key, value any) bool {
-			resp[key.(string)] = value.(string)
+			resp[key.(string)] = value.(*net.UDPAddr).String()
 			return true
 		})
 
@@ -38,7 +39,7 @@ func (s RegistryServer) addrList() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		var resp = make(map[string]string)
 		socket.Range(func(key, value any) bool {
-			resp[key.(string)] = value.(string)
+			resp[key.(string)] = value.(*net.UDPAddr).String()
 			return true
 		})
 

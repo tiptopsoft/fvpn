@@ -44,7 +44,7 @@ func New(mode Mode) (*Tuntap, error) {
 	var err error
 	var file *os.File
 	for {
-		name = fmt.Sprintf("tap%s", i)
+		name = fmt.Sprintf("tap%d", i)
 		_, err = net.InterfaceByName(name)
 		if err != nil && err.Error() == NoSuchInterface.Error() {
 			//build
