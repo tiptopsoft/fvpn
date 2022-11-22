@@ -48,8 +48,9 @@ func (es *EdgeStar) process(conn net.Conn) error {
 					return err
 				} else {
 					es.tap = tap
+
 					//设置IP
-					if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ip addr add %s dev %s", regAck.AutoIP.String(), tap.Name)); err != nil {
+					if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ip addr change %s dev %s", regAck.AutoIP.String(), tap.Name)); err != nil {
 						return err
 					}
 				}

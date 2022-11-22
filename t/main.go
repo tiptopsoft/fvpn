@@ -1,11 +1,8 @@
 package main
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/packet/common"
-	"unsafe"
+	"net"
 )
 
 func main() {
@@ -51,13 +48,17 @@ func main() {
 	//
 	//fmt.Println("len: ", len(hw), hw)
 
-	cp := common.NewPacket()
-	fmt.Println(unsafe.Sizeof(cp))
-}
+	i := 0
+	var name string
+	for {
+		name = fmt.Sprintf("tap%d", i)
+		a, err := net.InterfaceByName(name)
+		if err != nil {
+			panic(err)
+		}
 
-func IntToBytes(n int) []byte {
-	x := int32(n)
-	bytesBuffer := bytes.NewBuffer([]byte{})
-	binary.Write(bytesBuffer, binary.BigEndian, x)
-	return bytesBuffer.Bytes()
+		fmt.Println(a)
+
+	}
+
 }
