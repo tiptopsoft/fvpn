@@ -9,8 +9,6 @@ import (
 	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
-	"github.com/interstellar-cloud/star/pkg/packet/register"
-	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
 	"net"
 	"sync"
 )
@@ -68,7 +66,7 @@ func (r *RegStar) start(address string) error {
 		}
 		go func() {
 			if err := rs.Start(rs.HttpListen); err != nil {
-				log.Logger.Errorf("listen http failed.")
+				log.Logger.Errorf("this is udp server, listen http failed.")
 			}
 		}()
 
@@ -119,42 +117,6 @@ func (r *RegStar) handleUdp(ctx context.Context, conn *net.UDPConn) {
 		}
 	}
 
-}
-
-// register edge node register to register
-func (r *RegStar) register(addr *net.UDPAddr, packet register.RegPacket) error {
-	m.Store(packet.SrcMac.String(), addr)
-	m.Range(func(key, value any) bool {
-		log.Logger.Infof("registry data key: %s, value: %v", key, value)
-		return true
-	})
-	return nil
-}
-
-func (r *RegStar) unRegister(packet register.RegPacket) error {
-	m.Delete(packet.SrcMac)
-	return nil
-}
-
-func ackBuilder(cp common.CommonPacket) ([]byte, error) {
-
-	RecMac := "01:01:03:02:03:01"
-	ip := "192.168.1.1"
-	Mask := "255.255.255.0"
-
-	p := ack.NewPacket()
-	mac, err := net.ParseMAC(RecMac)
-	if err != nil {
-		log.Logger.Errorf("invalid mac:%s", RecMac)
-	}
-
-	p.RegMac = mac
-	p.AutoIP = net.ParseIP(ip)
-	p.Mask = net.ParseIP(Mask)
-	cp.Flags = option.MSG_TYPE_REGISTER_ACK
-	p.CommonPacket = cp
-
-	return ack.Encode(p)
 }
 
 func ResolveAddr(address string) (*net.UDPAddr, error) {

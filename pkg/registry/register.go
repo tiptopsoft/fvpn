@@ -2,8 +2,10 @@ package registry
 
 import (
 	"github.com/interstellar-cloud/star/pkg/log"
+	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"github.com/interstellar-cloud/star/pkg/packet/register"
+	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
 	"net"
 )
 
@@ -31,4 +33,35 @@ func (r *RegStar) processRegister(addr *net.UDPAddr, conn *net.UDPConn, data []b
 	}
 
 	<-limitChan
+}
+
+func ackBuilder(cp common.CommonPacket) ([]byte, error) {
+
+	RecMac := "01:01:03:02:03:01"
+	ip := "192.168.1.1"
+	Mask := "255.255.255.0"
+
+	p := ack.NewPacket()
+	mac, err := net.ParseMAC(RecMac)
+	if err != nil {
+		log.Logger.Errorf("invalid mac:%s", RecMac)
+	}
+
+	p.RegMac = mac
+	p.AutoIP = net.ParseIP(ip)
+	p.Mask = net.ParseIP(Mask)
+	cp.Flags = option.MSG_TYPE_REGISTER_ACK
+	p.CommonPacket = cp
+
+	return ack.Encode(p)
+}
+
+// register edge node register to register
+func (r *RegStar) register(addr *net.UDPAddr, packet register.RegPacket) error {
+	m.Store(packet.SrcMac.String(), addr)
+	m.Range(func(key, value any) bool {
+		log.Logger.Infof("registry data key: %s, value: %v", key, value)
+		return true
+	})
+	return nil
 }
