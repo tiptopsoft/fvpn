@@ -1,64 +1,45 @@
 package main
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"net"
+	"strconv"
 )
 
+//ip到数字
+func ip2Long(ip string) uint32 {
+	var long uint32
+	binary.Read(bytes.NewBuffer(net.ParseIP(ip).To4()), binary.BigEndian, &long)
+	return long
+}
+
+//数字到IP
+func backtoIP4(ipInt int64) string {
+	// need to do two bit shifting and “0xff” masking
+	b0 := strconv.FormatInt((ipInt>>24)&0xff, 10)
+	b1 := strconv.FormatInt((ipInt>>16)&0xff, 10)
+	b2 := strconv.FormatInt((ipInt>>8)&0xff, 10)
+	b3 := strconv.FormatInt((ipInt & 0xff), 10)
+	return b0 + "." + b1 + "." + b2 + "." + b3
+}
 func main() {
-	//var v2 int32
-	//var b [4]byte
-	//
-	//v2 = 257
-	//
-	//b[3] = uint8(v2)
-	//b[2] = uint8(v2 >> 8)
-	//b[1] = uint8(v2 >> 16)
-	//b[0] = uint8(v2 >> 24)
-	//
-	//fmt.Println(b)
-	//
-	//b2 := IntToBytes(257)
-	//fmt.Println("b2:", b2)
-
-	//s := "魑"
-	//for i, j := range s {
-	//	fmt.Println(reflect.TypeOf(s[i]))
-	//	fmt.Println(i)
-	//	fmt.Println(reflect.TypeOf(j))
-	//}
-	//sb := []byte(s)
-	//fmt.Println(sb)
-	//sbb := []rune(s)
-	//fmt.Println(sbb)
-	//fmt.Println(reflect.TypeOf(s[0]))
-	//
-	//fmt.Println(sbb[0])
-	//fmt.Print(string([]rune{39761}))
-
-	//RecMac := "01:01:03:02:03:01"
-	//var a [32]byte
-	//copy(a[:], RecMac)
-	//fmt.Println(len(RecMac))
-	//fmt.Println(string(a[:]))
-	//hw, err := net.ParseMAC(RecMac)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//
-	//fmt.Println("len: ", len(hw), hw)
-
-	i := 0
-	var name string
-	for {
-		name = fmt.Sprintf("tap%d", i)
-		a, err := net.InterfaceByName(name)
-		if err != nil {
-			panic(err)
-		}
-
-		fmt.Println(a)
-
+	result := ip2Long("98.138.253.109")
+	fmt.Println(result)
+	// or if you prefer the super fast way
+	faster := binary.BigEndian.Uint32(net.ParseIP("98.138.253.109")[12:16])
+	fmt.Println(faster)
+	faster64 := int64(faster)
+	fmt.Println(backtoIP4(faster64))
+	ip1 := ip2Long("221.177.0.0")
+	ip2 := ip2Long("221.177.7.255")
+	//ip1 := ip2Long("192.168.0.0")
+	//ip2 := ip2Long("192.168.0.255")
+	x := ip2 - ip1
+	fmt.Println(ip1, ip2, x)
+	for i := ip1; i <= ip2; i++ {
+		i := int64(i)
+		fmt.Println(backtoIP4(i))
 	}
-
 }

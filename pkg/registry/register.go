@@ -37,19 +37,18 @@ func (r *RegStar) processRegister(addr *net.UDPAddr, conn *net.UDPConn, data []b
 
 func ackBuilder(cp common.CommonPacket) ([]byte, error) {
 
-	RecMac := "01:01:03:02:03:01"
-	ip := "192.168.1.1"
-	Mask := "255.255.255.0"
-
-	p := ack.NewPacket()
-	mac, err := net.ParseMAC(RecMac)
+	//RecMac := "01:01:03:02:03:01"
+	//ip := "192.168.1.1"
+	//Mask := "255.255.255.0"
+	endpoint, err := New()
 	if err != nil {
-		log.Logger.Errorf("invalid mac:%s", RecMac)
+		return nil, err
 	}
 
-	p.RegMac = mac
-	p.AutoIP = net.ParseIP(ip)
-	p.Mask = net.ParseIP(Mask)
+	p := ack.NewPacket()
+	p.RegMac = endpoint.Mac
+	p.AutoIP = endpoint.IP
+	p.Mask = endpoint.Mask
 	cp.Flags = option.MSG_TYPE_REGISTER_ACK
 	p.CommonPacket = cp
 
