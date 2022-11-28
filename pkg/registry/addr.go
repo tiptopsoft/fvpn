@@ -27,7 +27,9 @@ func New() (*Endpoint, error) {
 		return nil, errors.New("new mac failed")
 	}
 
-	ip1, ok := ipMap.Load("ip")
+	var ip1 any
+	var ok bool
+	ip1, ok = ipMap.Load("ip")
 	if !ok {
 		ip1 = string2Long("192.168.0.1")
 	} else {
@@ -36,7 +38,7 @@ func New() (*Endpoint, error) {
 	}
 
 	ip := net.ParseIP(GenerateIP(ip1.(int64)))
-	_, ipMask, err := net.ParseCIDR("255.255.255.0")
+	_, ipMask, err := net.ParseCIDR("255.255.255.0/24")
 	if err != nil {
 		return nil, err
 	}
@@ -48,8 +50,8 @@ func New() (*Endpoint, error) {
 }
 
 //ip到数字
-func string2Long(ip string) uint32 {
-	var long uint32
+func string2Long(ip string) int64 {
+	var long int64
 	binary.Read(bytes.NewBuffer(net.ParseIP(ip).To4()), binary.BigEndian, &long)
 	return long
 }
