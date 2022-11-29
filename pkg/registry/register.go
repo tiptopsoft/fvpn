@@ -36,10 +36,6 @@ func (r *RegStar) processRegister(addr *net.UDPAddr, conn *net.UDPConn, data []b
 }
 
 func ackBuilder(cp common.CommonPacket) ([]byte, error) {
-
-	//RecMac := "01:01:03:02:03:01"
-	//ip := "192.168.1.1"
-	//Mask := "255.255.255.0"
 	endpoint, err := New()
 	if err != nil {
 		return nil, err
