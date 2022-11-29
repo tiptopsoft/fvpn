@@ -49,7 +49,7 @@ func (es *EdgeStar) process(conn net.Conn) error {
 				} else {
 					es.tap = tap
 					//设置IP
-					if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ip addr change %s dev %s", regAck.AutoIP.String(), tap.Name)); err != nil {
+					if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", tap.Name, regAck.AutoIP.String(), regAck.Mask.String(), 1420)); err != nil {
 						return err
 					}
 				}

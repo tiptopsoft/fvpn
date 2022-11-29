@@ -11,7 +11,7 @@ type RegPacketAck struct {
 	common.CommonPacket                  //8 byte
 	RegMac              net.HardwareAddr //6 byte
 	AutoIP              net.IP           //4byte
-	Mask                net.IPMask
+	Mask                net.IP
 }
 
 func NewPacket() RegPacketAck {

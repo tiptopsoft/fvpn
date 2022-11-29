@@ -20,7 +20,7 @@ var (
 type Endpoint struct {
 	Mac  net.HardwareAddr
 	IP   net.IP
-	Mask net.IPMask
+	Mask net.IP
 }
 
 //AddrCache 存储到map里
@@ -49,7 +49,7 @@ func New(srcMac string) (*Endpoint, error) {
 			num++
 		}
 		ip := net.ParseIP(GenerateIP(num))
-		_, ipMask, err := net.ParseCIDR("255.255.255.0/24")
+		ipMask, _, err := net.ParseCIDR("255.255.255.0/24")
 
 		if err != nil {
 			log.Logger.Errorf("invalid cidr.")
@@ -61,7 +61,7 @@ func New(srcMac string) (*Endpoint, error) {
 			Endpoint: Endpoint{
 				Mac:  mac,
 				IP:   ip,
-				Mask: ipMask.Mask,
+				Mask: ipMask,
 			},
 		}
 		ipNumber.Store(num)
