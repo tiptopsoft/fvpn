@@ -13,7 +13,7 @@ import (
 func (es *EdgeStar) unregister(conn net.Conn) error {
 	var err error
 	p := common.NewPacket()
-	p.Flags = option.MSG_TYPE_UNREGISTER_SUPER
+	p.Flags = option.MsgTypeUnregisterSuper
 	p.TTL = common.DefaultTTL
 	rp := register.NewPacket()
 	hw, _ := net.ParseMAC(es.MacAddr)

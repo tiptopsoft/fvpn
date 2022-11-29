@@ -37,7 +37,7 @@ func (es *EdgeStar) process(conn net.Conn) error {
 			}
 
 			switch cp.Flags {
-			case option.MSG_TYPE_REGISTER_ACK:
+			case option.MsgTypeRegisterAck:
 				regAck, err := ack.Decode(udpBytes)
 				if err != nil {
 					return err
@@ -56,7 +56,7 @@ func (es *EdgeStar) process(conn net.Conn) error {
 				}
 				ch <- 2
 				break
-			case option.MSG_TYPE_PEER_INFO:
+			case option.MsgTypePeerInfo:
 				//get peerInfo
 				peerPacketAck, err := peerack.Decode(udpBytes)
 				if err != nil {

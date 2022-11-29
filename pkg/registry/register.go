@@ -45,7 +45,7 @@ func ackBuilder(cp common.CommonPacket) ([]byte, error) {
 	p.RegMac = endpoint.Mac
 	p.AutoIP = endpoint.IP
 	p.Mask = endpoint.Mask
-	cp.Flags = option.MSG_TYPE_REGISTER_ACK
+	cp.Flags = option.MsgTypeRegisterAck
 	p.CommonPacket = cp
 
 	return ack.Encode(p)

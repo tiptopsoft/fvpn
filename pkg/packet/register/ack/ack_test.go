@@ -32,7 +32,7 @@ func TestNewPacket(t *testing.T) {
 	fmt.Println(ipsize)
 	p.AutoIP = vip
 	p.Mask = net.ParseIP(Mask)
-	cp.Flags = option.MSG_TYPE_REGISTER_ACK
+	cp.Flags = option.MsgTypeRegisterAck
 	p.CommonPacket = cp
 
 	fmt.Println(Encode(p))

@@ -38,7 +38,7 @@ func TapHandle(fd uintptr, name string) {
 		if dst.P2p == 2 {
 			// through supernode
 			cp := common.NewPacket()
-			cp.Flags = option.MSG_TYPE_PACKET
+			cp.Flags = option.MsgTypePacket
 
 			fp := forward.NewPacket()
 			fp.CommonPacket = cp

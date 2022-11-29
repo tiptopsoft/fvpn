@@ -8,7 +8,7 @@ import (
 
 func (es *EdgeStar) queryPeer(conn net.Conn) error {
 	cp := common.NewPacket()
-	cp.Flags = option.MSG_TYPE_PEER_INFO
+	cp.Flags = option.MsgTypePeerInfo
 
 	data, err := common.Encode(cp)
 	if err != nil {
