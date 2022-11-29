@@ -49,7 +49,6 @@ func (edge EdgeStar) Start() error {
 		break
 	case 3: // start to init connect to dst
 		m.Range(func(key, value any) bool {
-
 			return true
 		})
 		break

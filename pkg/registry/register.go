@@ -22,7 +22,7 @@ func (r *RegStar) processRegister(addr *net.UDPAddr, conn *net.UDPConn, data []b
 		log.Logger.Errorf("registry failed. err: %v", err)
 	}
 	// build a ack
-	f, err := ackBuilder(regPacket.CommonPacket)
+	f, err := ackBuilder(regPacket)
 	log.Logger.Infof("build a registry ack: %v", f)
 	if err != nil {
 		log.Logger.Errorf("build resp p failed. err: %v", err)
@@ -35,8 +35,8 @@ func (r *RegStar) processRegister(addr *net.UDPAddr, conn *net.UDPConn, data []b
 	<-limitChan
 }
 
-func ackBuilder(cp common.CommonPacket) ([]byte, error) {
-	endpoint, err := New()
+func ackBuilder(rp register.RegPacket) ([]byte, error) {
+	endpoint, err := New(rp.SrcMac.String())
 	if err != nil {
 		return nil, err
 	}
@@ -45,8 +45,8 @@ func ackBuilder(cp common.CommonPacket) ([]byte, error) {
 	p.RegMac = endpoint.Mac
 	p.AutoIP = endpoint.IP
 	p.Mask = endpoint.Mask
-	cp.Flags = option.MsgTypeRegisterAck
-	p.CommonPacket = cp
+	rp.CommonPacket.Flags = option.MsgTypeRegisterAck
+	p.CommonPacket = rp.CommonPacket
 
 	return ack.Encode(p)
 }

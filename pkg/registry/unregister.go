@@ -20,7 +20,7 @@ func (r *RegStar) processUnregister(addr *net.UDPAddr, conn *net.UDPConn, data [
 		log.Logger.Errorf("registry failed. err: %v", err)
 	}
 	// build a ack
-	f, err := ackBuilder(regPacket.CommonPacket)
+	f, err := ackBuilder(regPacket)
 	log.Logger.Infof("build a registry ack: %v", f)
 	if err != nil {
 		log.Logger.Errorf("build resp p failed. err: %v", err)

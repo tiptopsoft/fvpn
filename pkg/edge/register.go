@@ -15,7 +15,7 @@ func (es *EdgeStar) register(conn net.Conn) error {
 	p.Flags = option.MsgTypeRegisterSuper
 	p.TTL = common.DefaultTTL
 	rp := register.NewPacket()
-	hw, _ := net.ParseMAC(es.MacAddr)
+	hw, _ := net.ParseMAC(GetLocalMacAddr())
 
 	rp.SrcMac = hw
 	rp.CommonPacket = p

@@ -5,12 +5,17 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/interstellar-cloud/star/pkg/log"
+	"go.uber.org/atomic"
 	"math/rand"
 	"net"
 	"sync"
 )
 
-var ipMap sync.Map
+var (
+	ipMap    sync.Map
+	ipNumber atomic.Uint32
+)
 
 type Endpoint struct {
 	Mac  net.HardwareAddr
@@ -18,34 +23,58 @@ type Endpoint struct {
 	Mask net.IPMask
 }
 
+//AddrCache 存储到map里
+type AddrCache struct {
+	Group    [4]byte
+	SrcMac   string
+	Endpoint Endpoint
+}
+
 // New generate a endpoint
-func New() (*Endpoint, error) {
+func New(srcMac string) (*Endpoint, error) {
 	macStr := fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", 0x52, 0x54, 0x00, rand.Intn(0xff), rand.Intn(0xff), rand.Intn(0xff))
 	mac, err := net.ParseMAC(macStr)
 	if err != nil {
 		return nil, errors.New("new mac failed")
 	}
 
-	var ip1 any
+	var ac any
 	var ok bool
-	ip1, ok = ipMap.Load("ip")
+	ac, ok = ipMap.Load(srcMac)
 	if !ok {
-		ip1 = string2Long("192.168.0.1")
+		num := ipNumber.Load()
+		if num == 0 {
+			num = string2Long("192.168.0.1")
+		} else {
+			num++
+		}
+		ip := net.ParseIP(GenerateIP(num))
+		_, ipMask, err := net.ParseCIDR("255.255.255.0/24")
+
+		if err != nil {
+			log.Logger.Errorf("invalid cidr.")
+			return nil, errors.New("invalid cidr")
+		}
+		ac = AddrCache{
+			Group:  [4]byte{},
+			SrcMac: srcMac,
+			Endpoint: Endpoint{
+				Mac:  mac,
+				IP:   ip,
+				Mask: ipMask.Mask,
+			},
+		}
+		ipNumber.Store(num)
+		ipMap.Store(srcMac, ac)
 	} else {
-		ip1 = ip1.(uint64) + 1
-		ipMap.Store("ip", ip1)
+		cache := ac.(AddrCache)
+		ip := net.ParseIP(GenerateIP(ipNumber.Load()))
+		cache.Endpoint.IP = ip
+		ipMap.Store(srcMac, cache)
 	}
 
-	ip := net.ParseIP(GenerateIP(ip1.(uint32)))
-	_, ipMask, err := net.ParseCIDR("255.255.255.0/24")
-	if err != nil {
-		return nil, err
-	}
-	return &Endpoint{
-		Mac:  mac,
-		IP:   ip,
-		Mask: ipMask.Mask,
-	}, nil
+	res := ac.(AddrCache)
+	return &res.Endpoint, nil
 }
 
 //ip到数字
