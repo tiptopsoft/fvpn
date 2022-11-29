@@ -15,45 +15,48 @@ import (
 // Read a single packet from the TAP interface, process it and write out the corresponding packet to the cooked socket.
 func TapHandle(fd uintptr, name string) {
 
-	b := make([]byte, option.STAR_PKT_BUFF_SIZE)
-	file := os.NewFile(fd, name)
+	for {
+		b := make([]byte, option.STAR_PKT_BUFF_SIZE)
+		file := os.NewFile(fd, name)
 
-	n, err := file.Read(b)
-	if err != nil {
-		log.Logger.Errorf("dev: %s read tap byte failed. ", name)
-	}
-	log.Logger.Infof("Tap dev: %s receive: %d byte", name, n)
-
-	mac := getMacAddr(b)
-
-	// get dest
-	info, ok := m.Load(mac)
-	dst := info.(ack.PeerInfo)
-	if ok {
-		//check it is use supernode or p2p
-		if dst.P2p == 1 {
-			// p2p
+		n, err := file.Read(b)
+		if err != nil {
+			log.Logger.Errorf("dev: %s read tap byte failed. ", name)
 		}
+		log.Logger.Infof("Tap dev: %s receive: %d byte", name, n)
 
-		if dst.P2p == 2 {
-			// through supernode
-			cp := common.NewPacket()
-			cp.Flags = option.MsgTypePacket
+		mac := getMacAddr(b)
 
-			fp := forward.NewPacket()
-			fp.CommonPacket = cp
-			bs, err := forward.Encode(fp)
-			if err != nil {
-				log.Logger.Errorf("encode forward failed. err: %v", err)
+		// get dest
+		info, ok := m.Load(mac)
+		dst := info.(ack.PeerInfo)
+		if ok {
+			//check it is use supernode or p2p
+			if dst.P2p == 1 {
+				// p2p
 			}
 
-			idx := 0
-			packet.EncodeBytes(b, bs, idx)
+			if dst.P2p == 2 {
+				// through supernode
+				cp := common.NewPacket()
+				cp.Flags = option.MsgTypePacket
 
-			packet.SendPacket(b, mac)
+				fp := forward.NewPacket()
+				fp.CommonPacket = cp
+				bs, err := forward.Encode(fp)
+				if err != nil {
+					log.Logger.Errorf("encode forward failed. err: %v", err)
+				}
+
+				idx := 0
+				packet.EncodeBytes(b, bs, idx)
+
+				packet.SendPacket(b, mac)
+			}
+
 		}
-
 	}
+
 }
 
 func getMacAddr(buf []byte) string {

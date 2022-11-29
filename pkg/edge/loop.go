@@ -52,6 +52,11 @@ func (es *EdgeStar) process(conn net.Conn) error {
 					if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", tap.Name, regAck.AutoIP.String(), regAck.Mask.String(), 1420)); err != nil {
 						return err
 					}
+
+					// tap handler start
+					go func() {
+						TapHandle(es.tap.Fd, tap.Name)
+					}()
 				}
 				ch <- 2
 				break
