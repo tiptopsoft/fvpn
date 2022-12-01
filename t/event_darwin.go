@@ -1,9 +1,13 @@
-package t
+package main
 
 import (
+	"bufio"
 	"fmt"
+	"log"
 	"net"
+	"os"
 	"strconv"
+	"strings"
 	"syscall"
 )
 
@@ -100,11 +104,88 @@ func NewEventLoop(s *Socket) (*EventLoop, error) {
 
 type Handler func(socket *Socket)
 
-func (eventloop EventLoop) Handle(handler Handler) {
+func (eventLoop EventLoop) Handle(handler Handler) {
 
+	for {
+		newEvents := make([]syscall.Kevent_t, 10)
+		numNewEvents, err := syscall.Kevent(
+			eventLoop.KqueueFileDescriptor,
+			nil,
+			newEvents,
+			nil,
+		)
+		if err != nil {
+			continue
+		}
+
+		for i := 0; i < numNewEvents; i++ {
+			currentEvent := newEvents[i]
+			eventFileDescriptor := int(currentEvent.Ident)
+
+			if currentEvent.Flags&syscall.EV_EOF != 0 {
+				// client closing connection
+				syscall.Close(eventFileDescriptor)
+			} else if eventFileDescriptor == eventLoop.SocketFileDescriptor {
+				// new incoming connection
+				socketConnection, _, err := syscall.Accept(eventFileDescriptor)
+				if err != nil {
+					continue
+				}
+
+				socketEvent := syscall.Kevent_t{
+					Ident:  uint64(socketConnection),
+					Filter: syscall.EVFILT_READ,
+					Flags:  syscall.EV_ADD,
+					Fflags: 0,
+					Data:   0,
+					Udata:  nil,
+				}
+				socketEventRegistered, err := syscall.Kevent(
+					eventLoop.KqueueFileDescriptor,
+					[]syscall.Kevent_t{socketEvent},
+					nil,
+					nil,
+				)
+				if err != nil || socketEventRegistered == -1 {
+					continue
+				}
+			} else if currentEvent.Filter&syscall.EVFILT_READ != 0 {
+				// data available -> forward to handler
+				handler(&Socket{
+					FileDescriptor: int(eventFileDescriptor),
+				})
+			}
+
+			// ignore all other events
+		}
+	}
 }
 
 func main() {
 
-	syscall.Kqueue()
+	s, err := Listen("127.0.0.1", 8080)
+	if err != nil {
+		log.Println("Failed to create Socket:", err)
+		os.Exit(1)
+	}
+
+	eventLoop, err := NewEventLoop(s)
+	if err != nil {
+		log.Println("Failed to create event loop:", err)
+		os.Exit(1)
+	}
+
+	log.Println("Server started. Waiting for incoming connections. ^C to exit.")
+
+	eventLoop.Handle(func(s *Socket) {
+		reader := bufio.NewReader(s)
+		for {
+			line, err := reader.ReadString('\n')
+			if err != nil || strings.TrimSpace(line) == "" {
+				break
+			}
+			s.Write([]byte(line))
+		}
+		s.Close()
+	})
 }
