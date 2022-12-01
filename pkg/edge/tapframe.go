@@ -8,8 +8,11 @@ import (
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"github.com/interstellar-cloud/star/pkg/packet/forward"
 	"github.com/interstellar-cloud/star/pkg/packet/peer/ack"
+	"io"
 	"os"
 )
+
+var tapChannel = make(chan byte, 2048)
 
 // TapHandle  use to handle tap frame, write to udp sock.
 // Read a single packet from the TAP interface, process it and write out the corresponding packet to the cooked socket.
@@ -20,7 +23,9 @@ func TapHandle(fd uintptr, name string) {
 		file := os.NewFile(fd, name)
 
 		n, err := file.Read(b)
-		if err != nil {
+		if err != nil && err == io.EOF {
+			continue
+		} else {
 			log.Logger.Errorf("dev: %s read tap byte failed. ", name)
 		}
 		log.Logger.Infof("Tap dev: %s receive: %d byte", name, n)
