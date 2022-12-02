@@ -4,6 +4,7 @@ import (
 	"github.com/interstellar-cloud/star/pkg/device"
 	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/option"
+	"github.com/interstellar-cloud/star/pkg/socket"
 	"net"
 	"os"
 )
@@ -32,6 +33,15 @@ func (edge EdgeStar) Start() error {
 		return err
 	}
 
+	s, err := socket.NewSocket(conn.(*net.UDPConn))
+	if err != nil {
+		return err
+	}
+
+	eventLoop, err := socket.NewEventLoop(s)
+	if err != nil {
+		return err
+	}
 	ch <- 1
 	// registry to registry
 	switch <-ch {
@@ -48,27 +58,13 @@ func (edge EdgeStar) Start() error {
 		}
 		break
 	case 3: // start to init connect to dst
-		m.Range(func(key, value any) bool {
+		option.AddrMap.Range(func(key, value any) bool {
 			return true
 		})
 		break
 	}
 
-	err = edge.process(conn)
-	if err != nil {
-		log.Logger.Errorf("process failed, err:%v", err)
-		// re start a goroutine.
-	}
-
-	//run loop process udp
-	//time.Sleep(1000 * 3)
-	//go func() {
-	//	err = edge.process(conn)
-	//	if err != nil {
-	//		log.Logger.Errorf("process failed, err:%v", err)
-	//		// re start a goroutine.
-	//	}
-	//}()
+	eventLoop.EventLoop()
 
 	if <-stopCh > 0 {
 		log.Logger.Infof("edge stop success")

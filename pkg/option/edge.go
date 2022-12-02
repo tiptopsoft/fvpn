@@ -1,5 +1,7 @@
 package option
 
+import "sync"
+
 // EdgeConfig read from a config file or cmd flags, or can be assgined from a registry after got the registry ack.
 type EdgeConfig struct {
 	Registry string   `mapstructure:"registry"`
@@ -14,3 +16,7 @@ type EdgeConfig struct {
 func EdgeDefault() *EdgeConfig {
 	return &EdgeConfig{}
 }
+
+var (
+	AddrMap sync.Map
+)

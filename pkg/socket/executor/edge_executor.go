@@ -1,4 +1,4 @@
-package edge
+package executor
 
 import (
 	"fmt"
@@ -8,19 +8,25 @@ import (
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	peerack "github.com/interstellar-cloud/star/pkg/packet/peer/ack"
 	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
+	"github.com/interstellar-cloud/star/pkg/socket"
 	"io"
 	"net"
-	"sync"
 )
 
-var m sync.Map
+type EdgeExecutor struct {
+	Tap      *device.Tuntap
+	Protocol option.Protocol
+	*socket.EventLoop
+}
 
-func (es *EdgeStar) process(conn net.Conn) error {
+func (ee EdgeExecutor) Execute(socket socket.Socket) error {
 
-	if es.Protocol == option.UDP {
+	if ee.Protocol == option.UDP {
+
 		for {
 			udpBytes := make([]byte, 2048)
-			_, _, err := conn.(*net.UDPConn).ReadFromUDP(udpBytes)
+			//_, _, err := conn.(*net.UDPConn).ReadFromUDP(udpBytes)
+			_, err := socket.Read(udpBytes)
 			if err != nil {
 				if err == io.EOF {
 					//no data exists, continue read next frame.
@@ -36,6 +42,13 @@ func (es *EdgeStar) process(conn net.Conn) error {
 				log.Logger.Errorf("decode err: %v", err)
 			}
 
+			// Socket
+			if socket.FileDescriptor == ee.SocketFileDescriptor {
+
+			} else { //TAP
+
+			}
+
 			switch cp.Flags {
 			case option.MsgTypeRegisterAck:
 				regAck, err := ack.Decode(udpBytes)
@@ -47,18 +60,16 @@ func (es *EdgeStar) process(conn net.Conn) error {
 				if tap, err := device.New(device.TAP); err != nil {
 					return err
 				} else {
-					es.tap = tap
+					ee.Tap = tap
 					//设置IP
 					if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", tap.Name, regAck.AutoIP.String(), regAck.Mask.String(), 1420)); err != nil {
 						return err
 					}
 
-					// tap handler start
-					go func() {
-						TapHandle(es.tap.Fd, tap.Name)
-					}()
+					if err := ee.TapFd(int(tap.Fd)); err != nil {
+						return err
+					}
 				}
-				ch <- 2
 				break
 			case option.MsgTypePeerInfo:
 				//get peerInfo
@@ -73,10 +84,8 @@ func (es *EdgeStar) process(conn net.Conn) error {
 					if err != nil {
 						log.Logger.Errorf("resolve addr failed. err: %v", err)
 					}
-					m.Store(v.Mac.String(), addr)
+					option.AddrMap.Store(v.Mac.String(), addr)
 				}
-
-				ch <- 3
 
 				break
 			}
