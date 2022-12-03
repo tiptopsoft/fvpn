@@ -7,7 +7,7 @@ import (
 )
 
 func NewEventLoop(socket *Socket) (*EventLoop, error) {
-	epfd, err := syscall.EpollCreate(0)
+	epfd, err := syscall.EpollCreate1(0)
 	if err != nil {
 		return nil, fmt.Errorf("create epoll fd failed: (%v)", err)
 	}
