@@ -1,4 +1,4 @@
-package executor
+package socket
 
 import (
 	"fmt"
@@ -8,7 +8,6 @@ import (
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	peerack "github.com/interstellar-cloud/star/pkg/packet/peer/ack"
 	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
-	"github.com/interstellar-cloud/star/pkg/socket"
 	"io"
 	"net"
 )
@@ -16,10 +15,10 @@ import (
 type EdgeExecutor struct {
 	Tap      *device.Tuntap
 	Protocol option.Protocol
-	*socket.EventLoop
+	*EventLoop
 }
 
-func (ee EdgeExecutor) Execute(socket socket.Socket) error {
+func (ee EdgeExecutor) Execute(socket Socket) error {
 
 	if ee.Protocol == option.UDP {
 
