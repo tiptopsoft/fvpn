@@ -12,11 +12,21 @@ func NewEventLoop(socket *Socket) (*EventLoop, error) {
 		return nil, fmt.Errorf("create epoll fd failed: (%v)", err)
 	}
 
-	return &EventLoop{
+	eventLoop := &EventLoop{
 		EpollFileDescriptor:  epfd,
 		SocketFileDescriptor: socket.FileDescriptor,
-	}, nil
+	}
 
+	var event syscall.EpollEvent
+	event.Events = syscall.EPOLLIN
+	event.Fd = int32(socket.FileDescriptor)
+
+	//join epfd
+	if err := syscall.EpollCtl(eventLoop.EpollFileDescriptor, syscall.EPOLL_CTL_ADD, socket.FileDescriptor, &event); err != nil {
+		return nil, fmt.Errorf("add server fd to epoll failed: (%v)", err)
+	}
+
+	return eventLoop, nil
 }
 
 func (eventLoop *EventLoop) TapFd(fd int) error {
@@ -26,7 +36,7 @@ func (eventLoop *EventLoop) TapFd(fd int) error {
 
 	//join epfd
 	if err := syscall.EpollCtl(eventLoop.EpollFileDescriptor, syscall.EPOLL_CTL_ADD, fd, &event); err != nil {
-		return fmt.Errorf("add server fd to epoll failed: (%v)", err)
+		return fmt.Errorf("add tap fd to epoll failed: (%v)", err)
 	}
 
 	eventLoop.TapFileDescriptor = fd

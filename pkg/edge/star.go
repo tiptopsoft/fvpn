@@ -39,9 +39,11 @@ func (edge EdgeStar) Start() error {
 	}
 
 	eventLoop, err := socket.NewEventLoop(s)
+
 	if err != nil {
 		return err
 	}
+	go eventLoop.EventLoop()
 	ch <- 1
 	// registry to registry
 	switch <-ch {
@@ -63,8 +65,6 @@ func (edge EdgeStar) Start() error {
 		})
 		break
 	}
-
-	eventLoop.EventLoop()
 
 	if <-stopCh > 0 {
 		log.Logger.Infof("edge stop success")
