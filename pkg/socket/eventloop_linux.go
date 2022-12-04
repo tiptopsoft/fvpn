@@ -58,11 +58,11 @@ func (eventLoop *EventLoop) EventLoop() {
 		for ev := 0; ev < nevents; ev++ {
 			fd := eventLoop.events[ev].Fd
 			var e Executor
-			if int(eventLoop.events[ev].Fd) == eventLoop.SocketFileDescriptor {
+			if int(fd) == eventLoop.SocketFileDescriptor {
 				e = TapExecutor{}
 			}
 
-			if int(eventLoop.events[ev].Fd) == eventLoop.TapFileDescriptor {
+			if int(fd) == eventLoop.TapFileDescriptor {
 				e = TapExecutor{}
 			}
 
