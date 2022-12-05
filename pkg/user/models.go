@@ -25,7 +25,7 @@ type Order struct {
 	Invalid           bool
 }
 
-// UserIP use to store user's device ip
+// UserIP use to store user's tuntap ip
 type UserIP struct {
 	gorm.Model
 	UserId string

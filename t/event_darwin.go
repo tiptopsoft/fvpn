@@ -92,7 +92,7 @@ func NewEventLoop(s *Socket) (*EventLoop, error) {
 	changeEventRegistered, err := syscall.Kevent(kqueue, []syscall.Kevent_t{changeEvent}, nil, nil)
 
 	if err != nil || changeEventRegistered == -1 {
-		return nil, fmt.Errorf("failed to register change event (%v)", err)
+		return nil, fmt.Errorf("failed to register change eventloop (%v)", err)
 	}
 
 	return &EventLoop{
@@ -171,7 +171,7 @@ func main() {
 
 	eventLoop, err := NewEventLoop(s)
 	if err != nil {
-		log.Println("Failed to create event loop:", err)
+		log.Println("Failed to create eventloop loop:", err)
 		os.Exit(1)
 	}
 

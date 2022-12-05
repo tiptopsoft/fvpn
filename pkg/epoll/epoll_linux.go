@@ -1,23 +1,24 @@
-package socket
+package epoll
 
 import (
 	"fmt"
+	"github.com/interstellar-cloud/star/pkg/socket"
 	"net"
 	"syscall"
 )
 
-func NewSocket(conn *net.UDPConn) (*Socket, error) {
+func NewSocket(conn *net.UDPConn) (*socket.Socket, error) {
 	file, err := conn.File()
 
 	if err != nil {
 		return nil, err
 	}
-	return &Socket{FileDescriptor: int(file.Fd())}, nil
+	return &socket.Socket{FileDescriptor: int(file.Fd())}, nil
 }
 
 // Listen use linux epoll
-func Listen(ip string, port int) (*Socket, error) {
-	socket := &Socket{}
+func Listen(ip string, port int) (*socket.Socket, error) {
+	socket := &socket.Socket{}
 
 	socketFileDescriptor, err := syscall.Socket(syscall.AF_INET, syscall.O_NONBLOCK|syscall.SOCK_DGRAM, 0)
 	if err != nil {

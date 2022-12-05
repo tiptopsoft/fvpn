@@ -1,22 +1,22 @@
-package device
+package tuntap
 
 import (
 	"errors"
 	"fmt"
 	"github.com/interstellar-cloud/star/pkg/option"
+	"github.com/interstellar-cloud/star/pkg/socket"
 	"golang.org/x/sys/unix"
-	"io"
 	"net"
 	"os"
 	"syscall"
 	"unsafe"
 )
 
-// Tuntap a device for net
+// Tuntap a tuntap for net
 type Tuntap struct {
-	Fd   uintptr
-	Name string
-	io.ReadWriteCloser
+	Fd      uintptr
+	Name    string
+	Socket  socket.Socket
 	Mode    Mode
 	MacAddr string
 }
@@ -113,10 +113,10 @@ func New(mode Mode) (*Tuntap, error) {
 	fmt.Println("Successfully connect to tun/tap interface:", name)
 
 	return &Tuntap{
-		file.Fd(),
-		name,
-		os.NewFile(file.Fd(), name),
-		mode, "",
+		Fd:     file.Fd(),
+		Name:   name,
+		Socket: socket.Socket{FileDescriptor: int(file.Fd())},
+		Mode:   mode,
 	}, nil
 }
 

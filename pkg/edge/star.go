@@ -1,17 +1,17 @@
 package edge
 
 import (
-	"github.com/interstellar-cloud/star/pkg/device"
+	"github.com/interstellar-cloud/star/pkg/epoll"
 	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/option"
-	"github.com/interstellar-cloud/star/pkg/socket"
+	"github.com/interstellar-cloud/star/pkg/tuntap"
 	"net"
 	"os"
 )
 
 type EdgeStar struct {
 	*option.EdgeConfig
-	tap *device.Tuntap
+	tap *tuntap.Tuntap
 }
 
 var (
@@ -33,12 +33,12 @@ func (edge EdgeStar) Start() error {
 		return err
 	}
 
-	s, err := socket.NewSocket(conn.(*net.UDPConn))
+	s, err := epoll.NewSocket(conn.(*net.UDPConn))
 	if err != nil {
 		return err
 	}
 
-	eventLoop, err := socket.NewEventLoop(s)
+	eventLoop, err := epoll.NewEventLoop(s)
 
 	if err != nil {
 		return err

@@ -1,4 +1,4 @@
-package device
+package tuntap
 
 const (
 	SYS_IOCTL     = 29

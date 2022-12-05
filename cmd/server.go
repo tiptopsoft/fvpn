@@ -14,7 +14,7 @@ func SuperCmd() *cobra.Command {
 	var opts serverOptions
 	cmd := &cobra.Command{
 		Use:   "serve",
-		Short: "remove a device",
+		Short: "remove a tuntap",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 
 			return nil
