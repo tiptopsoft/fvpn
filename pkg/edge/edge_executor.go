@@ -1,4 +1,4 @@
-package epoll
+package edge
 
 import (
 	"fmt"
@@ -16,7 +16,6 @@ import (
 type EdgeExecutor struct {
 	Tap      *tuntap.Tuntap
 	Protocol option.Protocol
-	*EventLoop
 }
 
 func (ee EdgeExecutor) Execute(socket socket.Socket) error {
@@ -51,18 +50,10 @@ func (ee EdgeExecutor) Execute(socket socket.Socket) error {
 			}
 			log.Logger.Infof("got registry registry ack: %v", regAck)
 			//create tap tuntap
-			if tap, err := tuntap.New(tuntap.TAP); err != nil {
-				return err
-			} else {
-				ee.Tap = tap
-				//设置IP
-				if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", tap.Name, regAck.AutoIP.String(), regAck.Mask.String(), 1420)); err != nil {
-					return err
-				}
 
-				if err := ee.TapFd(tap.Socket); err != nil {
-					return err
-				}
+			//设置IP
+			if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", ee.Tap.Name, regAck.AutoIP.String(), regAck.Mask.String(), 1420)); err != nil {
+				return err
 			}
 			break
 		case option.MsgTypePeerInfo:

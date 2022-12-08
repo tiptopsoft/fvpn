@@ -1,7 +1,6 @@
 package edge
 
 import (
-	"github.com/interstellar-cloud/star/pkg/epoll"
 	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/tuntap"
@@ -33,17 +32,6 @@ func (edge EdgeStar) Start() error {
 		return err
 	}
 
-	s, err := epoll.NewSocket(conn.(*net.UDPConn))
-	if err != nil {
-		return err
-	}
-
-	eventLoop, err := epoll.NewEventLoop(s)
-
-	if err != nil {
-		return err
-	}
-	go eventLoop.EventLoop()
 	ch <- 1
 	// registry to registry
 	switch <-ch {
@@ -65,6 +53,19 @@ func (edge EdgeStar) Start() error {
 		})
 		break
 	}
+
+	netFile, err := conn.(*net.UDPConn).File()
+	if err != nil {
+		log.Logger.Errorf("get conn fd failed: (%v)", err)
+	}
+
+	tap, err := tuntap.New(tuntap.TAP)
+	if err != nil {
+		log.Logger.Errorf("create or connect tuntap failed. (%v)", err)
+	}
+
+	eventLoop := EventLoop{Tap: tap}
+	eventLoop.eventLoop(int(netFile.Fd()), int(tap.Fd))
 
 	if <-stopCh > 0 {
 		log.Logger.Infof("edge stop success")

@@ -1,7 +1,7 @@
 package socket
 
 import (
-	"syscall"
+	"golang.org/x/sys/unix"
 )
 
 //Socket use to wrap FileDescriptor
@@ -10,7 +10,7 @@ type Socket struct {
 }
 
 func (socket Socket) Read(bytes []byte) (n int, err error) {
-	n, err = syscall.Read(socket.FileDescriptor, bytes)
+	n, err = unix.Read(socket.FileDescriptor, bytes)
 	if err != nil {
 		return 0, err
 	}
@@ -18,7 +18,7 @@ func (socket Socket) Read(bytes []byte) (n int, err error) {
 }
 
 func (socket Socket) Write(bytes []byte) (n int, err error) {
-	n, err = syscall.Write(socket.FileDescriptor, bytes)
+	n, err = unix.Write(socket.FileDescriptor, bytes)
 	if err != nil {
 		n = 0
 	}
@@ -26,5 +26,9 @@ func (socket Socket) Write(bytes []byte) (n int, err error) {
 }
 
 func (socket Socket) Close() error {
-	return syscall.Close(socket.FileDescriptor)
+	return unix.Close(socket.FileDescriptor)
+}
+
+type Executor interface {
+	Execute(socket Socket) error
 }

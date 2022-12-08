@@ -1,4 +1,4 @@
-package epoll
+package edge
 
 import (
 	"fmt"
@@ -21,6 +21,7 @@ func (te TapExecutor) Execute(socket socket.Socket) error {
 
 	b := make([]byte, option.STAR_PKT_BUFF_SIZE)
 	n, err := socket.Read(b)
+	log.Logger.Info(fmt.Sprintf("Read from tap %s: %v", te.Name, b))
 	if err != nil {
 		log.Logger.Errorf("tap read failed. (%v)", err)
 		return err
@@ -58,6 +59,17 @@ func (te TapExecutor) Execute(socket socket.Socket) error {
 
 	}
 	return nil
+}
+
+func ReadChannel(socket socket.Socket) (chan byte, error) {
+	result := make(chan byte, 2048)
+	b := make([]byte, 2048)
+	_, err := socket.Read(b)
+	if err != nil {
+		return result, err
+	}
+
+	return result, nil
 }
 
 func getMacAddr(buf []byte) string {
