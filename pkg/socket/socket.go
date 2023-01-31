@@ -2,11 +2,17 @@ package socket
 
 import (
 	"golang.org/x/sys/unix"
+	"net"
 )
 
 //Socket use to wrap FileDescriptor
 type Socket struct {
 	FileDescriptor int
+	UdpSocket      *net.UDPConn
+}
+
+func (socket Socket) ReadFromUdp(bytes []byte) (n int, addr *net.UDPAddr, err error) {
+	return socket.UdpSocket.ReadFromUDP(bytes)
 }
 
 func (socket Socket) Read(bytes []byte) (n int, err error) {

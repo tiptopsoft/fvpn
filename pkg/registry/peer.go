@@ -11,7 +11,6 @@ import (
 )
 
 func (r *RegStar) processPeer(addr *net.UDPAddr, conn *net.UDPConn, data []byte, cp *common.CommonPacket) {
-
 	var p peer.PeerPacket
 	p, err := peer.DecodeWithCommonPacket(data, *cp)
 	if err != nil {

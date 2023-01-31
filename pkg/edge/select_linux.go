@@ -50,7 +50,8 @@ func (eventLoop EventLoop) eventLoop(netFd, tapFd int) {
 				sAny, _ := fdMap.Load(tapFd)
 				s = sAny.(socket.Socket)
 				executor = TapExecutor{
-					Name: eventLoop.Tap.Name,
+					Name:   eventLoop.Tap.Name,
+					Socket: socket.Socket{FileDescriptor: netFd},
 				}
 			}
 

@@ -13,19 +13,19 @@ type Handler interface {
 	Handle(ctx context.Context, udpBytes []byte) error
 }
 
-type Executor struct {
+type ChainHandler struct {
 	handlers []Handler
 }
 
-func NewExecutor() Executor {
-	return Executor{}
+func NewChainHandler() ChainHandler {
+	return ChainHandler{}
 }
 
-func (e Executor) AddHandler(ctx context.Context, handler Handler) {
+func (e ChainHandler) AddHandler(ctx context.Context, handler Handler) {
 	e.handlers = append(e.handlers, handler)
 }
 
-func (e Executor) Execute(ctx context.Context, udpBytes []byte) error {
+func (e ChainHandler) Handle(ctx context.Context, udpBytes []byte) error {
 	for _, h := range e.handlers {
 		if err := h.Handle(ctx, udpBytes); err != nil {
 			return err

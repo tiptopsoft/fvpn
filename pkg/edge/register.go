@@ -20,7 +20,7 @@ func (es *EdgeStar) register(conn net.Conn) error {
 	rp.SrcMac = hw
 	rp.CommonPacket = p
 	data, err := register.Encode(rp)
-	log.Logger.Info("sending data: %v", data)
+	log.Logger.Infof("sending data: %v", data)
 	if err != nil {
 		return err
 	}

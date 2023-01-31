@@ -1,13 +1,13 @@
 star:
   listen: :3000
-  registry: 127.0.0.1:4000
+  registry: :4000
   tap: tap0
   ip: 192.168.1.1
   mask: 255.255.255.0
   mac: 01:02:0f:0E:04:01
   type: udp
 
-#-------------------分害线
+#-------------------分割线
 registry:
   listen: 127.0.0.1:4000
   httpListen: :4009

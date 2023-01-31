@@ -9,7 +9,7 @@ import (
 )
 
 var once sync.Once
-var socket sync.Map
+var socketMap sync.Map
 
 func (r *RegStar) forward(data []byte, cp *common.CommonPacket) {
 
@@ -23,7 +23,7 @@ func (r *RegStar) forward(data []byte, cp *common.CommonPacket) {
 	if addr, ok := m.Load(fp.DstMac); !ok {
 		log.Logger.Errorf("dst has not registerd in registry. addr: %s", addr)
 	} else {
-		if sock, ok := socket.Load(fp.DstMac); !ok {
+		if sock, ok := socketMap.Load(fp.DstMac); !ok {
 			once.Do(func() {
 
 				conn, err := net.Dial("udp", addr.(*net.UDPAddr).String())
@@ -31,7 +31,7 @@ func (r *RegStar) forward(data []byte, cp *common.CommonPacket) {
 					log.Logger.Errorf("dial remote edge failed. err: %v", err)
 				}
 				sock = conn
-				socket.Store(fp.DstMac, conn)
+				socketMap.Store(fp.DstMac, conn)
 			})
 		} else {
 			_, err := sock.(*net.UDPConn).Write(data)

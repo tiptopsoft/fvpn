@@ -3,12 +3,14 @@ package registry
 import (
 	"context"
 	"fmt"
+	"github.com/interstellar-cloud/star/pkg/epoll"
 	"github.com/interstellar-cloud/star/pkg/handler"
 	"github.com/interstellar-cloud/star/pkg/handler/auth"
 	"github.com/interstellar-cloud/star/pkg/handler/encrypt"
 	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
+	"github.com/interstellar-cloud/star/pkg/socket"
 	"net"
 	"sync"
 )
@@ -28,7 +30,7 @@ type Node struct {
 //RegStar use as registry
 type RegStar struct {
 	*option.RegConfig
-	handler.Executor
+	handler.ChainHandler
 	conn net.Conn
 }
 
@@ -40,7 +42,7 @@ func (r *RegStar) Start(address string) error {
 func (r *RegStar) start(address string) error {
 	var ctx = context.Background()
 	var conn net.Conn
-	r.Executor = handler.NewExecutor()
+	r.ChainHandler = handler.NewChainHandler()
 	if r.OpenAuth {
 		r.AddHandler(ctx, &auth.AuthHandler{})
 	}
@@ -57,7 +59,7 @@ func (r *RegStar) start(address string) error {
 		}
 
 		conn, err = net.ListenUDP("udp", addr)
-
+		r.conn = conn
 		log.Logger.Infof("registry start at: %s", address)
 
 		//start http
@@ -74,10 +76,19 @@ func (r *RegStar) start(address string) error {
 			return err
 		}
 		defer conn.Close()
-		for {
-			limitChan <- 1
-			go r.handleUdp(ctx, conn.(*net.UDPConn))
+
+		eventLoop, err := epoll.NewEventLoop()
+		eventLoop.Protocol = r.Protocol
+		if err := eventLoop.AddFd(conn); err != nil {
+			log.Logger.Errorf("add fd to epoll failed. (%v)", err)
+			return err
 		}
+
+		if err != nil {
+			return err
+		}
+
+		eventLoop.EventLoop(r)
 	default:
 		log.Logger.Info("this is a tcp server")
 	}
@@ -85,38 +96,32 @@ func (r *RegStar) start(address string) error {
 	return nil
 }
 
-func (r *RegStar) handleUdp(ctx context.Context, conn *net.UDPConn) {
-	for {
-		data := make([]byte, 2048)
-		_, addr, err := conn.ReadFromUDP(data)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		p, err := common.Decode(data)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		//exec executor
-		if err := r.Execute(ctx, data); err != nil {
-			fmt.Println(err)
-		}
-
-		switch p.Flags {
-
-		case option.MsgTypeRegisterSuper:
-			r.processRegister(addr, conn, data, nil)
-			break
-		case option.MsgTypeQueryPeer:
-			r.processPeer(addr, conn, data, &p)
-			break
-		case option.MsgTypePacket:
-			r.forward(data, &p)
-			break
-		}
+func (r *RegStar) Execute(socket socket.Socket) error {
+	data := make([]byte, 2048)
+	_, addr, err := socket.ReadFromUdp(data)
+	if err != nil {
+		fmt.Println(err)
 	}
 
+	p, err := common.Decode(data)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	switch p.Flags {
+
+	case option.MsgTypeRegisterSuper:
+		r.processRegister(addr, socket.UdpSocket, data, nil)
+		break
+	case option.MsgTypeQueryPeer:
+		r.processPeer(addr, socket.UdpSocket, data, &p)
+		break
+	case option.MsgTypePacket:
+		r.forward(data, &p)
+		break
+	}
+
+	return nil
 }
 
 func ResolveAddr(address string) (*net.UDPAddr, error) {

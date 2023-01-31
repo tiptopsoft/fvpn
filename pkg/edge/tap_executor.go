@@ -12,7 +12,8 @@ import (
 )
 
 type TapExecutor struct {
-	Name string
+	Name   string
+	Socket socket.Socket
 }
 
 // Execute TapExecutor  use to handle tap frame, write to udp sock.
@@ -53,23 +54,17 @@ func (te TapExecutor) Execute(socket socket.Socket) error {
 
 			idx := 0
 			packet.EncodeBytes(b, bs, idx)
-
-			packet.SendPacket(b, mac)
+			write2Net(te.Socket, b)
 		}
 
 	}
 	return nil
 }
 
-func ReadChannel(socket socket.Socket) (chan byte, error) {
-	result := make(chan byte, 2048)
-	b := make([]byte, 2048)
-	_, err := socket.Read(b)
-	if err != nil {
-		return result, err
+func write2Net(socket socket.Socket, b []byte) {
+	if _, err := socket.Write(b); err != nil {
+		log.Logger.Errorf("write to remote failed. (%v)", err)
 	}
-
-	return result, nil
 }
 
 func getMacAddr(buf []byte) string {

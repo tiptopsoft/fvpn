@@ -38,7 +38,7 @@ func (s RegistryServer) list() gin.HandlerFunc {
 func (s RegistryServer) addrList() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		var resp = make(map[string]string)
-		socket.Range(func(key, value any) bool {
+		socketMap.Range(func(key, value any) bool {
 			resp[key.(string)] = value.(*net.UDPAddr).String()
 			return true
 		})
