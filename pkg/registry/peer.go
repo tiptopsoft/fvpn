@@ -1,23 +1,15 @@
 package registry
 
 import (
-	"errors"
-	"github.com/interstellar-cloud/star/pkg/packet/common"
-	"github.com/interstellar-cloud/star/pkg/packet/peer"
 	"github.com/interstellar-cloud/star/pkg/packet/peer/ack"
 	"github.com/interstellar-cloud/star/pkg/util/log"
 	"net"
 )
 
-func (r *RegStar) processPeer(addr *net.UDPAddr, conn *net.UDPConn, data []byte, cp *common.CommonPacket) {
-	var p peer.PeerPacket
-	p, err := peer.DecodeWithCommonPacket(data, *cp)
-	if err != nil {
-		log.Logger.Errorf("decode peer packet failed. err: %v", err)
-	}
-
+func (r *RegStar) processPeer(addr *net.UDPAddr, conn *net.UDPConn) {
+	log.Logger.Infof("start to process query peers...")
 	// get peer info
-	peers, size, err := getPeerInfo(p.SrcMac.String())
+	peers, size, err := getPeerInfo()
 	if err != nil {
 		log.Logger.Errorf("get peers from registry failed. err: %v", err)
 	}
@@ -31,29 +23,24 @@ func (r *RegStar) processPeer(addr *net.UDPAddr, conn *net.UDPConn, data []byte,
 	if err != nil {
 		log.Logger.Errorf("registry write failed. err: %v", err)
 	}
-	<-limitChan
+
+	log.Logger.Infof("finish process query peers. (%v)", f)
 }
 
-func getPeerInfo(mac string) ([]ack.PeerInfo, uint8, error) {
-	m1, err := net.ParseMAC(mac)
-	if err != nil {
-		return nil, 0, errors.New("invalid mac")
-	}
+func getPeerInfo() ([]ack.PeerInfo, uint8, error) {
 	var result []ack.PeerInfo
-	res, ok := m.Load(mac)
-	if !ok {
-		return nil, 0, errors.New("peer not found")
-	}
+	m.Range(func(mac, pub any) bool {
+		a := pub.(*net.UDPAddr)
+		info := ack.PeerInfo{
+			Mac:  []byte(mac.(string)),
+			Host: a.IP,
+			Port: uint16(a.Port),
+		}
+		result = append(result, info)
+		return true
+	})
 
-	a := res.(*net.UDPAddr)
-
-	info := ack.PeerInfo{
-		Mac:  m1,
-		Host: a.IP,
-		Port: uint16(a.Port),
-	}
-	result = append(result, info)
-	return result, 1, nil
+	return result, uint8(len(result)), nil
 }
 
 func peerAckBuild(infos []ack.PeerInfo, size uint8) ([]byte, error) {
