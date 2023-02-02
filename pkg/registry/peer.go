@@ -10,6 +10,7 @@ func (r *RegStar) processPeer(addr *net.UDPAddr, conn *net.UDPConn) {
 	log.Logger.Infof("start to process query peers...")
 	// get peer info
 	peers, size, err := getPeerInfo()
+	log.Logger.Infof("registry peers: (%v), size: (%v)", peers, size)
 	if err != nil {
 		log.Logger.Errorf("get peers from registry failed. err: %v", err)
 	}

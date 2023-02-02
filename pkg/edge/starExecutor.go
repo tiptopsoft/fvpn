@@ -8,19 +8,19 @@ import (
 	"github.com/interstellar-cloud/star/pkg/socket"
 	"github.com/interstellar-cloud/star/pkg/tuntap"
 	"github.com/interstellar-cloud/star/pkg/util/log"
-	option2 "github.com/interstellar-cloud/star/pkg/util/option"
+	option "github.com/interstellar-cloud/star/pkg/util/option"
 	"io"
 	"net"
 )
 
 type EdgeExecutor struct {
 	Tap      *tuntap.Tuntap
-	Protocol option2.Protocol
+	Protocol option.Protocol
 }
 
 func (ee EdgeExecutor) Execute(socket socket.Socket) error {
 
-	if ee.Protocol == option2.UDP {
+	if ee.Protocol == option.UDP {
 
 		//for {
 		udpBytes := make([]byte, 2048)
@@ -41,7 +41,7 @@ func (ee EdgeExecutor) Execute(socket socket.Socket) error {
 		}
 
 		switch cp.Flags {
-		case option2.MsgTypeRegisterAck:
+		case option.MsgTypeRegisterAck:
 			regAck, err := ack.Decode(udpBytes)
 			if err != nil {
 				return err
@@ -50,11 +50,11 @@ func (ee EdgeExecutor) Execute(socket socket.Socket) error {
 			//create tap tuntap
 
 			//设置IP
-			if err = option2.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", ee.Tap.Name, regAck.AutoIP.String(), regAck.Mask.String(), 1420)); err != nil {
+			if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", ee.Tap.Name, regAck.AutoIP.String(), regAck.Mask.String(), 1420)); err != nil {
 				return err
 			}
 			break
-		case option2.MsgTypePeerInfo:
+		case option.MsgTypeQueryPeer:
 			//get peerInfo
 			peerPacketAck, err := peerack.Decode(udpBytes)
 			if err != nil {
@@ -62,12 +62,13 @@ func (ee EdgeExecutor) Execute(socket socket.Socket) error {
 			}
 
 			infos := peerPacketAck.PeerInfos
+			log.Logger.Infof("got registry peers: (%v)", infos)
 			for _, v := range infos {
 				addr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", v.Host.String(), v.Port))
 				if err != nil {
 					log.Logger.Errorf("resolve addr failed. err: %v", err)
 				}
-				option2.AddrMap.Store(v.Mac.String(), addr)
+				option.AddrMap.Store(v.Mac.String(), addr)
 			}
 
 			break
