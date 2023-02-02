@@ -1,10 +1,10 @@
 package edge
 
 import (
-	"github.com/interstellar-cloud/star/pkg/log"
-	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/socket"
 	"github.com/interstellar-cloud/star/pkg/tuntap"
+	"github.com/interstellar-cloud/star/pkg/util/log"
+	"github.com/interstellar-cloud/star/pkg/util/option"
 	"golang.org/x/sys/unix"
 	"sync"
 )

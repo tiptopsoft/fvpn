@@ -1,9 +1,9 @@
 package registry
 
 import (
-	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"github.com/interstellar-cloud/star/pkg/packet/register"
+	"github.com/interstellar-cloud/star/pkg/util/log"
 	"net"
 )
 

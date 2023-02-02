@@ -1,7 +1,7 @@
 package user
 
 import (
-	"github.com/interstellar-cloud/star/pkg/option"
+	"github.com/interstellar-cloud/star/pkg/util/option"
 	"gorm.io/gorm"
 )
 

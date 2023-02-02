@@ -1,9 +1,9 @@
 package registry
 
 import (
-	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"github.com/interstellar-cloud/star/pkg/packet/forward"
+	"github.com/interstellar-cloud/star/pkg/util/log"
 	"net"
 	"sync"
 )
@@ -19,7 +19,6 @@ func (r *RegStar) forward(data []byte, cp *common.CommonPacket) {
 	}
 
 	// find Addr in registry
-
 	if addr, ok := m.Load(fp.DstMac); !ok {
 		log.Logger.Errorf("dst has not registerd in registry. addr: %s", addr)
 	} else {

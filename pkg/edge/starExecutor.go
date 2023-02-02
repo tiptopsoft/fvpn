@@ -2,25 +2,25 @@ package edge
 
 import (
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/log"
-	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	peerack "github.com/interstellar-cloud/star/pkg/packet/peer/ack"
 	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
 	"github.com/interstellar-cloud/star/pkg/socket"
 	"github.com/interstellar-cloud/star/pkg/tuntap"
+	"github.com/interstellar-cloud/star/pkg/util/log"
+	option2 "github.com/interstellar-cloud/star/pkg/util/option"
 	"io"
 	"net"
 )
 
 type EdgeExecutor struct {
 	Tap      *tuntap.Tuntap
-	Protocol option.Protocol
+	Protocol option2.Protocol
 }
 
 func (ee EdgeExecutor) Execute(socket socket.Socket) error {
 
-	if ee.Protocol == option.UDP {
+	if ee.Protocol == option2.UDP {
 
 		//for {
 		udpBytes := make([]byte, 2048)
@@ -41,7 +41,7 @@ func (ee EdgeExecutor) Execute(socket socket.Socket) error {
 		}
 
 		switch cp.Flags {
-		case option.MsgTypeRegisterAck:
+		case option2.MsgTypeRegisterAck:
 			regAck, err := ack.Decode(udpBytes)
 			if err != nil {
 				return err
@@ -50,11 +50,11 @@ func (ee EdgeExecutor) Execute(socket socket.Socket) error {
 			//create tap tuntap
 
 			//设置IP
-			if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", ee.Tap.Name, regAck.AutoIP.String(), regAck.Mask.String(), 1420)); err != nil {
+			if err = option2.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", ee.Tap.Name, regAck.AutoIP.String(), regAck.Mask.String(), 1420)); err != nil {
 				return err
 			}
 			break
-		case option.MsgTypePeerInfo:
+		case option2.MsgTypePeerInfo:
 			//get peerInfo
 			peerPacketAck, err := peerack.Decode(udpBytes)
 			if err != nil {
@@ -67,7 +67,7 @@ func (ee EdgeExecutor) Execute(socket socket.Socket) error {
 				if err != nil {
 					log.Logger.Errorf("resolve addr failed. err: %v", err)
 				}
-				option.AddrMap.Store(v.Mac.String(), addr)
+				option2.AddrMap.Store(v.Mac.String(), addr)
 			}
 
 			break

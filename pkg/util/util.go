@@ -1,8 +1,9 @@
-package option
+package util
 
 import (
 	"context"
 	"fmt"
+	"github.com/interstellar-cloud/star/pkg/util/errors"
 	"math/rand"
 	"net"
 )
@@ -16,7 +17,7 @@ func GetLocalMac(name string) ([4]byte, error) {
 	}
 	macAddr := fa.HardwareAddr.String()
 	if len(macAddr) == 0 {
-		return [4]byte{}, ErrGetMac
+		return [4]byte{}, errors.ErrGetMac
 	}
 
 	copy(b[:], macAddr)

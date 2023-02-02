@@ -39,6 +39,14 @@ type Mysql struct {
 	Name     string `mapstructure:"name"`
 }
 
+type RegConfig struct {
+	Listen      string   `mapstructure:"listen"`
+	HttpListen  string   `mapstructure:"httpListen"`
+	Protocol    Protocol `mapstructure:"type"`
+	OpenAuth    bool
+	OpenEncrypt bool
+}
+
 func InitConfig() (config *Config, err error) {
 	viper.SetConfigName("app")         // name of config file (without extension)
 	viper.SetConfigType("yaml")        // REQUIRED if the config file does not have the extension in the name

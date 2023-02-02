@@ -2,7 +2,7 @@ package registry
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/interstellar-cloud/star/pkg/option"
+	"github.com/interstellar-cloud/star/pkg/util/option"
 	"net"
 )
 

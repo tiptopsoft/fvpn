@@ -14,7 +14,7 @@ var (
 	DefaultPort      uint16 = 3000
 )
 
-//CommonPacket  every time sends base frame.
+//CommonPacket  every time sends util frame.
 type CommonPacket struct {
 	Version uint8   //1
 	TTL     uint8   //1
