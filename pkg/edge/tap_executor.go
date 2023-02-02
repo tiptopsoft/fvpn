@@ -5,7 +5,6 @@ import (
 	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet"
-	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"github.com/interstellar-cloud/star/pkg/packet/forward"
 	"github.com/interstellar-cloud/star/pkg/packet/peer/ack"
 	"github.com/interstellar-cloud/star/pkg/socket"
@@ -42,11 +41,7 @@ func (te TapExecutor) Execute(socket socket.Socket) error {
 
 		if dst.P2p == 2 {
 			// through supernode
-			cp := common.NewPacket()
-			cp.Flags = option.MsgTypePacket
-
 			fp := forward.NewPacket()
-			fp.CommonPacket = cp
 			bs, err := forward.Encode(fp)
 			if err != nil {
 				log.Logger.Errorf("encode forward failed. err: %v", err)
@@ -61,6 +56,7 @@ func (te TapExecutor) Execute(socket socket.Socket) error {
 	return nil
 }
 
+//use host socket write so destination
 func write2Net(socket socket.Socket, b []byte) {
 	if _, err := socket.Write(b); err != nil {
 		log.Logger.Errorf("write to remote failed. (%v)", err)

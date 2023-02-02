@@ -24,12 +24,10 @@ func (ee EdgeExecutor) Execute(socket socket.Socket) error {
 
 		//for {
 		udpBytes := make([]byte, 2048)
-		//_, _, err := conn.(*net.UDPConn).ReadFromUDP(udpBytes)
 		_, err := socket.Read(udpBytes)
 		if err != nil {
 			if err == io.EOF {
-				//no data exists, continue read next frame.
-				//continue
+				//no data exists, continue read next frame continue
 				log.Logger.Errorf("not data exists")
 			} else {
 				log.Logger.Errorf("read from remote error: %v", err)

@@ -38,7 +38,7 @@ func Decode(udpBytes []byte) (PeerPacket, error) {
 	}
 	idx := 0
 	res.CommonPacket = cp
-	idx += int(unsafe.Sizeof(common.NewPacket()))
+	idx += int(unsafe.Sizeof(common.CommonPacket{}))
 	var mac = make([]byte, 6)
 	packet.DecodeBytes(&mac, udpBytes, idx)
 	res.SrcMac = mac
@@ -50,7 +50,7 @@ func DecodeWithCommonPacket(udpBytes []byte, cp common.CommonPacket) (PeerPacket
 	res := NewPacket()
 	idx := 0
 	res.CommonPacket = cp
-	idx += int(unsafe.Sizeof(common.NewPacket()))
+	idx += int(unsafe.Sizeof(common.CommonPacket{}))
 	var mac = make([]byte, 6)
 	packet.DecodeBytes(&mac, udpBytes, idx)
 	res.SrcMac = mac

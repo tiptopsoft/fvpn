@@ -22,11 +22,11 @@ type CommonPacket struct {
 	Group   [4]byte //4
 }
 
-func NewPacket() CommonPacket {
+func NewPacket(msgType uint16) CommonPacket {
 	return CommonPacket{
 		Version: Version,
 		TTL:     DefaultTTL,
-		Flags:   0,
+		Flags:   msgType,
 		Group:   [4]byte{},
 	}
 }
@@ -43,7 +43,7 @@ func Encode(cp CommonPacket) ([]byte, error) {
 }
 
 func Decode(udpByte []byte) (CommonPacket, error) {
-	cp := NewPacket()
+	cp := CommonPacket{}
 	idx := 0
 	idx = packet.DecodeUint8(&cp.Version, udpByte, idx)
 	idx = packet.DecodeUint8(&cp.TTL, udpByte, idx)

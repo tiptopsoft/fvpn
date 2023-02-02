@@ -1,6 +1,7 @@
 package ack
 
 import (
+	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"net"
@@ -15,7 +16,10 @@ type RegPacketAck struct {
 }
 
 func NewPacket() RegPacketAck {
-	return RegPacketAck{}
+	cmPacket := common.NewPacket(option.MsgTypeRegisterAck)
+	return RegPacketAck{
+		CommonPacket: cmPacket,
+	}
 }
 
 func Encode(reg RegPacketAck) ([]byte, error) {

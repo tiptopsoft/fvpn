@@ -3,12 +3,13 @@ package edge
 import (
 	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/option"
+	"github.com/interstellar-cloud/star/pkg/socket"
 	"github.com/interstellar-cloud/star/pkg/tuntap"
 	"net"
 	"os"
 )
 
-type EdgeStar struct {
+type StarEdge struct {
 	*option.EdgeConfig
 	tap *tuntap.Tuntap
 }
@@ -18,16 +19,13 @@ var (
 	ch     = make(chan int, 1)
 )
 
-/**
- * Start logic: start to:
-1. PING to registry node 2. registry to registry 3. auto ip config tuntap 4.
-*/
-func (edge EdgeStar) Start() error {
+// Start logic: start to: 1. PING to registry node 2. registry to registry 3. auto ip config tuntap 4.
+func (edge StarEdge) Start() error {
 	//init connect to registry
 	var conn net.Conn
 	var err error
 
-	conn, err = edge.conn(edge.Registry)
+	conn, err = edge.conn()
 	if err != nil {
 		return err
 	}
@@ -54,18 +52,15 @@ func (edge EdgeStar) Start() error {
 		break
 	}
 
-	netFile, err := conn.(*net.UDPConn).File()
-	if err != nil {
-		log.Logger.Errorf("get conn fd failed: (%v)", err)
-	}
-
+	//netFile, err := conn.(*net.UDPConn).File()
+	netFd := socket.SocketFD(conn)
 	tap, err := tuntap.New(tuntap.TAP)
 	if err != nil {
 		log.Logger.Errorf("create or connect tuntap failed. (%v)", err)
 	}
 
 	eventLoop := EventLoop{Tap: tap}
-	eventLoop.eventLoop(int(netFile.Fd()), int(tap.Fd))
+	eventLoop.eventLoop(netFd, int(tap.Fd))
 
 	if <-stopCh > 0 {
 		log.Logger.Infof("edge stop success")
@@ -74,13 +69,13 @@ func (edge EdgeStar) Start() error {
 	return nil
 }
 
-func (es *EdgeStar) conn(address string) (net.Conn, error) {
+func (edge *StarEdge) conn() (net.Conn, error) {
 	var conn net.Conn
 	var err error
 
-	switch es.Protocol {
+	switch edge.Protocol {
 	case option.UDP:
-		conn, err = net.Dial("udp", es.Registry)
+		conn, err = net.Dial("udp", edge.Registry)
 	}
 
 	//defer conn.Close()
@@ -88,6 +83,6 @@ func (es *EdgeStar) conn(address string) (net.Conn, error) {
 		return nil, err
 	}
 
-	log.Logger.Info("star connected to registry:", es.Registry)
+	log.Logger.Infof("star connected to registry: (%v)", edge.Registry)
 	return conn, nil
 }

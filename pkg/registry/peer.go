@@ -3,7 +3,6 @@ package registry
 import (
 	"errors"
 	"github.com/interstellar-cloud/star/pkg/log"
-	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"github.com/interstellar-cloud/star/pkg/packet/peer"
 	"github.com/interstellar-cloud/star/pkg/packet/peer/ack"
@@ -59,10 +58,6 @@ func getPeerInfo(mac string) ([]ack.PeerInfo, uint8, error) {
 
 func peerAckBuild(infos []ack.PeerInfo, size uint8) ([]byte, error) {
 	peerPacket := ack.NewPacket()
-	cp := common.NewPacket()
-	cp.Flags = option.MsgTypePeerInfo
-
-	peerPacket.CommonPacket = cp
 	peerPacket.Size = size
 	peerPacket.PeerInfos = infos
 

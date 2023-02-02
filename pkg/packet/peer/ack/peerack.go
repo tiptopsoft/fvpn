@@ -1,6 +1,7 @@
 package ack
 
 import (
+	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"net"
@@ -23,7 +24,10 @@ type PeerPacketAck struct {
 }
 
 func NewPacket() PeerPacketAck {
-	return PeerPacketAck{}
+	cmPacket := common.NewPacket(option.MsgTypePeerInfo)
+	return PeerPacketAck{
+		CommonPacket: cmPacket,
+	}
 }
 
 func Encode(ack PeerPacketAck) ([]byte, error) {
@@ -49,7 +53,7 @@ func Decode(udpBytes []byte) (PeerPacketAck, error) {
 	ack := PeerPacketAck{}
 	idx := 0
 	cp, err := common.Decode(udpBytes)
-	idx += int(unsafe.Sizeof(common.NewPacket()))
+	idx += int(unsafe.Sizeof(common.CommonPacket{}))
 	ack.CommonPacket = cp
 
 	idx = packet.DecodeUint8(&ack.Size, udpBytes, idx)
