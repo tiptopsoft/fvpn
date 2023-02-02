@@ -24,7 +24,7 @@ type PeerPacketAck struct {
 }
 
 func NewPacket() PeerPacketAck {
-	cmPacket := common.NewPacket(option.MsgTypePeerInfo)
+	cmPacket := common.NewPacket(option.MsgTypeQueryPeer)
 	return PeerPacketAck{
 		CommonPacket: cmPacket,
 	}
