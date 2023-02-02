@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
+	"github.com/interstellar-cloud/star/pkg/util/option"
 	"net"
 	"reflect"
 	"unsafe"
@@ -16,7 +17,17 @@ type RegPacket struct {
 }
 
 func NewPacket() RegPacket {
-	return RegPacket{}
+	cmPacket := common.NewPacket(option.MsgTypeRegisterSuper)
+	return RegPacket{
+		CommonPacket: cmPacket,
+	}
+}
+
+func NewUnregisterPacket() RegPacket {
+	cmPacket := common.NewPacket(option.MsgTypeUnregisterSuper)
+	return RegPacket{
+		CommonPacket: cmPacket,
+	}
 }
 
 func Encode(cp RegPacket) ([]byte, error) {
@@ -40,7 +51,7 @@ func Decode(udpBytes []byte) (RegPacket, error) {
 	}
 	idx := 0
 	res.CommonPacket = cp
-	idx += int(unsafe.Sizeof(common.NewPacket()))
+	idx += int(unsafe.Sizeof(common.CommonPacket{}))
 	var mac = make([]byte, 6)
 	packet.DecodeBytes(&mac, udpBytes, idx)
 	res.SrcMac = mac
@@ -52,7 +63,7 @@ func DecodeWithCommonPacket(udpBytes []byte, cp common.CommonPacket) (RegPacket,
 	res := NewPacket()
 	idx := 0
 	res.CommonPacket = cp
-	idx += int(unsafe.Sizeof(common.NewPacket()))
+	idx += int(unsafe.Sizeof(common.CommonPacket{}))
 	var mac = make([]byte, 6)
 	packet.DecodeBytes(&mac, udpBytes, idx)
 	res.SrcMac = mac

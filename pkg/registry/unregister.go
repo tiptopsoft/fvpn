@@ -1,9 +1,9 @@
 package registry
 
 import (
-	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"github.com/interstellar-cloud/star/pkg/packet/register"
+	"github.com/interstellar-cloud/star/pkg/util/log"
 	"net"
 )
 
@@ -29,8 +29,6 @@ func (r *RegStar) processUnregister(addr *net.UDPAddr, conn *net.UDPConn, data [
 	if err != nil {
 		log.Logger.Errorf("registry write failed. err: %v", err)
 	}
-
-	<-limitChan
 }
 
 func (r *RegStar) unRegister(packet register.RegPacket) error {

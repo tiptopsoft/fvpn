@@ -1,11 +1,11 @@
 package registry
 
 import (
-	"github.com/interstellar-cloud/star/pkg/log"
-	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"github.com/interstellar-cloud/star/pkg/packet/register"
 	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
+	"github.com/interstellar-cloud/star/pkg/util/log"
+	"github.com/interstellar-cloud/star/pkg/util/option"
 	"net"
 )
 
@@ -32,7 +32,6 @@ func (r *RegStar) processRegister(addr *net.UDPAddr, conn *net.UDPConn, data []b
 		log.Logger.Errorf("registry write failed. err: %v", err)
 	}
 
-	<-limitChan
 }
 
 func ackBuilder(rp register.RegPacket) ([]byte, error) {

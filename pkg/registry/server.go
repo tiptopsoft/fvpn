@@ -3,33 +3,31 @@ package registry
 import (
 	"context"
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/epoll"
+	"github.com/interstellar-cloud/star/pkg/epoller"
 	"github.com/interstellar-cloud/star/pkg/handler"
 	"github.com/interstellar-cloud/star/pkg/handler/auth"
 	"github.com/interstellar-cloud/star/pkg/handler/encrypt"
-	"github.com/interstellar-cloud/star/pkg/log"
-	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"github.com/interstellar-cloud/star/pkg/socket"
+	"github.com/interstellar-cloud/star/pkg/util/log"
+	option2 "github.com/interstellar-cloud/star/pkg/util/option"
 	"net"
 	"sync"
 )
-
-var limitChan = make(chan int, 1)
 
 // mac:Pub
 var m sync.Map
 
 type Node struct {
 	Mac   [4]byte
-	Proto option.Protocol
+	Proto option2.Protocol
 	Conn  net.Conn
 	Addr  *net.UDPAddr
 }
 
 //RegStar use as registry
 type RegStar struct {
-	*option.RegConfig
+	*option2.RegConfig
 	handler.ChainHandler
 	conn net.Conn
 }
@@ -52,7 +50,7 @@ func (r *RegStar) start(address string) error {
 	}
 
 	switch r.Protocol {
-	case option.UDP:
+	case option2.UDP:
 		addr, err := ResolveAddr(address)
 		if err != nil {
 			return err
@@ -77,10 +75,10 @@ func (r *RegStar) start(address string) error {
 		}
 		defer conn.Close()
 
-		eventLoop, err := epoll.NewEventLoop()
+		eventLoop, err := epoller.NewEventLoop()
 		eventLoop.Protocol = r.Protocol
 		if err := eventLoop.AddFd(conn); err != nil {
-			log.Logger.Errorf("add fd to epoll failed. (%v)", err)
+			log.Logger.Errorf("add fd to epoller failed. (%v)", err)
 			return err
 		}
 
@@ -110,13 +108,13 @@ func (r *RegStar) Execute(socket socket.Socket) error {
 
 	switch p.Flags {
 
-	case option.MsgTypeRegisterSuper:
+	case option2.MsgTypeRegisterSuper:
 		r.processRegister(addr, socket.UdpSocket, data, nil)
 		break
-	case option.MsgTypeQueryPeer:
-		r.processPeer(addr, socket.UdpSocket, data, &p)
+	case option2.MsgTypeQueryPeer:
+		r.processPeer(addr, socket.UdpSocket)
 		break
-	case option.MsgTypePacket:
+	case option2.MsgTypePacket:
 		r.forward(data, &p)
 		break
 	}

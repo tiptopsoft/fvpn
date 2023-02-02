@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
+	"github.com/interstellar-cloud/star/pkg/util/option"
 	"net"
 	"unsafe"
 )
@@ -14,7 +15,10 @@ type PeerPacket struct {
 }
 
 func NewPacket() PeerPacket {
-	return PeerPacket{}
+	cmPacket := common.NewPacket(option.MsgTypeQueryPeer)
+	return PeerPacket{
+		CommonPacket: cmPacket,
+	}
 }
 
 func Encode(cp PeerPacket) ([]byte, error) {
@@ -38,7 +42,7 @@ func Decode(udpBytes []byte) (PeerPacket, error) {
 	}
 	idx := 0
 	res.CommonPacket = cp
-	idx += int(unsafe.Sizeof(common.NewPacket()))
+	idx += int(unsafe.Sizeof(common.CommonPacket{}))
 	var mac = make([]byte, 6)
 	packet.DecodeBytes(&mac, udpBytes, idx)
 	res.SrcMac = mac
@@ -46,11 +50,10 @@ func Decode(udpBytes []byte) (PeerPacket, error) {
 }
 
 func DecodeWithCommonPacket(udpBytes []byte, cp common.CommonPacket) (PeerPacket, error) {
-
 	res := NewPacket()
 	idx := 0
 	res.CommonPacket = cp
-	idx += int(unsafe.Sizeof(common.NewPacket()))
+	idx += int(unsafe.Sizeof(common.CommonPacket{}))
 	var mac = make([]byte, 6)
 	packet.DecodeBytes(&mac, udpBytes, idx)
 	res.SrcMac = mac

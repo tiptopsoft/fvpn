@@ -2,8 +2,8 @@ package ack
 
 import (
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
+	"github.com/interstellar-cloud/star/pkg/util/option"
 	"net"
 	"testing"
 	"unsafe"
@@ -24,16 +24,13 @@ func TestNewPacket(t *testing.T) {
 		panic(err)
 	}
 
-	cp := common.NewPacket()
-
 	p.RegMac = mac
 	vip := net.ParseIP(ip)
 	ipsize := unsafe.Sizeof(vip)
 	fmt.Println(ipsize)
 	p.AutoIP = vip
 	p.Mask = net.ParseIP(Mask)
-	cp.Flags = option.MsgTypeRegisterAck
-	p.CommonPacket = cp
+	p.CommonPacket = common.NewPacket(option.MsgTypeRegisterAck)
 
 	fmt.Println(Encode(p))
 }

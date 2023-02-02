@@ -2,13 +2,13 @@ package edge
 
 import (
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/log"
-	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	peerack "github.com/interstellar-cloud/star/pkg/packet/peer/ack"
 	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
 	"github.com/interstellar-cloud/star/pkg/socket"
 	"github.com/interstellar-cloud/star/pkg/tuntap"
+	"github.com/interstellar-cloud/star/pkg/util/log"
+	option "github.com/interstellar-cloud/star/pkg/util/option"
 	"io"
 	"net"
 )
@@ -24,12 +24,10 @@ func (ee EdgeExecutor) Execute(socket socket.Socket) error {
 
 		//for {
 		udpBytes := make([]byte, 2048)
-		//_, _, err := conn.(*net.UDPConn).ReadFromUDP(udpBytes)
 		_, err := socket.Read(udpBytes)
 		if err != nil {
 			if err == io.EOF {
-				//no data exists, continue read next frame.
-				//continue
+				//no data exists, continue read next frame continue
 				log.Logger.Errorf("not data exists")
 			} else {
 				log.Logger.Errorf("read from remote error: %v", err)
@@ -56,7 +54,7 @@ func (ee EdgeExecutor) Execute(socket socket.Socket) error {
 				return err
 			}
 			break
-		case option.MsgTypePeerInfo:
+		case option.MsgTypeQueryPeer:
 			//get peerInfo
 			peerPacketAck, err := peerack.Decode(udpBytes)
 			if err != nil {
@@ -64,6 +62,7 @@ func (ee EdgeExecutor) Execute(socket socket.Socket) error {
 			}
 
 			infos := peerPacketAck.PeerInfos
+			log.Logger.Infof("got registry peers: (%v)", infos)
 			for _, v := range infos {
 				addr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", v.Host.String(), v.Port))
 				if err != nil {

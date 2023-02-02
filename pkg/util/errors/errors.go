@@ -1,4 +1,4 @@
-package option
+package errors
 
 import "errors"
 

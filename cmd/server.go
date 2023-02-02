@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/user"
+	"github.com/interstellar-cloud/star/pkg/util/option"
 	"github.com/spf13/cobra"
 )
 

@@ -1,14 +1,13 @@
-package epoll
+package epoller
 
 import (
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/log"
-	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/socket"
+	"github.com/interstellar-cloud/star/pkg/util/log"
+	"github.com/interstellar-cloud/star/pkg/util/option"
 	"golang.org/x/sys/unix"
 	"net"
 	"os"
-	"reflect"
 	"syscall"
 )
 
@@ -40,7 +39,7 @@ func (eventLoop EventLoop) AddFd(conn net.Conn) error {
 	var event unix.EpollEvent
 	var e error
 	event.Events = unix.EPOLLIN
-	fd := socketFD(conn)
+	fd := socket.SocketFD(conn)
 	log.Logger.Infof("Add fd: %d", fd)
 	event.Fd = int32(fd)
 	if eventLoop.Protocol == option.UDP {
@@ -54,16 +53,6 @@ func (eventLoop EventLoop) AddFd(conn net.Conn) error {
 
 	return nil
 
-}
-
-func socketFD(conn net.Conn) int {
-	tcpConn := reflect.Indirect(reflect.ValueOf(conn)).FieldByName("conn")
-	//if tls {
-	//	tcpConn = reflect.Indirect(tcpConn.Elem())
-	//}
-	fdVal := tcpConn.FieldByName("fd")
-	pfdVal := reflect.Indirect(fdVal).FieldByName("pfd")
-	return int(pfdVal.FieldByName("Sysfd").Int())
 }
 
 func (eventLoop *EventLoop) EventLoop(executor socket.Executor) {
