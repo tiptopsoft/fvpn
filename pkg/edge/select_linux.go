@@ -61,7 +61,7 @@ func (eventLoop EventLoop) eventLoop(netFd, tapFd int) {
 
 		if s.FileDescriptor != 0 {
 			if err := executor.Execute(s); err != nil {
-				log.Logger.Errorf("executor execute faile: (%v)", err)
+				log.Logger.Errorf("executor execute faile: (%v)", err.Error())
 			}
 		}
 
