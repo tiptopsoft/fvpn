@@ -4,6 +4,7 @@ import (
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"github.com/interstellar-cloud/star/pkg/packet/register"
 	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
+	"github.com/interstellar-cloud/star/pkg/registry/addr"
 	"github.com/interstellar-cloud/star/pkg/util/log"
 	"github.com/interstellar-cloud/star/pkg/util/option"
 	"net"
@@ -35,7 +36,7 @@ func (r *RegStar) processRegister(addr *net.UDPAddr, conn *net.UDPConn, data []b
 }
 
 func ackBuilder(rp register.RegPacket) ([]byte, error) {
-	endpoint, err := New(rp.SrcMac.String())
+	endpoint, err := addr.New(rp.SrcMac.String())
 	if err != nil {
 		return nil, err
 	}

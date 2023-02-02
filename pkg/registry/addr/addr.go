@@ -1,4 +1,4 @@
-package registry
+package addr
 
 import (
 	"bytes"
