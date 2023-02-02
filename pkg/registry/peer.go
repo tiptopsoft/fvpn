@@ -32,8 +32,13 @@ func getPeerInfo() ([]ack.PeerInfo, uint8, error) {
 	var result []ack.PeerInfo
 	m.Range(func(mac, pub any) bool {
 		a := pub.(*net.UDPAddr)
+		srcMac, err := net.ParseMAC(mac.(string))
+		if err != nil {
+			log.Logger.Errorf("parse mac failed. (%v)", err)
+			return false
+		}
 		info := ack.PeerInfo{
-			Mac:  []byte(mac.(string)),
+			Mac:  srcMac,
 			Host: a.IP,
 			Port: uint16(a.Port),
 		}
