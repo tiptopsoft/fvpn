@@ -2,10 +2,10 @@ package registry
 
 import (
 	"errors"
-	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"github.com/interstellar-cloud/star/pkg/packet/peer"
 	"github.com/interstellar-cloud/star/pkg/packet/peer/ack"
+	"github.com/interstellar-cloud/star/pkg/util/log"
 	"net"
 )
 

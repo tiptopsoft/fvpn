@@ -1,14 +1,13 @@
 package edge
 
 import (
-	"errors"
 	"fmt"
 	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/forward"
 	"github.com/interstellar-cloud/star/pkg/packet/peer/ack"
 	"github.com/interstellar-cloud/star/pkg/socket"
 	"github.com/interstellar-cloud/star/pkg/util/log"
-	"github.com/interstellar-cloud/star/pkg/util/option"
+	option2 "github.com/interstellar-cloud/star/pkg/util/option"
 )
 
 type TapExecutor struct {
@@ -20,7 +19,7 @@ type TapExecutor struct {
 // Read a single packet from the TAP interface, process it and write out the corresponding packet to the cooked socket.
 func (te TapExecutor) Execute(socket socket.Socket) error {
 
-	b := make([]byte, option.STAR_PKT_BUFF_SIZE)
+	b := make([]byte, option2.STAR_PKT_BUFF_SIZE)
 	n, err := socket.Read(b)
 	log.Logger.Info(fmt.Sprintf("Read from tap %s: %v", te.Name, b))
 	if err != nil {
@@ -32,10 +31,7 @@ func (te TapExecutor) Execute(socket socket.Socket) error {
 	mac := getMacAddr(b)
 
 	// get dest
-	info, ok := option.AddrMap.Load(mac)
-	if !ok {
-		return errors.New("dest peer not register")
-	}
+	info, ok := option2.AddrMap.Load(mac)
 	dst := info.(ack.PeerInfo)
 	if ok {
 		//check it is use supernode or p2p

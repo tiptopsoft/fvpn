@@ -15,6 +15,8 @@ import (
 	"sync"
 )
 
+var limitChan = make(chan int, 1)
+
 // mac:Pub
 var m sync.Map
 
@@ -112,7 +114,7 @@ func (r *RegStar) Execute(socket socket.Socket) error {
 		r.processRegister(addr, socket.UdpSocket, data, nil)
 		break
 	case option2.MsgTypeQueryPeer:
-		r.processPeer(addr, socket.UdpSocket)
+		r.processPeer(addr, socket.UdpSocket, data, &p)
 		break
 	case option2.MsgTypePacket:
 		r.forward(data, &p)
