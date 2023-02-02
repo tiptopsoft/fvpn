@@ -29,8 +29,6 @@ func (r *RegStar) processUnregister(addr *net.UDPAddr, conn *net.UDPConn, data [
 	if err != nil {
 		log.Logger.Errorf("registry write failed. err: %v", err)
 	}
-
-	<-limitChan
 }
 
 func (r *RegStar) unRegister(packet register.RegPacket) error {

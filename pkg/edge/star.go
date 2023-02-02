@@ -7,13 +7,13 @@ import (
 	"github.com/interstellar-cloud/star/pkg/socket"
 	"github.com/interstellar-cloud/star/pkg/tuntap"
 	"github.com/interstellar-cloud/star/pkg/util/log"
-	option2 "github.com/interstellar-cloud/star/pkg/util/option"
+	"github.com/interstellar-cloud/star/pkg/util/option"
 	"net"
 	"os"
 )
 
 type StarEdge struct {
-	*option2.EdgeConfig
+	*option.EdgeConfig
 	tap *tuntap.Tuntap
 }
 
@@ -33,7 +33,7 @@ func (edge StarEdge) Start() error {
 		return err
 	}
 
-	i := 0
+	i := 1
 outloop:
 	for {
 		//registry to registry
@@ -53,7 +53,7 @@ outloop:
 			i++
 			break
 		case 3: // start to init connect to dst
-			option2.AddrMap.Range(func(key, value any) bool {
+			option.AddrMap.Range(func(key, value any) bool {
 				return true
 			})
 			i++
@@ -85,7 +85,7 @@ func (edge *StarEdge) conn() (net.Conn, error) {
 	var err error
 
 	switch edge.Protocol {
-	case option2.UDP:
+	case option.UDP:
 		conn, err = net.Dial("udp", edge.Registry)
 	}
 
@@ -106,8 +106,8 @@ func (edge *StarEdge) queryPeer(conn net.Conn) error {
 	}
 
 	switch edge.Protocol {
-	case option2.UDP:
-		log.Logger.Info("Start to query edge peer info")
+	case option.UDP:
+		log.Logger.Infof("Start to query edge peer info, data: (%v)", data)
 		if _, err := conn.(*net.UDPConn).Write(data); err != nil {
 			return nil
 		}
@@ -129,7 +129,7 @@ func (edge *StarEdge) register(conn net.Conn) error {
 	}
 
 	switch edge.Protocol {
-	case option2.UDP:
+	case option.UDP:
 		log.Logger.Infof("star start to registry self to registry: %v", rp)
 		if _, err := conn.(*net.UDPConn).Write(data); err != nil {
 			return err
@@ -153,7 +153,7 @@ func (edge *StarEdge) unregister(conn net.Conn) error {
 	}
 
 	switch edge.Protocol {
-	case option2.UDP:
+	case option.UDP:
 		log.Logger.Infof("star start to registry self to registry: %v", rp)
 		if _, err := conn.(*net.UDPConn).Write(data); err != nil {
 			return err

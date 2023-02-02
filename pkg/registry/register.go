@@ -32,7 +32,6 @@ func (r *RegStar) processRegister(addr *net.UDPAddr, conn *net.UDPConn, data []b
 		log.Logger.Errorf("registry write failed. err: %v", err)
 	}
 
-	<-limitChan
 }
 
 func ackBuilder(rp register.RegPacket) ([]byte, error) {
