@@ -57,7 +57,6 @@ func Decode(udpBytes []byte) (PeerPacketAck, error) {
 	ack.CommonPacket = cp
 
 	idx = packet.DecodeUint8(&ack.Size, udpBytes, idx)
-	idx = packet.DecodeUint8(&ack.Size, udpBytes, idx)
 
 	var info []PeerInfo
 	for i := 0; uint8(i) < ack.Size; i++ {
@@ -65,8 +64,9 @@ func Decode(udpBytes []byte) (PeerPacketAck, error) {
 		var mac = make([]byte, 6)
 		idx = packet.DecodeBytes(&mac, udpBytes, idx)
 		peer.Mac = mac
-		var ip = make([]byte, 4)
+		var ip = make([]byte, 16)
 		idx = packet.DecodeBytes(&ip, udpBytes, idx)
+		peer.Host = ip
 		idx = packet.DecodeUint16(&peer.Port, udpBytes, idx)
 		info = append(info, peer)
 	}
