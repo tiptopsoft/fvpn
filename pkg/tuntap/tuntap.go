@@ -101,12 +101,3 @@ func New(mode Mode) (*Tuntap, error) {
 		Mode:   mode,
 	}, nil
 }
-
-//Remove delete a tuntap
-//func Remove(opts *option.StarConfig) error {
-//	if err := option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ip link delete %s", opts.Name)); err != nil {
-//		return err
-//	}
-//
-//	return nil
-//}
