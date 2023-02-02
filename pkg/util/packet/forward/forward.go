@@ -2,9 +2,10 @@ package forward
 
 import (
 	"errors"
+	"github.com/interstellar-cloud/star/pkg/option"
+	"github.com/interstellar-cloud/star/pkg/packet"
+	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"github.com/interstellar-cloud/star/pkg/util/option"
-	"github.com/interstellar-cloud/star/pkg/util/packet"
-	"github.com/interstellar-cloud/star/pkg/util/packet/common"
 	"net"
 	"unsafe"
 )
@@ -33,7 +34,7 @@ func Encode(fp ForwardPacket) ([]byte, error) {
 	idx = packet.EncodeBytes(b, commonBytes, idx)
 	idx = packet.EncodeBytes(b, fp.SrcMac[:], idx)
 	idx = packet.EncodeBytes(b, fp.DstMac[:], idx)
-	return b, nil
+	return nil, nil
 }
 
 func Decode(udpBytes []byte) (ForwardPacket, error) {
