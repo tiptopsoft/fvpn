@@ -1,9 +1,9 @@
 package ack
 
 import (
+	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
-	"github.com/interstellar-cloud/star/pkg/util/option"
 	"net"
 	"unsafe"
 )
@@ -13,7 +13,7 @@ type PeerInfo struct {
 	Mac  net.HardwareAddr
 	Host net.IP
 	Port uint16
-	P2P  uint8 //1: 是2：否
+	P2p  uint8 //1: 是2：否
 }
 
 // PeerPacketAck ack for size of PeerInfo
@@ -24,7 +24,7 @@ type PeerPacketAck struct {
 }
 
 func NewPacket() PeerPacketAck {
-	cmPacket := common.NewPacket(option.MsgTypeQueryPeer)
+	cmPacket := common.NewPacket(option.MsgTypePeerInfo)
 	return PeerPacketAck{
 		CommonPacket: cmPacket,
 	}
@@ -57,6 +57,7 @@ func Decode(udpBytes []byte) (PeerPacketAck, error) {
 	ack.CommonPacket = cp
 
 	idx = packet.DecodeUint8(&ack.Size, udpBytes, idx)
+	idx = packet.DecodeUint8(&ack.Size, udpBytes, idx)
 
 	var info []PeerInfo
 	for i := 0; uint8(i) < ack.Size; i++ {
@@ -64,9 +65,8 @@ func Decode(udpBytes []byte) (PeerPacketAck, error) {
 		var mac = make([]byte, 6)
 		idx = packet.DecodeBytes(&mac, udpBytes, idx)
 		peer.Mac = mac
-		var ip = make([]byte, 16)
+		var ip = make([]byte, 4)
 		idx = packet.DecodeBytes(&ip, udpBytes, idx)
-		peer.Host = ip
 		idx = packet.DecodeUint16(&peer.Port, udpBytes, idx)
 		info = append(info, peer)
 	}
