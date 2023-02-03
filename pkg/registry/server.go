@@ -3,6 +3,7 @@ package registry
 import (
 	"context"
 	"fmt"
+	"github.com/interstellar-cloud/star/pkg/util"
 	"github.com/interstellar-cloud/star/pkg/util/epoller"
 	"github.com/interstellar-cloud/star/pkg/util/handler"
 	"github.com/interstellar-cloud/star/pkg/util/handler/auth"
@@ -15,21 +16,16 @@ import (
 	"sync"
 )
 
-//mac: peerInfo
-var m sync.Map
-
-type Node struct {
-	Mac   [4]byte
-	Proto option2.Protocol
-	Conn  net.Conn
-	Addr  *net.UDPAddr
-}
+var (
+	once sync.Once
+)
 
 //RegStar use as registry
 type RegStar struct {
 	*option2.RegConfig
 	handler.ChainHandler
-	conn net.Conn
+	conn  net.Conn
+	Peers util.Peers
 }
 
 func (r *RegStar) Start(address string) error {
@@ -49,6 +45,10 @@ func (r *RegStar) start(address string) error {
 		r.AddHandler(ctx, &encrypt.StarEncrypt{})
 	}
 
+	once.Do(func() {
+		r.Peers = make(util.Peers)
+	})
+
 	switch r.Protocol {
 	case option2.UDP:
 		addr, err := ResolveAddr(address)
@@ -62,10 +62,10 @@ func (r *RegStar) start(address string) error {
 
 		//start http
 		rs := RegistryServer{
-			r.RegConfig,
+			RegStar: r,
 		}
 		go func() {
-			if err := rs.Start(rs.HttpListen); err != nil {
+			if err := rs.Start(); err != nil {
 				log.Logger.Errorf("this is udp server, listen http failed.")
 			}
 		}()
@@ -109,10 +109,10 @@ func (r *RegStar) Execute(socket socket.Socket) error {
 	switch p.Flags {
 
 	case option2.MsgTypeRegisterSuper:
-		r.processRegister(addr, socket.UdpSocket, data, nil)
+		r.processRegister(addr, socket, data, nil)
 		break
 	case option2.MsgTypeQueryPeer:
-		r.processPeer(addr, socket.UdpSocket)
+		r.processFindPeer(addr, socket)
 		break
 	case option2.MsgTypePacket:
 		r.forward(data, &p)

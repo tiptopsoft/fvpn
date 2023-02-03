@@ -1,6 +1,7 @@
 package socket
 
 import (
+	"github.com/interstellar-cloud/star/pkg/util/option"
 	"golang.org/x/sys/unix"
 	"net"
 	"reflect"
@@ -8,6 +9,7 @@ import (
 
 //Socket use to wrap FileDescriptor
 type Socket struct {
+	AppType        option.Protocol
 	FileDescriptor int
 	UdpSocket      *net.UDPConn
 }
@@ -16,20 +18,23 @@ func (socket Socket) ReadFromUdp(bytes []byte) (n int, addr *net.UDPAddr, err er
 	return socket.UdpSocket.ReadFromUDP(bytes)
 }
 
+func (socket Socket) WriteToUdp(bytes []byte, addr *net.UDPAddr) (n int, err error) {
+	return socket.UdpSocket.WriteToUDP(bytes, addr)
+}
+
 func (socket Socket) Read(bytes []byte) (n int, err error) {
-	n, err = unix.Read(socket.FileDescriptor, bytes)
-	if err != nil {
-		return 0, err
+	if socket.AppType == option.UDP {
+		return socket.UdpSocket.Read(bytes)
 	}
-	return
+	return unix.Read(socket.FileDescriptor, bytes)
 }
 
 func (socket Socket) Write(bytes []byte) (n int, err error) {
-	n, err = unix.Write(socket.FileDescriptor, bytes)
-	if err != nil {
-		n = 0
+	if socket.AppType == option.UDP {
+		return socket.UdpSocket.Write(bytes)
+	} else {
+		return unix.Write(socket.FileDescriptor, bytes)
 	}
-	return n, err
 }
 
 func SocketFD(conn net.Conn) int {

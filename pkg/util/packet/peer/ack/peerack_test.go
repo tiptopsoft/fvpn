@@ -13,13 +13,13 @@ func TestDecode(t *testing.T) {
 	fmt.Println([]byte(mac))
 	fmt.Println(mac)
 	fmt.Println(mac)
-	var result []PeerInfo
+	var result []EdgeInfo
 	srcMac, err := net.ParseMAC(mac)
 	fmt.Println("src: ", srcMac)
 	if err != nil {
 		panic(err)
 	}
-	info := PeerInfo{
+	info := EdgeInfo{
 		Mac:  srcMac,
 		Host: net.IPv4(127, 0, 0, 1),
 		Port: 35582,

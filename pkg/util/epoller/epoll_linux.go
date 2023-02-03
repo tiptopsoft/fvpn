@@ -58,10 +58,8 @@ func (eventLoop EventLoop) AddFd(conn net.Conn) error {
 
 func (eventLoop *EventLoop) EventLoop(executor executor.Executor) {
 	for {
-		fmt.Println("begin epolling...")
 		events := eventLoop.events
 		nevents, e := syscall.EpollWait(eventLoop.epfd, eventLoop.events[:], -1)
-		fmt.Println("starting epolling...")
 		if e != nil {
 			fmt.Println("epoll_wait: ", e)
 			break
@@ -69,7 +67,6 @@ func (eventLoop *EventLoop) EventLoop(executor executor.Executor) {
 
 		for i := 0; i < nevents; i++ {
 			fd := events[i].Fd
-			log.Logger.Infof("eventFd: %d", fd)
 			var conn *net.UDPConn
 			//if eventLoop.Protocol == option.UDP {
 			conn = eventLoop.connections[int(fd)]

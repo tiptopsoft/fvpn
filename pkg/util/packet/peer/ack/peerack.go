@@ -8,29 +8,29 @@ import (
 	"unsafe"
 )
 
-// PeerInfo info need to connect to
-type PeerInfo struct {
+// EdgeInfo info need to connect to
+type EdgeInfo struct {
 	Mac  net.HardwareAddr
 	Host net.IP
 	Port uint16
 	P2P  uint8 //1: 是2：否
 }
 
-// PeerPacketAck ack for size of PeerInfo
-type PeerPacketAck struct {
+// EdgePacketAck ack for size of EdgeInfo
+type EdgePacketAck struct {
 	common.CommonPacket
 	Size      uint8
-	PeerInfos []PeerInfo
+	PeerInfos []EdgeInfo
 }
 
-func NewPacket() PeerPacketAck {
+func NewPacket() EdgePacketAck {
 	cmPacket := common.NewPacket(option.MsgTypeQueryPeer)
-	return PeerPacketAck{
+	return EdgePacketAck{
 		CommonPacket: cmPacket,
 	}
 }
 
-func Encode(ack PeerPacketAck) ([]byte, error) {
+func Encode(ack EdgePacketAck) ([]byte, error) {
 	b := make([]byte, 2048)
 	cp, err := common.Encode(ack.CommonPacket)
 	if err != nil {
@@ -49,8 +49,8 @@ func Encode(ack PeerPacketAck) ([]byte, error) {
 	return b, nil
 }
 
-func Decode(udpBytes []byte) (PeerPacketAck, error) {
-	ack := PeerPacketAck{}
+func Decode(udpBytes []byte) (EdgePacketAck, error) {
+	ack := EdgePacketAck{}
 	idx := 0
 	cp, err := common.Decode(udpBytes)
 	idx += int(unsafe.Sizeof(common.CommonPacket{}))
@@ -58,9 +58,9 @@ func Decode(udpBytes []byte) (PeerPacketAck, error) {
 
 	idx = packet.DecodeUint8(&ack.Size, udpBytes, idx)
 
-	var info []PeerInfo
+	var info []EdgeInfo
 	for i := 0; uint8(i) < ack.Size; i++ {
-		peer := PeerInfo{}
+		peer := EdgeInfo{}
 		var mac = make([]byte, 6)
 		idx = packet.DecodeBytes(&mac, udpBytes, idx)
 		peer.Mac = mac

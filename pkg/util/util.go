@@ -60,8 +60,8 @@ func GetLocalMacAddr() string {
 	return ""
 }
 
-func IsBroadCast(destMac net.HardwareAddr) bool {
-	if destMac.String() == BROADCAST_MAC.String() {
+func IsBroadCast(destMac string) bool {
+	if destMac == BROADCAST_MAC.String() {
 		return true
 	}
 

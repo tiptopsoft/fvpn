@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"github.com/interstellar-cloud/star/pkg/util"
 	"github.com/interstellar-cloud/star/pkg/util/log"
 	"github.com/interstellar-cloud/star/pkg/util/packet/common"
 	"github.com/interstellar-cloud/star/pkg/util/packet/forward"
@@ -8,7 +9,6 @@ import (
 	"sync"
 )
 
-var once sync.Once
 var socketMap sync.Map
 
 func (r *RegStar) forward(data []byte, cp *common.CommonPacket) {
@@ -19,23 +19,17 @@ func (r *RegStar) forward(data []byte, cp *common.CommonPacket) {
 	}
 
 	// find Addr in registry
-	if addr, ok := m.Load(fp.DstMac); !ok {
-		log.Logger.Errorf("dst has not registerd in registry. addr: %s", addr)
-	} else {
-		if sock, ok := socketMap.Load(fp.DstMac); !ok {
-			once.Do(func() {
+	peer := util.FindPeers(r.Peers, fp.DstMac.String())
 
-				conn, err := net.Dial("udp", addr.(*net.UDPAddr).String())
-				if err != nil {
-					log.Logger.Errorf("dial remote edge failed. err: %v", err)
-				}
-				sock = conn
-				socketMap.Store(fp.DstMac, conn)
-			})
-		} else {
+	if peer == nil {
+		log.Logger.Errorf("dst has not registerd in registry. macAddr: %s", fp.DstMac.String())
+	} else if util.IsBroadCast(fp.DstMac.String()) {
+		//broad cast send data to all edge
+		for _, v := range r.Peers {
+			sock := v.Conn
 			_, err := sock.(*net.UDPConn).Write(data)
 			if err != nil {
-				log.Logger.Errorf("send to remote edge failed. err: %v", err)
+				log.Logger.Errorf("send to remote edge or registry failed. err: %v", err)
 			}
 		}
 
