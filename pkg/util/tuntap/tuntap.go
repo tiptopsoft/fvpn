@@ -1,9 +1,8 @@
 package tuntap
 
 import (
-	"errors"
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/socket"
+	"github.com/interstellar-cloud/star/pkg/util/socket"
 	"golang.org/x/sys/unix"
 	"os"
 	"syscall"
@@ -30,10 +29,6 @@ type Ifreq struct {
 	Name  [16]byte
 	Flags uint16
 }
-
-var (
-	NoSuchInterface = errors.New("route ip+net: no such network interface")
-)
 
 // New craete a tuntap
 func New(mode Mode) (*Tuntap, error) {

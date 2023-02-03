@@ -1,7 +1,7 @@
 package common
 
 import (
-	"github.com/interstellar-cloud/star/pkg/packet"
+	"github.com/interstellar-cloud/star/pkg/util/packet"
 	"unsafe"
 )
 

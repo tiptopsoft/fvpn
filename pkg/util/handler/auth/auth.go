@@ -2,7 +2,7 @@ package auth
 
 import (
 	"context"
-	"github.com/interstellar-cloud/star/pkg/packet/common"
+	"github.com/interstellar-cloud/star/pkg/util/packet/common"
 )
 
 type StarAuth struct {

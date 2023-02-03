@@ -2,8 +2,8 @@ package ack
 
 import (
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"github.com/interstellar-cloud/star/pkg/util/option"
+	"github.com/interstellar-cloud/star/pkg/util/packet/common"
 	"net"
 	"testing"
 	"unsafe"

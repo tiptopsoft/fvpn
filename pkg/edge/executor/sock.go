@@ -1,14 +1,15 @@
-package edge
+package executor
 
 import (
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/packet/common"
-	peerack "github.com/interstellar-cloud/star/pkg/packet/peer/ack"
-	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
-	"github.com/interstellar-cloud/star/pkg/socket"
-	"github.com/interstellar-cloud/star/pkg/tuntap"
 	"github.com/interstellar-cloud/star/pkg/util/log"
-	option "github.com/interstellar-cloud/star/pkg/util/option"
+	"github.com/interstellar-cloud/star/pkg/util/option"
+	"github.com/interstellar-cloud/star/pkg/util/packet/common"
+	"github.com/interstellar-cloud/star/pkg/util/packet/forward"
+	peerack "github.com/interstellar-cloud/star/pkg/util/packet/peer/ack"
+	"github.com/interstellar-cloud/star/pkg/util/packet/register/ack"
+	socket2 "github.com/interstellar-cloud/star/pkg/util/socket"
+	"github.com/interstellar-cloud/star/pkg/util/tuntap"
 	"io"
 	"net"
 )
@@ -18,7 +19,7 @@ type EdgeExecutor struct {
 	Protocol option.Protocol
 }
 
-func (ee EdgeExecutor) Execute(socket socket.Socket) error {
+func (ee EdgeExecutor) Execute(socket socket2.Socket) error {
 
 	if ee.Protocol == option.UDP {
 
@@ -71,6 +72,19 @@ func (ee EdgeExecutor) Execute(socket socket.Socket) error {
 				option.AddrMap.Store(v.Mac.String(), addr)
 			}
 
+			break
+
+		case option.MsgTypePacket:
+			forwardPacket, err := forward.Decode(udpBytes)
+			if err != nil {
+				return err
+			}
+
+			log.Logger.Infof("got through packet: %v", forwardPacket)
+			//写入到tap
+			if _, err := ee.Tap.Socket.Write(udpBytes); err != nil {
+				log.Logger.Errorf("write to tap failed. (%v)", err.Error())
+			}
 			break
 		}
 

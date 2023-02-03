@@ -45,7 +45,3 @@ func SocketFD(conn net.Conn) int {
 func (socket Socket) Close() error {
 	return unix.Close(socket.FileDescriptor)
 }
-
-type Executor interface {
-	Execute(socket Socket) error
-}

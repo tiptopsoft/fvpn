@@ -2,8 +2,8 @@ package option
 
 import "sync"
 
-// EdgeConfig read from a config file or cmd flags, or can be assgined from a registry after got the registry ack.
-type EdgeConfig struct {
+// StarConfig read from a config file or cmd flags, or can be assgined from a registry after got the registry ack.
+type StarConfig struct {
 	Registry string   `mapstructure:"registry"`
 	Listen   string   `mapstructure:"listen"`
 	TapName  string   `mapstructure:"tap"`
@@ -13,8 +13,8 @@ type EdgeConfig struct {
 	Protocol Protocol `mapstructure:"type"`
 }
 
-func EdgeDefault() *EdgeConfig {
-	return &EdgeConfig{}
+func Default() *StarConfig {
+	return &StarConfig{}
 }
 
 var (

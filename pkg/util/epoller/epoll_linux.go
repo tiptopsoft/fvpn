@@ -2,9 +2,10 @@ package epoller
 
 import (
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/socket"
 	"github.com/interstellar-cloud/star/pkg/util/log"
 	"github.com/interstellar-cloud/star/pkg/util/option"
+	"github.com/interstellar-cloud/star/pkg/util/socket"
+	"github.com/interstellar-cloud/star/pkg/util/socket/executor"
 	"golang.org/x/sys/unix"
 	"net"
 	"os"
@@ -55,7 +56,7 @@ func (eventLoop EventLoop) AddFd(conn net.Conn) error {
 
 }
 
-func (eventLoop *EventLoop) EventLoop(executor socket.Executor) {
+func (eventLoop *EventLoop) EventLoop(executor executor.Executor) {
 	for {
 		fmt.Println("begin epolling...")
 		events := eventLoop.events
