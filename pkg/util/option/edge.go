@@ -1,7 +1,5 @@
 package option
 
-import "sync"
-
 // StarConfig read from a config file or cmd flags, or can be assgined from a registry after got the registry ack.
 type StarConfig struct {
 	Registry string   `mapstructure:"registry"`
@@ -16,7 +14,3 @@ type StarConfig struct {
 func Default() *StarConfig {
 	return &StarConfig{}
 }
-
-var (
-	AddrMap sync.Map
-)
