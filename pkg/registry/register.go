@@ -1,12 +1,12 @@
 package registry
 
 import (
-	"github.com/interstellar-cloud/star/pkg/packet/common"
-	"github.com/interstellar-cloud/star/pkg/packet/register"
-	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
 	"github.com/interstellar-cloud/star/pkg/registry/addr"
 	"github.com/interstellar-cloud/star/pkg/util/log"
 	"github.com/interstellar-cloud/star/pkg/util/option"
+	"github.com/interstellar-cloud/star/pkg/util/packet/common"
+	"github.com/interstellar-cloud/star/pkg/util/packet/register"
+	"github.com/interstellar-cloud/star/pkg/util/packet/register/ack"
 	"net"
 )
 

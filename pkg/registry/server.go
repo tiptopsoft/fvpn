@@ -3,19 +3,19 @@ package registry
 import (
 	"context"
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/epoller"
-	"github.com/interstellar-cloud/star/pkg/handler"
-	"github.com/interstellar-cloud/star/pkg/handler/auth"
-	"github.com/interstellar-cloud/star/pkg/handler/encrypt"
-	"github.com/interstellar-cloud/star/pkg/packet/common"
-	"github.com/interstellar-cloud/star/pkg/socket"
+	"github.com/interstellar-cloud/star/pkg/util/epoller"
+	"github.com/interstellar-cloud/star/pkg/util/handler"
+	"github.com/interstellar-cloud/star/pkg/util/handler/auth"
+	"github.com/interstellar-cloud/star/pkg/util/handler/encrypt"
 	"github.com/interstellar-cloud/star/pkg/util/log"
 	option2 "github.com/interstellar-cloud/star/pkg/util/option"
+	"github.com/interstellar-cloud/star/pkg/util/packet/common"
+	"github.com/interstellar-cloud/star/pkg/util/socket"
 	"net"
 	"sync"
 )
 
-// mac:Pub
+//mac: peerInfo
 var m sync.Map
 
 type Node struct {

@@ -1,14 +1,12 @@
-package edge
+package executor
 
 import (
-	"errors"
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/packet"
-	"github.com/interstellar-cloud/star/pkg/packet/forward"
-	"github.com/interstellar-cloud/star/pkg/packet/peer/ack"
-	"github.com/interstellar-cloud/star/pkg/socket"
 	"github.com/interstellar-cloud/star/pkg/util/log"
 	"github.com/interstellar-cloud/star/pkg/util/option"
+	"github.com/interstellar-cloud/star/pkg/util/packet"
+	"github.com/interstellar-cloud/star/pkg/util/packet/forward"
+	"github.com/interstellar-cloud/star/pkg/util/socket"
 )
 
 type TapExecutor struct {
@@ -16,46 +14,36 @@ type TapExecutor struct {
 	Socket socket.Socket
 }
 
-// Execute TapExecutor  use to handle tap frame, write to udp sock.
+// Execute TapExecutor use to handle tap frame, write to udp sock.
 // Read a single packet from the TAP interface, process it and write out the corresponding packet to the cooked socket.
 func (te TapExecutor) Execute(socket socket.Socket) error {
 
 	b := make([]byte, option.STAR_PKT_BUFF_SIZE)
 	n, err := socket.Read(b)
-	log.Logger.Info(fmt.Sprintf("Read from tap %s: %v", te.Name, b))
+	log.Logger.Info(fmt.Sprintf("Read from tap %s: length: %d", te.Name, len(b)))
 	if err != nil {
 		log.Logger.Errorf("tap read failed. (%v)", err)
 		return err
 	}
-	log.Logger.Infof("Tap dev: %s receive: %d byte", te.Name, n)
 
 	mac := getMacAddr(b)
-
+	log.Logger.Infof("Tap dev: %s receive: %d byte, mac: %v", te.Name, n, mac)
 	// get dest
-	info, ok := option.AddrMap.Load(mac)
+	_, ok := option.AddrMap.Load(mac)
+	//dst := info.(ack.PeerInfo)
 	if !ok {
-		return errors.New("dest peer not register")
-	}
-	dst := info.(ack.PeerInfo)
-	if ok {
-		//check it is use supernode or p2p
-		if dst.P2P == 1 {
-			// p2p
+		// through supernode
+		fp := forward.NewPacket()
+		bs, err := forward.Encode(fp)
+		if err != nil {
+			log.Logger.Errorf("encode forward failed. err: %v", err)
 		}
 
-		if dst.P2P == 2 {
-			// through supernode
-			fp := forward.NewPacket()
-			bs, err := forward.Encode(fp)
-			if err != nil {
-				log.Logger.Errorf("encode forward failed. err: %v", err)
-			}
-
-			idx := 0
-			packet.EncodeBytes(b, bs, idx)
-			write2Net(te.Socket, b)
-		}
-
+		idx := 0
+		packet.EncodeBytes(bs, b, idx)
+		write2Net(te.Socket, bs)
+	} else {
+		// go p2p
 	}
 	return nil
 }
