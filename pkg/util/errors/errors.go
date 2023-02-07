@@ -8,4 +8,5 @@ var (
 	ErrUnknow         = errors.New("unknown")
 	ErrGetMac         = errors.New("invalid mac addr")
 	ErrPacket         = errors.New("invalid packet")
+	NoSuchInterface   = errors.New("route ip+net: no such network interface")
 )

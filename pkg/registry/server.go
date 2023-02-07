@@ -3,33 +3,29 @@ package registry
 import (
 	"context"
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/epoller"
-	"github.com/interstellar-cloud/star/pkg/handler"
-	"github.com/interstellar-cloud/star/pkg/handler/auth"
-	"github.com/interstellar-cloud/star/pkg/handler/encrypt"
-	"github.com/interstellar-cloud/star/pkg/packet/common"
-	"github.com/interstellar-cloud/star/pkg/socket"
+	"github.com/interstellar-cloud/star/pkg/util"
+	"github.com/interstellar-cloud/star/pkg/util/epoller"
+	"github.com/interstellar-cloud/star/pkg/util/handler"
+	"github.com/interstellar-cloud/star/pkg/util/handler/auth"
+	"github.com/interstellar-cloud/star/pkg/util/handler/encrypt"
 	"github.com/interstellar-cloud/star/pkg/util/log"
 	option2 "github.com/interstellar-cloud/star/pkg/util/option"
+	"github.com/interstellar-cloud/star/pkg/util/packet/common"
+	"github.com/interstellar-cloud/star/pkg/util/socket"
 	"net"
 	"sync"
 )
 
-// mac:Pub
-var m sync.Map
-
-type Node struct {
-	Mac   [4]byte
-	Proto option2.Protocol
-	Conn  net.Conn
-	Addr  *net.UDPAddr
-}
+var (
+	once sync.Once
+)
 
 //RegStar use as registry
 type RegStar struct {
 	*option2.RegConfig
 	handler.ChainHandler
-	conn net.Conn
+	socket socket.Socket
+	Peers  util.Peers
 }
 
 func (r *RegStar) Start(address string) error {
@@ -49,6 +45,10 @@ func (r *RegStar) start(address string) error {
 		r.AddHandler(ctx, &encrypt.StarEncrypt{})
 	}
 
+	once.Do(func() {
+		r.Peers = make(util.Peers)
+	})
+
 	switch r.Protocol {
 	case option2.UDP:
 		addr, err := ResolveAddr(address)
@@ -57,15 +57,19 @@ func (r *RegStar) start(address string) error {
 		}
 
 		conn, err = net.ListenUDP("udp", addr)
-		r.conn = conn
+		r.socket = socket.Socket{
+			AppType:        option2.UDP,
+			FileDescriptor: 0,
+			UdpSocket:      conn.(*net.UDPConn),
+		}
 		log.Logger.Infof("registry start at: %s", address)
 
 		//start http
 		rs := RegistryServer{
-			r.RegConfig,
+			RegStar: r,
 		}
 		go func() {
-			if err := rs.Start(rs.HttpListen); err != nil {
+			if err := rs.Start(); err != nil {
 				log.Logger.Errorf("this is udp server, listen http failed.")
 			}
 		}()
@@ -73,7 +77,7 @@ func (r *RegStar) start(address string) error {
 		if err != nil {
 			return err
 		}
-		defer conn.Close()
+		//defer conn.Close()
 
 		eventLoop, err := epoller.NewEventLoop()
 		eventLoop.Protocol = r.Protocol
@@ -109,10 +113,10 @@ func (r *RegStar) Execute(socket socket.Socket) error {
 	switch p.Flags {
 
 	case option2.MsgTypeRegisterSuper:
-		r.processRegister(addr, socket.UdpSocket, data, nil)
+		r.processRegister(addr, socket, data, nil)
 		break
 	case option2.MsgTypeQueryPeer:
-		r.processPeer(addr, socket.UdpSocket)
+		r.processFindPeer(addr, socket)
 		break
 	case option2.MsgTypePacket:
 		r.forward(data, &p)

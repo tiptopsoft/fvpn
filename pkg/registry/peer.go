@@ -1,15 +1,17 @@
 package registry
 
 import (
-	"github.com/interstellar-cloud/star/pkg/packet/peer/ack"
+	"github.com/interstellar-cloud/star/pkg/util"
 	"github.com/interstellar-cloud/star/pkg/util/log"
+	"github.com/interstellar-cloud/star/pkg/util/packet/peer/ack"
+	"github.com/interstellar-cloud/star/pkg/util/socket"
 	"net"
 )
 
-func (r *RegStar) processPeer(addr *net.UDPAddr, conn *net.UDPConn) {
+func (r *RegStar) processFindPeer(addr *net.UDPAddr, socket socket.Socket) {
 	log.Logger.Infof("start to process query peers...")
 	// get peer info
-	peers, size, err := getPeerInfo()
+	peers, size, err := getPeerInfo(r.Peers)
 	log.Logger.Infof("registry peers: (%v), size: (%v)", peers, size)
 	if err != nil {
 		log.Logger.Errorf("get peers from registry failed. err: %v", err)
@@ -20,31 +22,30 @@ func (r *RegStar) processPeer(addr *net.UDPAddr, conn *net.UDPConn) {
 		log.Logger.Errorf("get peer ack from registry failed. err: %v", err)
 	}
 
-	_, err = conn.WriteToUDP(f, addr)
+	_, err = socket.WriteToUdp(f, addr)
+	log.Logger.Infof("addr: %v", addr)
 	if err != nil {
 		log.Logger.Errorf("registry write failed. err: %v", err)
 	}
 
-	log.Logger.Infof("finish process query peers. (%v)", f)
+	log.Logger.Infof("finish process query peers")
 }
 
-func getPeerInfo() ([]ack.PeerInfo, uint8, error) {
-	var result []ack.PeerInfo
-	m.Range(func(mac, pub any) bool {
-		a := pub.(*net.UDPAddr)
-		info := ack.PeerInfo{
-			Mac:  []byte(mac.(string)),
-			Host: a.IP,
-			Port: uint16(a.Port),
+func getPeerInfo(peers util.Peers) ([]ack.EdgeInfo, uint8, error) {
+	var result []ack.EdgeInfo
+	for _, peer := range peers {
+		info := ack.EdgeInfo{
+			Mac:  peer.MacAddr,
+			Host: peer.IP,
+			Port: peer.Port,
 		}
 		result = append(result, info)
-		return true
-	})
+	}
 
 	return result, uint8(len(result)), nil
 }
 
-func peerAckBuild(infos []ack.PeerInfo, size uint8) ([]byte, error) {
+func peerAckBuild(infos []ack.EdgeInfo, size uint8) ([]byte, error) {
 	peerPacket := ack.NewPacket()
 	peerPacket.Size = size
 	peerPacket.PeerInfos = infos

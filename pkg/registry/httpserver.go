@@ -2,21 +2,20 @@ package registry
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/interstellar-cloud/star/pkg/util/option"
 	"net"
 )
 
 type RegistryServer struct {
-	*option.RegConfig
+	*RegStar
 }
 
-func (s RegistryServer) Start(addr string) error {
+func (s RegistryServer) Start() error {
 
 	var router = gin.Default()
 	router.GET("registry/list", s.list())
 	router.GET("registry/addr/list", s.addrList())
 
-	err := router.Run(addr)
+	err := router.Run(s.HttpListen)
 	if err != nil {
 		return err
 	}
@@ -25,13 +24,7 @@ func (s RegistryServer) Start(addr string) error {
 
 func (s RegistryServer) list() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var resp = make(map[string]string)
-		m.Range(func(key, value any) bool {
-			resp[key.(string)] = value.(*net.UDPAddr).String()
-			return true
-		})
-
-		ctx.JSON(200, resp)
+		ctx.JSON(200, s.Peers)
 	}
 }
 

@@ -28,7 +28,7 @@ type Star struct {
 }
 
 type Config struct {
-	Star *EdgeConfig `mapstructure:"star"`
+	Star *StarConfig `mapstructure:"star"`
 	Reg  *RegConfig  `mapstructure:"registry"`
 }
 

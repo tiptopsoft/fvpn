@@ -2,13 +2,13 @@ package cmd
 
 import (
 	"github.com/interstellar-cloud/star/pkg/edge"
-	"github.com/interstellar-cloud/star/pkg/handler/auth"
+	"github.com/interstellar-cloud/star/pkg/util/handler/auth"
 	option2 "github.com/interstellar-cloud/star/pkg/util/option"
 	"github.com/spf13/cobra"
 )
 
 type upOptions struct {
-	*option2.EdgeConfig
+	*option2.StarConfig
 	auth.StarAuth
 	StarConfigFilePath string
 }
@@ -42,8 +42,8 @@ func runEdge(opts *upOptions) error {
 		return err
 	}
 
-	s := edge.StarEdge{
-		EdgeConfig: config.Star,
+	s := edge.Star{
+		StarConfig: config.Star,
 	}
 	return s.Start()
 }

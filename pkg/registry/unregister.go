@@ -1,13 +1,14 @@
 package registry
 
 import (
-	"github.com/interstellar-cloud/star/pkg/packet/common"
-	"github.com/interstellar-cloud/star/pkg/packet/register"
 	"github.com/interstellar-cloud/star/pkg/util/log"
+	"github.com/interstellar-cloud/star/pkg/util/packet/common"
+	"github.com/interstellar-cloud/star/pkg/util/packet/register"
+	"github.com/interstellar-cloud/star/pkg/util/socket"
 	"net"
 )
 
-func (r *RegStar) processUnregister(addr *net.UDPAddr, conn *net.UDPConn, data []byte, cp *common.CommonPacket) {
+func (r *RegStar) processUnregister(addr *net.UDPAddr, socket socket.Socket, data []byte, cp *common.CommonPacket) {
 	var regPacket register.RegPacket
 	var err error
 	if cp != nil {
@@ -20,18 +21,17 @@ func (r *RegStar) processUnregister(addr *net.UDPAddr, conn *net.UDPConn, data [
 		log.Logger.Errorf("registry failed. err: %v", err)
 	}
 	// build a ack
-	f, err := ackBuilder(regPacket)
+	f, err := r.ackBuilder(*addr, socket, regPacket)
 	log.Logger.Infof("build a registry ack: %v", f)
 	if err != nil {
 		log.Logger.Errorf("build resp p failed. err: %v", err)
 	}
-	_, err = conn.WriteToUDP(f, addr)
+	_, err = socket.WriteToUdp(f, addr)
 	if err != nil {
 		log.Logger.Errorf("registry write failed. err: %v", err)
 	}
 }
 
 func (r *RegStar) unRegister(packet register.RegPacket) error {
-	m.Delete(packet.SrcMac.String())
 	return nil
 }
