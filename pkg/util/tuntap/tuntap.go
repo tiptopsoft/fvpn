@@ -2,8 +2,10 @@ package tuntap
 
 import (
 	"fmt"
+	"github.com/interstellar-cloud/star/pkg/util"
 	"github.com/interstellar-cloud/star/pkg/util/socket"
 	"golang.org/x/sys/unix"
+	"net"
 	"os"
 	"syscall"
 	"unsafe"
@@ -15,7 +17,7 @@ type Tuntap struct {
 	Name    string
 	Socket  socket.Socket
 	Mode    Mode
-	MacAddr string
+	MacAddr net.HardwareAddr
 }
 
 type Mode int
@@ -89,10 +91,12 @@ func New(mode Mode) (*Tuntap, error) {
 
 	fmt.Println("Successfully connect to tun/tap interface:", name)
 
+	mac, _ := util.GetMacAddrByDev(name)
 	return &Tuntap{
-		Fd:     file.Fd(),
-		Name:   name,
-		Socket: socket.Socket{FileDescriptor: int(file.Fd())},
-		Mode:   mode,
+		Fd:      file.Fd(),
+		Name:    name,
+		Socket:  socket.Socket{FileDescriptor: int(file.Fd())},
+		Mode:    mode,
+		MacAddr: mac,
 	}, nil
 }

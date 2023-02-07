@@ -24,8 +24,8 @@ var (
 type RegStar struct {
 	*option2.RegConfig
 	handler.ChainHandler
-	conn  net.Conn
-	Peers util.Peers
+	socket socket.Socket
+	Peers  util.Peers
 }
 
 func (r *RegStar) Start(address string) error {
@@ -57,7 +57,11 @@ func (r *RegStar) start(address string) error {
 		}
 
 		conn, err = net.ListenUDP("udp", addr)
-		r.conn = conn
+		r.socket = socket.Socket{
+			AppType:        option2.UDP,
+			FileDescriptor: 0,
+			UdpSocket:      conn.(*net.UDPConn),
+		}
 		log.Logger.Infof("registry start at: %s", address)
 
 		//start http
@@ -73,7 +77,7 @@ func (r *RegStar) start(address string) error {
 		if err != nil {
 			return err
 		}
-		defer conn.Close()
+		//defer conn.Close()
 
 		eventLoop, err := epoller.NewEventLoop()
 		eventLoop.Protocol = r.Protocol

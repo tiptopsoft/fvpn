@@ -2,7 +2,6 @@ package util
 
 import (
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/util/errors"
 	"math/rand"
 	"net"
 )
@@ -14,21 +13,12 @@ var (
 	NULL_MAC           = net.HardwareAddr{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 )
 
-func GetLocalMac(name string) ([4]byte, error) {
-	var b [4]byte
+func GetMacAddrByDev(name string) (net.HardwareAddr, error) {
 	fa, err := net.InterfaceByName(name)
-
 	if err != nil {
-		return [4]byte{}, err
+		return nil, err
 	}
-	macAddr := fa.HardwareAddr.String()
-	if len(macAddr) == 0 {
-		return [4]byte{}, errors.ErrGetMac
-	}
-
-	copy(b[:], macAddr)
-	return b, nil
-
+	return fa.HardwareAddr, nil
 }
 
 // RandMac rand gen a mac

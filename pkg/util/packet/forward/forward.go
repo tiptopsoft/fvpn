@@ -33,7 +33,7 @@ func Encode(fp ForwardPacket) ([]byte, error) {
 	idx = packet.EncodeBytes(b, commonBytes, idx)
 	idx = packet.EncodeBytes(b, fp.SrcMac[:], idx)
 	idx = packet.EncodeBytes(b, fp.DstMac[:], idx)
-	return nil, nil
+	return b, nil
 }
 
 func Decode(udpBytes []byte) (ForwardPacket, error) {
