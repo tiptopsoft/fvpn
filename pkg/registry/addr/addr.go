@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/interstellar-cloud/star/pkg/util/log"
 	"go.uber.org/atomic"
-	"math/rand"
 	"net"
 	"sync"
 )
@@ -18,9 +17,10 @@ var (
 )
 
 type Endpoint struct {
-	Mac  net.HardwareAddr
-	IP   net.IP
-	Mask net.IP
+	Mac      net.HardwareAddr
+	IP       net.IP
+	Mask     net.IP
+	ipNumber uint32
 }
 
 //AddrCache 存储到map里
@@ -31,16 +31,10 @@ type AddrCache struct {
 }
 
 // New generate a endpoint
-func New(srcMac string) (*Endpoint, error) {
-	macStr := fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", 0x52, 0x54, 0x00, rand.Intn(0xff), rand.Intn(0xff), rand.Intn(0xff))
-	mac, err := net.ParseMAC(macStr)
-	if err != nil {
-		return nil, errors.New("new mac failed")
-	}
-
+func New(srcMac net.HardwareAddr) (*Endpoint, error) {
 	var ac any
 	var ok bool
-	ac, ok = ipMap.Load(srcMac)
+	ac, ok = ipMap.Load(srcMac.String())
 	if !ok {
 		num := ipNumber.Load()
 		if num == 0 {
@@ -57,20 +51,21 @@ func New(srcMac string) (*Endpoint, error) {
 		}
 		ac = AddrCache{
 			Group:  [4]byte{},
-			SrcMac: srcMac,
+			SrcMac: srcMac.String(),
 			Endpoint: Endpoint{
-				Mac:  mac,
-				IP:   ip,
-				Mask: ipMask,
+				Mac:      srcMac,
+				IP:       ip,
+				Mask:     ipMask,
+				ipNumber: num,
 			},
 		}
 		ipNumber.Store(num)
-		ipMap.Store(srcMac, ac)
+		ipMap.Store(srcMac.String(), ac)
 	} else {
 		cache := ac.(AddrCache)
-		ip := net.ParseIP(GenerateIP(ipNumber.Load()))
+		ip := net.ParseIP(GenerateIP(cache.Endpoint.ipNumber))
 		cache.Endpoint.IP = ip
-		ipMap.Store(srcMac, cache)
+		ipMap.Store(srcMac.String(), cache)
 	}
 
 	res := ac.(AddrCache)

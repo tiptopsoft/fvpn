@@ -21,6 +21,7 @@ import (
 	"os"
 	"sync"
 	"time"
+	"unsafe"
 )
 
 type Star struct {
@@ -65,11 +66,9 @@ func (star Star) Start() error {
 	err = star.register()
 
 	go func() {
-
 		for {
-			err = star.register()
 			err = star.queryPeer()
-			time.Sleep(time.Second * 60 * 2)
+			time.Sleep(time.Second * 60)
 		}
 	}()
 
@@ -178,8 +177,7 @@ func (star *Star) unregister(conn net.Conn) error {
 	var err error
 
 	rp := register.NewUnregisterPacket()
-	hw, _ := net.ParseMAC(star.Tuntap.MacAddr)
-	rp.SrcMac = hw
+	rp.SrcMac = star.Tuntap.MacAddr
 	data, err := register.Encode(rp)
 	fmt.Println("sending unregister data: ", data)
 	if err != nil {
@@ -250,7 +248,8 @@ func (ee NetExecutor) Execute(socket socket.Socket) error {
 	if ee.Protocol == option.UDP {
 		//for {
 		udpBytes := make([]byte, 2048)
-		_, err := socket.Read(udpBytes)
+		n, err := socket.Read(udpBytes)
+		log.Logger.Infof("star net socket receive size: %d, data: (%v)", n, udpBytes)
 		if err != nil {
 			if err == io.EOF {
 				//no data exists, continue read next frame continue
@@ -312,10 +311,18 @@ func (ee NetExecutor) Execute(socket socket.Socket) error {
 			if err != nil {
 				return err
 			}
-			log.Logger.Infof("got through packet: %v", forwardPacket)
-			//写入到tap
-			if _, err := ee.Tap.Socket.Write(udpBytes); err != nil {
-				log.Logger.Errorf("write to tap failed. (%v)", err.Error())
+			log.Logger.Infof("got through packet: %v, srcMac: %v, current tap macAddr: %v", forwardPacket, forwardPacket.SrcMac, ee.Tap.MacAddr)
+
+			if forwardPacket.SrcMac.String() == ee.Tap.MacAddr.String() {
+				//self, drop packet
+				log.Logger.Warnf("self packet droped: %v, srcMac: %v, current tap macAddr: %v", forwardPacket, forwardPacket.SrcMac, ee.Tap.MacAddr)
+			} else {
+				//写入到tap
+				idx := unsafe.Sizeof(forwardPacket)
+				if _, err := ee.Tap.Socket.Write(udpBytes[idx:n]); err != nil {
+					log.Logger.Errorf("write to tap failed. (%v)", err.Error())
+				}
+				log.Logger.Infof("net write to tap as tap response to client. size: %d", n-int(idx))
 			}
 			break
 		}
@@ -328,7 +335,7 @@ func (ee NetExecutor) Execute(socket socket.Socket) error {
 func (te TapExecutor) Execute(socket socket.Socket) error {
 	b := make([]byte, option.STAR_PKT_BUFF_SIZE)
 	n, err := socket.Read(b)
-	log.Logger.Info(fmt.Sprintf("Read from tap %s: length: %d", te.Tap.Name, len(b)))
+	log.Logger.Info(fmt.Sprintf("Read from tap %s: length: %d，data: %v", te.Tap.Name, n, b))
 	if err != nil {
 		log.Logger.Errorf("tap read failed. (%v)", err)
 		return err
@@ -336,26 +343,38 @@ func (te TapExecutor) Execute(socket socket.Socket) error {
 
 	destMac := getMacAddr(b)
 	log.Logger.Infof("Tap dev: %s receive: %d byte, mac: %v", te.Tap.Name, n, destMac)
-	broad := util.IsBroadCast(destMac)
-	if broad {
-		// broad frame, go through supernode
-		fp := forward.NewPacket()
-		bs, err := forward.Encode(fp)
-		if err != nil {
-			log.Logger.Errorf("encode forward failed. err: %v", err)
-		}
-
-		idx := 0
-		packet.EncodeBytes(bs, b, idx)
-		write2Net(te.NetSocket, bs)
-	} else {
-		// go p2p
+	//broad := util.IsBroadCast(destMac)
+	//if broad {
+	// broad frame, go through supernode
+	fp := forward.NewPacket()
+	fp.SrcMac, err = util.GetMacAddrByDev(te.Tap.Name)
+	if err != nil {
+		log.Logger.Errorf("get src mac failed. %v", err)
 	}
+	fp.DstMac, err = net.ParseMAC(destMac)
+	if err != nil {
+		log.Logger.Errorf("get src mac failed. %v", err)
+	}
+
+	bs, err := forward.Encode(fp)
+	if err != nil {
+		log.Logger.Errorf("encode forward failed. err: %v", err)
+	}
+
+	idx := 0
+	newPacket := make([]byte, 2048)
+	idx = packet.EncodeBytes(newPacket, bs, idx)
+	packet.EncodeBytes(newPacket, b[:n], idx)
+	write2Net(te.NetSocket, newPacket)
+	//} else {
+	//	// go p2p
+	//}
 	return nil
 }
 
 //use host socket write so destination
 func write2Net(socket socket.Socket, b []byte) {
+	log.Logger.Infof("tap write to net packet: (%v)", b)
 	if _, err := socket.Write(b); err != nil {
 		log.Logger.Errorf("write to remote failed. (%v)", err)
 	}

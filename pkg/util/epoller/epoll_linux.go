@@ -62,7 +62,7 @@ func (eventLoop *EventLoop) EventLoop(executor executor.Executor) {
 		nevents, e := syscall.EpollWait(eventLoop.epfd, eventLoop.events[:], -1)
 		if e != nil {
 			fmt.Println("epoll_wait: ", e)
-			break
+			continue
 		}
 
 		for i := 0; i < nevents; i++ {

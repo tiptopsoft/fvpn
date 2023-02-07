@@ -36,7 +36,7 @@ func (r *RegStar) processRegister(remoteAddr *net.UDPAddr, socket socket.Socket,
 }
 
 func (r *RegStar) ackBuilder(peerAddr net.UDPAddr, socket socket.Socket, rp register.RegPacket) ([]byte, error) {
-	endpoint, err := addr.New(rp.SrcMac.String())
+	endpoint, err := addr.New(rp.SrcMac)
 	if err != nil {
 		return nil, err
 	}

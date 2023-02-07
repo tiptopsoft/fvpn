@@ -1,7 +1,6 @@
 package registry
 
 import (
-	"encoding/json"
 	"github.com/interstellar-cloud/star/pkg/util"
 	"github.com/interstellar-cloud/star/pkg/util/log"
 	"github.com/interstellar-cloud/star/pkg/util/packet/peer/ack"
@@ -13,11 +12,7 @@ func (r *RegStar) processFindPeer(addr *net.UDPAddr, socket socket.Socket) {
 	log.Logger.Infof("start to process query peers...")
 	// get peer info
 	peers, size, err := getPeerInfo(r.Peers)
-	b, err := json.Marshal(peers)
-	if err != nil {
-		log.Logger.Errorf("proces peer failed: %v", err)
-	}
-	log.Logger.Infof("registry peers: (%v), size: (%v)", string(b), size)
+	log.Logger.Infof("registry peers: (%v), size: (%v)", peers, size)
 	if err != nil {
 		log.Logger.Errorf("get peers from registry failed. err: %v", err)
 	}
@@ -33,7 +28,7 @@ func (r *RegStar) processFindPeer(addr *net.UDPAddr, socket socket.Socket) {
 		log.Logger.Errorf("registry write failed. err: %v", err)
 	}
 
-	log.Logger.Infof("finish process query peers. (%v)", f)
+	log.Logger.Infof("finish process query peers")
 }
 
 func getPeerInfo(peers util.Peers) ([]ack.EdgeInfo, uint8, error) {
