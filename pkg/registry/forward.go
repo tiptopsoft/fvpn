@@ -18,8 +18,8 @@ func (r *RegStar) forward(data []byte, cp *common.CommonPacket) {
 	//if util.IsBroadCast(fp.DstMac.String()) {
 	//broad cast send data to all edge
 	for _, v := range r.Nodes {
-		_, err := r.socket.WriteToUdp(data, &v.Addr)
-		log.Logger.Infof("forward packet: (%v), addr: %v", data, &v.Addr)
+		err := r.socket.WriteToUdp(data, v.Addr)
+		log.Logger.Infof("forward packet: (%v), addr: %v", data, v.Addr)
 		if err != nil {
 			log.Logger.Errorf("send to remote edge or registry failed. err: %v", err)
 		}
