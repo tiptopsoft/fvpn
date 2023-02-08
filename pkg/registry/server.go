@@ -12,6 +12,7 @@ import (
 	option2 "github.com/interstellar-cloud/star/pkg/util/option"
 	"github.com/interstellar-cloud/star/pkg/util/packet/common"
 	"github.com/interstellar-cloud/star/pkg/util/socket"
+	"golang.org/x/sys/unix"
 	"net"
 	"sync"
 )
@@ -25,7 +26,7 @@ type RegStar struct {
 	*option2.RegConfig
 	handler.ChainHandler
 	socket socket.Socket
-	Peers  util.Peers
+	Nodes  util.Nodes
 }
 
 func (r *RegStar) Start(address string) error {
@@ -35,7 +36,8 @@ func (r *RegStar) Start(address string) error {
 // Node register node for net, and for user create edge
 func (r *RegStar) start(address string) error {
 	var ctx = context.Background()
-	var conn net.Conn
+	sock := socket.NewSocket()
+	r.socket = sock
 	r.ChainHandler = handler.NewChainHandler()
 	if r.OpenAuth {
 		r.AddHandler(ctx, &auth.AuthHandler{})
@@ -46,21 +48,20 @@ func (r *RegStar) start(address string) error {
 	}
 
 	once.Do(func() {
-		r.Peers = make(util.Peers)
+		r.Nodes = make(util.Nodes)
 	})
 
 	switch r.Protocol {
 	case option2.UDP:
 		addr, err := ResolveAddr(address)
+
 		if err != nil {
 			return err
 		}
 
-		conn, err = net.ListenUDP("udp", addr)
-		r.socket = socket.Socket{
-			AppType:        option2.UDP,
-			FileDescriptor: 0,
-			UdpSocket:      conn.(*net.UDPConn),
+		err = r.socket.Listen(addr)
+		if err != nil {
+			return err
 		}
 		log.Logger.Infof("registry start at: %s", address)
 
@@ -81,8 +82,8 @@ func (r *RegStar) start(address string) error {
 
 		eventLoop, err := epoller.NewEventLoop()
 		eventLoop.Protocol = r.Protocol
-		if err := eventLoop.AddFd(conn); err != nil {
-			log.Logger.Errorf("add fd to epoller failed. (%v)", err)
+		if err := eventLoop.AddFd(r.socket); err != nil {
+			log.Logger.Errorf("add fd to epoller failed. err: (%v)", err)
 			return err
 		}
 
@@ -113,10 +114,10 @@ func (r *RegStar) Execute(socket socket.Socket) error {
 	switch p.Flags {
 
 	case option2.MsgTypeRegisterSuper:
-		r.processRegister(addr, socket, data, nil)
+		r.processRegister(addr, data, nil)
 		break
 	case option2.MsgTypeQueryPeer:
-		r.processFindPeer(addr, socket)
+		r.processFindPeer(addr)
 		break
 	case option2.MsgTypePacket:
 		r.forward(data, &p)
@@ -126,6 +127,19 @@ func (r *RegStar) Execute(socket socket.Socket) error {
 	return nil
 }
 
-func ResolveAddr(address string) (*net.UDPAddr, error) {
-	return net.ResolveUDPAddr("udp", address)
+func ResolveAddr(address string) (unix.Sockaddr, error) {
+	addr, err := net.ResolveUDPAddr("udp", address)
+	if err != nil {
+		return nil, err
+	}
+
+	ip := [4]byte{}
+	copy(ip[:], addr.IP.To4())
+
+	result := &unix.SockaddrInet4{
+		Port: addr.Port,
+		Addr: ip,
+	}
+
+	return result, nil
 }

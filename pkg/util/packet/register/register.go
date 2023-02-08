@@ -59,7 +59,6 @@ func Decode(udpBytes []byte) (RegPacket, error) {
 }
 
 func DecodeWithCommonPacket(udpBytes []byte, cp common.CommonPacket) (RegPacket, error) {
-
 	res := NewPacket()
 	idx := 0
 	res.CommonPacket = cp

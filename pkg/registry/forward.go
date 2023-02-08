@@ -17,7 +17,7 @@ func (r *RegStar) forward(data []byte, cp *common.CommonPacket) {
 
 	//if util.IsBroadCast(fp.DstMac.String()) {
 	//broad cast send data to all edge
-	for _, v := range r.Peers {
+	for _, v := range r.Nodes {
 		_, err := r.socket.WriteToUdp(data, &v.Addr)
 		log.Logger.Infof("forward packet: (%v), addr: %v", data, &v.Addr)
 		if err != nil {
@@ -27,7 +27,7 @@ func (r *RegStar) forward(data []byte, cp *common.CommonPacket) {
 
 	//} else {
 	//	// find Addr in registry
-	//	peer := util.FindPeers(r.Peers, fp.DstMac.String())
+	//	peer := util.FindPeers(r.Nodes, fp.DstMac.String())
 	//	if peer == nil {
 	//		log.Logger.Errorf("dst has not registerd in registry. macAddr: %s", fp.DstMac.String())
 	//	}

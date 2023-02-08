@@ -24,7 +24,7 @@ func (s RegistryServer) Start() error {
 
 func (s RegistryServer) list() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		ctx.JSON(200, s.Peers)
+		ctx.JSON(200, s.Nodes)
 	}
 }
 

@@ -1,18 +1,18 @@
 package registry
 
 import (
-	"github.com/interstellar-cloud/star/pkg/registry/addr"
 	"github.com/interstellar-cloud/star/pkg/util"
+	"github.com/interstellar-cloud/star/pkg/util/addr"
 	"github.com/interstellar-cloud/star/pkg/util/log"
 	"github.com/interstellar-cloud/star/pkg/util/option"
 	"github.com/interstellar-cloud/star/pkg/util/packet/common"
 	"github.com/interstellar-cloud/star/pkg/util/packet/register"
 	"github.com/interstellar-cloud/star/pkg/util/packet/register/ack"
-	"github.com/interstellar-cloud/star/pkg/util/socket"
+	"golang.org/x/sys/unix"
 	"net"
 )
 
-func (r *RegStar) processRegister(remoteAddr *net.UDPAddr, socket socket.Socket, data []byte, cp *common.CommonPacket) {
+func (r *RegStar) processRegister(remoteAddr unix.Sockaddr, data []byte, cp *common.CommonPacket) {
 	var regPacket register.RegPacket
 	var err error
 	if cp != nil {
@@ -22,12 +22,12 @@ func (r *RegStar) processRegister(remoteAddr *net.UDPAddr, socket socket.Socket,
 	}
 
 	// build an ack
-	f, err := r.ackBuilder(*remoteAddr, socket, regPacket)
+	f, err := r.registerAck(remoteAddr, regPacket.SrcMac)
 	log.Logger.Infof("build a registry ack: %v", f)
 	if err != nil {
-		log.Logger.Errorf("build resp p failed. err: %v", err)
+		log.Logger.Errorf("build resp failed. err: %v", err)
 	}
-	_, err = socket.WriteToUdp(f, remoteAddr)
+	err = r.socket.WriteToUdp(f, remoteAddr)
 	if err != nil {
 		log.Logger.Errorf("registry write failed. err: %v", err)
 	}
@@ -35,27 +35,25 @@ func (r *RegStar) processRegister(remoteAddr *net.UDPAddr, socket socket.Socket,
 
 }
 
-func (r *RegStar) ackBuilder(peerAddr net.UDPAddr, socket socket.Socket, rp register.RegPacket) ([]byte, error) {
-	endpoint, err := addr.New(rp.SrcMac)
+func (r *RegStar) registerAck(peerAddr unix.Sockaddr, srcMac net.HardwareAddr) ([]byte, error) {
+	endpoint, err := addr.New(srcMac)
 	if err != nil {
 		return nil, err
 	}
-
 	p := ack.NewPacket()
 	p.RegMac = endpoint.Mac
 	p.AutoIP = endpoint.IP
 	p.Mask = endpoint.Mask
-	rp.CommonPacket.Flags = option.MsgTypeRegisterAck
-	p.CommonPacket = rp.CommonPacket
+	p.CommonPacket = common.NewPacket(option.MsgTypeRegisterAck)
 
-	peer := &util.Peer{
-		Conn:    socket.UdpSocket,
+	ackNode := &util.Node{
+		Socket:  r.socket,
 		Addr:    peerAddr,
 		MacAddr: endpoint.Mac,
 		IP:      endpoint.IP,
 		Port:    0,
 	}
 
-	r.Peers[endpoint.Mac.String()] = peer
+	r.Nodes[endpoint.Mac.String()] = ackNode
 	return ack.Encode(p)
 }

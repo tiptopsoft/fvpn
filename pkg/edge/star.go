@@ -1,8 +1,10 @@
 package edge
 
 import (
+	"errors"
 	"fmt"
 	"github.com/interstellar-cloud/star/pkg/util"
+	"github.com/interstellar-cloud/star/pkg/util/addr"
 	"github.com/interstellar-cloud/star/pkg/util/log"
 	"github.com/interstellar-cloud/star/pkg/util/option"
 	"github.com/interstellar-cloud/star/pkg/util/packet"
@@ -28,7 +30,7 @@ type Star struct {
 	*option.StarConfig
 	*tuntap.Tuntap
 	socket.Socket
-	Peers          util.Peers //获取回来的Peers  mac: Peer
+	Nodes          util.Nodes //获取回来的Peers  mac: Node
 	Executor       executor.Executor
 	SocketExecutor executor.Executor
 	TapExecutor    executor.Executor
@@ -39,7 +41,7 @@ type TapExecutor struct {
 	NetSocket socket.Socket
 	TapSocket socket.Socket
 	Protocol  option.Protocol
-	Peers     util.Peers
+	Peers     util.Nodes
 }
 
 type NetExecutor struct {
@@ -47,7 +49,7 @@ type NetExecutor struct {
 	NetSocket socket.Socket
 	TapSocket socket.Socket
 	Protocol  option.Protocol
-	Peers     util.Peers //获取回来的Peers  mac: Peer
+	Peers     util.Nodes //获取回来的Peers  mac: Node
 }
 
 var (
@@ -59,12 +61,11 @@ var (
 func (star Star) Start() error {
 	//init connect to registry
 	var err error
-	_, err = star.conn()
+	star.Socket = socket.NewSocket()
+	err = star.conn()
 	if err != nil {
 		return err
 	}
-	err = star.register()
-
 	go func() {
 		for {
 			err = star.queryPeer()
@@ -73,20 +74,18 @@ func (star Star) Start() error {
 	}()
 
 	once.Do(func() {
-		star.Peers = make(util.Peers, 1)
+		star.Nodes = make(util.Nodes, 1)
 		tap, err := tuntap.New(tuntap.TAP)
 		star.Tuntap = tap
 		tapSocket := socket.Socket{
-			AppType:        option.UDP,
-			FileDescriptor: int(star.Tuntap.Fd),
-			UdpSocket:      star.UdpSocket,
+			Fd: int(star.Tuntap.Fd),
 		}
 		star.SocketExecutor = NetExecutor{
 			Tap:       tap,
 			NetSocket: star.Socket,
 			TapSocket: tapSocket,
 			Protocol:  star.Protocol,
-			Peers:     star.Peers,
+			Peers:     star.Nodes,
 		}
 
 		star.TapExecutor = TapExecutor{
@@ -94,13 +93,14 @@ func (star Star) Start() error {
 			NetSocket: star.Socket,
 			TapSocket: tapSocket,
 			Protocol:  star.Protocol,
-			Peers:     star.Peers,
+			Peers:     star.Nodes,
 		}
 		if err != nil {
-			log.Logger.Errorf("create or connect tuntap failed. (%v)", err)
+			log.Logger.Errorf("create or connect tuntap failed, err: (%v)", err)
 		}
 	})
 
+	err = star.register()
 	star.loop()
 	if <-stopCh > 0 {
 		log.Logger.Infof("star stop success")
@@ -109,26 +109,19 @@ func (star Star) Start() error {
 	return nil
 }
 
-func (star *Star) conn() (net.Conn, error) {
-	var conn net.Conn
+func (star *Star) conn() error {
 	var err error
-
 	switch star.Protocol {
 	case option.UDP:
-		conn, err = net.Dial("udp", star.Registry)
-	}
+		remoteAddr, err := util.GetAddress(star.Registry, addr.DefaultPort)
+		if err != nil {
+			return err
+		}
 
-	//defer conn.Close()
-	if err != nil {
-		return nil, err
+		err = star.Socket.Connect(&remoteAddr)
+		log.Logger.Infof("star connected to registry: (%v)", star.Registry)
 	}
-
-	log.Logger.Infof("star connected to registry: (%v)", star.Registry)
-	star.Socket = socket.Socket{
-		AppType:   option.UDP,
-		UdpSocket: conn.(*net.UDPConn),
-	}
-	return conn, nil
+	return err
 }
 
 func (star *Star) queryPeer() error {
@@ -153,17 +146,16 @@ func (star *Star) queryPeer() error {
 func (star *Star) register() error {
 	var err error
 	rp := register.NewPacket()
-	hw, _ := net.ParseMAC(util.GetLocalMacAddr())
-	rp.SrcMac = hw
+	rp.SrcMac, _ = addr.GetMacAddrByDev(star.Tuntap.Name)
+	log.Logger.Infof("register src mac: %v to registry", rp.SrcMac.String())
 	data, err := register.Encode(rp)
 	log.Logger.Infof("sending registry data: %v", data)
 	if err != nil {
 		return err
 	}
-
 	switch star.Protocol {
 	case option.UDP:
-		log.Logger.Infof("star start to registry self to registry: %v", rp)
+		log.Logger.Infof("star start to register to registry: %v", rp)
 		if _, err := star.Write(data); err != nil {
 			return err
 		}
@@ -196,43 +188,53 @@ func (star *Star) unregister(conn net.Conn) error {
 }
 
 func (star *Star) loop() {
-	netFd := socket.SocketFD(star.UdpSocket)
-	tapFd := int(star.Fd)
-	var FdSet unix.FdSet
-	var maxFd int
-	if netFd > tapFd {
-		maxFd = netFd
-	} else {
-		maxFd = tapFd
-	}
 	for {
+		netFd := star.Socket.Fd
+		tapFd := int(star.Tuntap.Fd)
+		var FdSet unix.FdSet
+		var maxFd int
+		if netFd > tapFd {
+			maxFd = netFd
+		} else {
+			maxFd = tapFd
+		}
 		FdSet.Zero()
 		FdSet.Set(netFd)
 		FdSet.Set(tapFd)
 
 		ret, err := unix.Select(maxFd+1, &FdSet, nil, nil, nil)
+		log.Logger.Infof("ret: %v, err: %v", ret, err)
 		if ret < 0 && err == unix.EINTR {
 			continue
 		}
-		var s socket.Socket
-		var executor executor.Executor
+
 		if err != nil {
 			panic(err)
+			// reconnect to registry
+			//_, err1 := star.conn()
+			//if err1 != nil {
+			//	log.Logger.Errorf("reconnect to registry failed. err: %v", err1)
+			//}
+			//
+			//tap, err1 := tuntap.New(tuntap.TAP)
+			//if err1 != nil {
+			//	log.Logger.Errorf("reopen tuntap failed. err: %v", err1)
+			//}
+			//star.Tuntap = tap
+			//log.Logger.Infof("reconnect to registry success")
 		}
+		var s socket.Socket
+		var executor executor.Executor
 
 		if FdSet.IsSet(tapFd) {
 			s = socket.Socket{
-				FileDescriptor: tapFd,
-				UdpSocket:      nil,
+				Fd: tapFd,
 			}
 			executor = star.TapExecutor
 		}
 
 		if FdSet.IsSet(netFd) {
-			s = socket.Socket{
-				FileDescriptor: netFd,
-				UdpSocket:      star.UdpSocket,
-			}
+			s = star.Socket
 			executor = star.SocketExecutor
 		}
 
@@ -243,27 +245,27 @@ func (star *Star) loop() {
 	}
 }
 
-func (ee NetExecutor) Execute(socket socket.Socket) error {
+func (ee NetExecutor) Execute(skt socket.Socket) error {
 	log.Logger.Infof("start execute net...")
 	if ee.Protocol == option.UDP {
 		//for {
 		udpBytes := make([]byte, 2048)
-		n, err := socket.Read(udpBytes)
-		log.Logger.Infof("star net socket receive size: %d, data: (%v)", n, udpBytes)
+		n, err := skt.Read(udpBytes)
+		log.Logger.Infof("star net skt receive size: %d, data: (%info)", n, udpBytes)
 		if err != nil {
 			if err == io.EOF {
 				//no data exists, continue read next frame continue
 				log.Logger.Errorf("not data exists")
 			} else {
-				log.Logger.Errorf("read from remote error: %v", err)
+				log.Logger.Errorf("read from remote error: %info", err)
 			}
 		}
 
 		cp, err := common.Decode(udpBytes)
 
-		log.Logger.Infof("edge net executor working...., data: %v", cp)
+		log.Logger.Infof("edge net executor working...., data: %info", cp)
 		if err != nil {
-			log.Logger.Errorf("decode err: %v", err)
+			log.Logger.Errorf("decode err: %info", err)
 		}
 
 		switch cp.Flags {
@@ -272,7 +274,7 @@ func (ee NetExecutor) Execute(socket socket.Socket) error {
 			if err != nil {
 				return err
 			}
-			log.Logger.Infof("got registry registry ack: %v", regAck)
+			log.Logger.Infof("got registry registry ack: %info", regAck)
 			//设置IP
 			if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", ee.Tap.Name, regAck.AutoIP.String(), regAck.Mask.String(), 1420)); err != nil {
 				return err
@@ -286,24 +288,26 @@ func (ee NetExecutor) Execute(socket socket.Socket) error {
 				return err
 			}
 			infos := peerPacketAck.PeerInfos
-			log.Logger.Infof("got registry peers: (%v)", infos)
-			for _, v := range infos {
-				addr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", v.Host.String(), v.Port))
+			log.Logger.Infof("got registry peers: (%info)", infos)
+			for _, info := range infos {
+				address, err := util.GetAddress(info.Host.String(), int(info.Port))
 				if err != nil {
-					log.Logger.Errorf("resolve addr failed. err: %v", err)
+					log.Logger.Errorf("resolve addr failed, err: %info", err)
 				}
-				//option.AddrMap.Store(v.Mac.String(), addr)
-				conn, err := net.Dial("udp", addr.String())
+
+				sock := socket.NewSocket()
+
+				err = sock.Connect(&address)
 				if err != nil {
 					return err
 				}
-				peer := &util.Peer{
-					Conn:    conn,
-					MacAddr: v.Mac,
-					IP:      v.Host,
-					Port:    v.Port,
+				peerInfo := &util.Node{
+					Socket:  sock,
+					MacAddr: info.Mac,
+					IP:      info.Host,
+					Port:    info.Port,
 				}
-				ee.Peers[v.Mac.String()] = peer
+				ee.Peers[info.Mac.String()] = peerInfo
 			}
 			break
 		case option.MsgTypePacket:
@@ -311,16 +315,16 @@ func (ee NetExecutor) Execute(socket socket.Socket) error {
 			if err != nil {
 				return err
 			}
-			log.Logger.Infof("got through packet: %v, srcMac: %v, current tap macAddr: %v", forwardPacket, forwardPacket.SrcMac, ee.Tap.MacAddr)
+			log.Logger.Infof("got through packet: %info, srcMac: %info, current tap macAddr: %info", forwardPacket, forwardPacket.SrcMac, ee.Tap.MacAddr)
 
 			if forwardPacket.SrcMac.String() == ee.Tap.MacAddr.String() {
 				//self, drop packet
-				log.Logger.Warnf("self packet droped: %v, srcMac: %v, current tap macAddr: %v", forwardPacket, forwardPacket.SrcMac, ee.Tap.MacAddr)
+				log.Logger.Warnf("self packet droped: %info, srcMac: %info, current tap macAddr: %info", forwardPacket, forwardPacket.SrcMac, ee.Tap.MacAddr)
 			} else {
 				//写入到tap
 				idx := unsafe.Sizeof(forwardPacket)
 				if _, err := ee.Tap.Socket.Write(udpBytes[idx:n]); err != nil {
-					log.Logger.Errorf("write to tap failed. (%v)", err.Error())
+					log.Logger.Errorf("write to tap failed. (%info)", err.Error())
 				}
 				log.Logger.Infof("net write to tap as tap response to client. size: %d", n-int(idx))
 			}
@@ -342,41 +346,47 @@ func (te TapExecutor) Execute(socket socket.Socket) error {
 	}
 
 	destMac := getMacAddr(b)
-	log.Logger.Infof("Tap dev: %s receive: %d byte, mac: %v", te.Tap.Name, n, destMac)
-	//broad := util.IsBroadCast(destMac)
-	//if broad {
-	// broad frame, go through supernode
+	log.Logger.Infof("Tap device: %s receive: %d byte, will write to mac: %v", te.Tap.Name, n, destMac)
+	broad := addr.IsBroadCast(destMac)
+	//broad frame, go through supernode
 	fp := forward.NewPacket()
-	fp.SrcMac, err = util.GetMacAddrByDev(te.Tap.Name)
+	fp.SrcMac, err = addr.GetMacAddrByDev(te.Tap.Name)
 	if err != nil {
-		log.Logger.Errorf("get src mac failed. %v", err)
+		log.Logger.Errorf("get src mac failed, err: %v", err)
 	}
 	fp.DstMac, err = net.ParseMAC(destMac)
 	if err != nil {
-		log.Logger.Errorf("get src mac failed. %v", err)
+		log.Logger.Errorf("get src mac failed, err: %v", err)
 	}
 
 	bs, err := forward.Encode(fp)
 	if err != nil {
-		log.Logger.Errorf("encode forward failed. err: %v", err)
+		log.Logger.Errorf("encode forward failed, err: %v", err)
 	}
 
 	idx := 0
 	newPacket := make([]byte, 2048)
 	idx = packet.EncodeBytes(newPacket, bs, idx)
 	packet.EncodeBytes(newPacket, b[:n], idx)
-	write2Net(te.NetSocket, newPacket)
-	//} else {
-	//	// go p2p
-	//}
+	if broad {
+		write2Net(te.NetSocket, newPacket)
+	} else {
+		// go p2p
+		log.Logger.Infof("find peer in edge, destMac: %v", destMac)
+		p := util.FindNode(te.Peers, destMac)
+		if p == nil {
+			return errors.New("peer not found, may be not registered in registry")
+		}
+		write2Net(p.Socket, newPacket)
+	}
 	return nil
 }
 
-//use host socket write so destination
+//use host socket write so destination, superNode or use p2p
 func write2Net(socket socket.Socket, b []byte) {
 	log.Logger.Infof("tap write to net packet: (%v)", b)
 	if _, err := socket.Write(b); err != nil {
-		log.Logger.Errorf("write to remote failed. (%v)", err)
+		log.Logger.Errorf("tap write to net failed. (%v)", err)
 	}
 }
 

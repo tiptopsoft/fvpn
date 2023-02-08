@@ -4,14 +4,13 @@ import (
 	"github.com/interstellar-cloud/star/pkg/util"
 	"github.com/interstellar-cloud/star/pkg/util/log"
 	"github.com/interstellar-cloud/star/pkg/util/packet/peer/ack"
-	"github.com/interstellar-cloud/star/pkg/util/socket"
-	"net"
+	"golang.org/x/sys/unix"
 )
 
-func (r *RegStar) processFindPeer(addr *net.UDPAddr, socket socket.Socket) {
+func (r *RegStar) processFindPeer(addr unix.Sockaddr) {
 	log.Logger.Infof("start to process query peers...")
 	// get peer info
-	peers, size, err := getPeerInfo(r.Peers)
+	peers, size, err := getPeerInfo(r.Nodes)
 	log.Logger.Infof("registry peers: (%v), size: (%v)", peers, size)
 	if err != nil {
 		log.Logger.Errorf("get peers from registry failed. err: %v", err)
@@ -22,7 +21,7 @@ func (r *RegStar) processFindPeer(addr *net.UDPAddr, socket socket.Socket) {
 		log.Logger.Errorf("get peer ack from registry failed. err: %v", err)
 	}
 
-	_, err = socket.WriteToUdp(f, addr)
+	err = r.socket.WriteToUdp(f, addr)
 	log.Logger.Infof("addr: %v", addr)
 	if err != nil {
 		log.Logger.Errorf("registry write failed. err: %v", err)
@@ -31,7 +30,7 @@ func (r *RegStar) processFindPeer(addr *net.UDPAddr, socket socket.Socket) {
 	log.Logger.Infof("finish process query peers")
 }
 
-func getPeerInfo(peers util.Peers) ([]ack.EdgeInfo, uint8, error) {
+func getPeerInfo(peers util.Nodes) ([]ack.EdgeInfo, uint8, error) {
 	var result []ack.EdgeInfo
 	for _, peer := range peers {
 		info := ack.EdgeInfo{
