@@ -107,7 +107,6 @@ func (star *Star) starLoop() {
 		FdSet.Zero()
 		FdSet.Set(netFd)
 		FdSet.Set(tapFd)
-
 		timeout := &unix.Timeval{
 			Sec:  3,
 			Usec: 0,

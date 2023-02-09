@@ -76,7 +76,7 @@ func (star Star) Start() error {
 			idx = packet.EncodeBytes(newPacket, bs, idx)
 			packet.EncodeBytes(newPacket, b[:n], idx)
 			if broad {
-				//write2Net(te.NetSocket, newPacket)
+				write2Net(skt, newPacket)
 			} else {
 				// go p2p
 				log.Logger.Infof("find peer in edge, destMac: %v", destMac)
@@ -84,7 +84,7 @@ func (star Star) Start() error {
 				if p == nil {
 					return errors.New("peer not found, may be not registered in registry")
 				}
-				//write2Net(p.Socket, newPacket)
+				write2Net(p.Socket, newPacket)
 			}
 			return nil
 		}
