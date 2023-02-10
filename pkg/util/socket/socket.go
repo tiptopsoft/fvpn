@@ -1,52 +1,45 @@
 package socket
 
 import (
-	"github.com/interstellar-cloud/star/pkg/util/option"
 	"golang.org/x/sys/unix"
-	"net"
-	"reflect"
 )
 
-//Socket use to wrap FileDescriptor
+//Socket use to wrap fd
 type Socket struct {
-	AppType        option.Protocol
-	FileDescriptor int
-	UdpSocket      *net.UDPConn
+	Fd int
 }
 
-func (socket Socket) ReadFromUdp(bytes []byte) (n int, addr *net.UDPAddr, err error) {
-	return socket.UdpSocket.ReadFromUDP(bytes)
+func (socket Socket) ReadFromUdp(bytes []byte) (n int, addr unix.Sockaddr, err error) {
+	return unix.Recvfrom(socket.Fd, bytes, 0)
 }
 
-func (socket Socket) WriteToUdp(bytes []byte, addr *net.UDPAddr) (n int, err error) {
-	return socket.UdpSocket.WriteToUDP(bytes, addr)
+func (socket Socket) WriteToUdp(bytes []byte, addr unix.Sockaddr) (err error) {
+	return unix.Sendto(socket.Fd, bytes, 0, addr)
 }
 
 func (socket Socket) Read(bytes []byte) (n int, err error) {
-	if socket.AppType == option.UDP {
-		return socket.UdpSocket.Read(bytes)
-	}
-	return unix.Read(socket.FileDescriptor, bytes)
+	return unix.Read(socket.Fd, bytes)
 }
 
 func (socket Socket) Write(bytes []byte) (n int, err error) {
-	if socket.AppType == option.UDP {
-		return socket.UdpSocket.Write(bytes)
-	} else {
-		return unix.Write(socket.FileDescriptor, bytes)
-	}
-}
-
-func SocketFD(conn net.Conn) int {
-	tcpConn := reflect.Indirect(reflect.ValueOf(conn)).FieldByName("conn")
-	//if tls {
-	//	tcpConn = reflect.Indirect(tcpConn.Elem())
-	//}
-	fdVal := tcpConn.FieldByName("fd")
-	pfdVal := reflect.Indirect(fdVal).FieldByName("pfd")
-	return int(pfdVal.FieldByName("Sysfd").Int())
+	return unix.Write(socket.Fd, bytes)
 }
 
 func (socket Socket) Close() error {
-	return unix.Close(socket.FileDescriptor)
+	return unix.Close(socket.Fd)
+}
+
+func NewSocket() Socket {
+	fd, _ := unix.Socket(unix.AF_INET, unix.SOCK_DGRAM, 0)
+	unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_REUSEADDR, 1)
+	unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_REUSEPORT, 1)
+	return Socket{Fd: fd}
+}
+
+func (socket Socket) Connect(addr unix.Sockaddr) error {
+	return unix.Connect(socket.Fd, addr)
+}
+
+func (socket Socket) Listen(addr unix.Sockaddr) error {
+	return unix.Bind(socket.Fd, addr)
 }

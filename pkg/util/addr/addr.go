@@ -3,17 +3,22 @@ package addr
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/util/log"
+	"github.com/interstellar-cloud/star/pkg/util/errors"
 	"go.uber.org/atomic"
+	"math/rand"
 	"net"
 	"sync"
 )
 
 var (
-	ipMap    sync.Map
-	ipNumber atomic.Uint32
+	ipMap              sync.Map
+	ipNumber           atomic.Uint32
+	BROADCAST_MAC      = net.HardwareAddr{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}
+	MULTICAST_MAC      = net.HardwareAddr{0x01, 0x00, 0x5E, 0x00, 0x00, 0x00} // first 3 bytes are meaningful
+	IPV6_MULTICAST_MAC = net.HardwareAddr{0x33, 0x33, 0x00, 0x00, 0x00, 0x00}
+	NULL_MAC           = net.HardwareAddr{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+	DefaultPort        = 4000
 )
 
 type Endpoint struct {
@@ -46,8 +51,7 @@ func New(srcMac net.HardwareAddr) (*Endpoint, error) {
 		ipMask, _, err := net.ParseCIDR("255.255.255.0/24")
 
 		if err != nil {
-			log.Logger.Errorf("invalid cidr.")
-			return nil, errors.New("invalid cidr")
+			return nil, errors.ErrInvalieCIDR
 		}
 		ac = AddrCache{
 			Group:  [4]byte{},
@@ -87,4 +91,49 @@ func GenerateIP(ipInt uint32) string {
 	b2 := (ipInt >> 8) & 0xff
 	b3 := ipInt & 0xff
 	return fmt.Sprintf("%d.%d.%d.%d", b0, b1, b2, b3)
+}
+
+func GetMacAddrByDev(name string) (net.HardwareAddr, error) {
+	fa, err := net.InterfaceByName(name)
+	if err != nil {
+		return nil, err
+	}
+	return fa.HardwareAddr, nil
+}
+
+// RandMac rand gen a mac
+func RandMac() (string, error) {
+	buf := make([]byte, 6)
+	_, err := rand.Read(buf)
+	if err != nil {
+		return "", err
+	}
+	buf[0] |= 2
+	mac := fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5])
+
+	return mac, nil
+}
+
+func GetLocalMacAddr() net.HardwareAddr {
+	// getMac
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil
+	}
+	for _, v := range ifaces {
+		if v.HardwareAddr == nil {
+			continue
+		}
+		return v.HardwareAddr
+	}
+
+	return nil
+}
+
+func IsBroadCast(destMac string) bool {
+	if destMac == BROADCAST_MAC.String() {
+		return true
+	}
+
+	return false
 }

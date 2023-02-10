@@ -9,4 +9,9 @@ var (
 	ErrGetMac         = errors.New("invalid mac addr")
 	ErrPacket         = errors.New("invalid packet")
 	NoSuchInterface   = errors.New("route ip+net: no such network interface")
+	ErrInvalieCIDR    = errors.New("invalid cidr")
 )
+
+func New(msg string) error {
+	return errors.New(msg)
+}

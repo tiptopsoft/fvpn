@@ -9,9 +9,9 @@ import (
 func TestSocketFD(t *testing.T) {
 
 	s := Socket{
-		AppType:        "",
-		FileDescriptor: 0,
-		UdpSocket:      nil,
+		AppType:   "",
+		Fd:        0,
+		UdpSocket: nil,
 	}
 
 	fmt.Println(s.AppType == option.UDP)
