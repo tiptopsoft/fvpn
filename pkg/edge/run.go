@@ -10,7 +10,6 @@ import (
 	"github.com/interstellar-cloud/star/pkg/util/packet/register"
 	"github.com/interstellar-cloud/star/pkg/util/socket"
 	"golang.org/x/sys/unix"
-	"net"
 )
 
 func (star *Star) conn() error {
@@ -52,7 +51,7 @@ func (star *Star) queryPeer() error {
 func (star *Star) register() error {
 	var err error
 	rp := register.NewPacket()
-	rp.SrcMac, _ = addr.GetMacAddrByDev(star.tuntap.Name)
+	rp.SrcMac, _ = addr.GetMacAddrByDev(star.tap.Name)
 	log.Logger.Infof("register src mac: %v to registry", rp.SrcMac.String())
 	data, err := register.Encode(rp)
 	log.Logger.Infof("sending registry data: %v", data)
@@ -71,11 +70,11 @@ func (star *Star) register() error {
 }
 
 // register register a edgestar to center.
-func (star *Star) unregister(conn net.Conn) error {
+func (star *Star) unregister() error {
 	var err error
 
 	rp := register.NewUnregisterPacket()
-	rp.SrcMac = star.tuntap.MacAddr
+	rp.SrcMac = star.tap.MacAddr
 	data, err := register.Encode(rp)
 	fmt.Println("sending unregister data: ", data)
 	if err != nil {
@@ -85,7 +84,7 @@ func (star *Star) unregister(conn net.Conn) error {
 	switch star.Protocol {
 	case option.UDP:
 		log.Logger.Infof("star start to registry self to registry: %v", rp)
-		if _, err := conn.(*net.UDPConn).Write(data); err != nil {
+		if _, err := star.Socket.Write(data); err != nil {
 			return err
 		}
 		break
@@ -95,7 +94,7 @@ func (star *Star) unregister(conn net.Conn) error {
 
 func (star *Star) starLoop() {
 	netFd := star.Socket.Fd
-	tapFd := star.tuntap.Fd
+	tapFd := star.tap.Fd
 	var FdSet unix.FdSet
 	var maxFd int
 	if netFd > tapFd {
@@ -121,13 +120,13 @@ func (star *Star) starLoop() {
 		}
 
 		if FdSet.IsSet(tapFd) {
-			if err := star.tapFunc(star.tuntap, star.Socket); err != nil {
+			if err := star.tapFunc(star.tap, star.Socket); err != nil {
 				log.Logger.Errorf("tap socket failed. (%v)", err)
 			}
 		}
 
 		if FdSet.IsSet(netFd) {
-			if err := star.socketFunc(star.tuntap, star.Socket); err != nil {
+			if err := star.socketFunc(star.tap, star.Socket); err != nil {
 				log.Logger.Errorf("socket func failed. (%v)", err)
 			}
 		}

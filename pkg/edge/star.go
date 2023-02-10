@@ -26,7 +26,7 @@ var (
 
 type Star struct {
 	*option.StarConfig
-	tuntap *tuntap.Tuntap
+	tap *tuntap.Tuntap
 	socket.Socket
 	Nodes      util.Nodes //获取回来的Peers  mac: Node
 	socketFunc func(device *tuntap.Tuntap, socket socket.Socket) error
@@ -43,13 +43,13 @@ func (star Star) Start() error {
 		star.Nodes = make(util.Nodes, 1)
 		star.Protocol = option.UDP
 		tap, err := tuntap.New(tuntap.TAP)
-		star.tuntap = tap
+		star.tap = tap
 
 		star.tapFunc = func(device *tuntap.Tuntap, skt socket.Socket) error {
 			b := make([]byte, option.STAR_PKT_BUFF_SIZE)
-			n, err := device.Read(b)
+			size, err := device.Read(b)
 			destMac := util.GetMacAddr(b)
-			fmt.Println(fmt.Sprintf("Read %d bytes from device %s, will write to dest %s", n, star.tuntap.Name, destMac))
+			fmt.Println(fmt.Sprintf("Read %d bytes from device %s, will write to dest %s", size, star.tap.Name, destMac))
 			if err != nil {
 				log.Logger.Errorf("tap read failed. (%v)", err)
 				return err
@@ -57,7 +57,7 @@ func (star Star) Start() error {
 			broad := addr.IsBroadCast(destMac)
 			//broad frame, go through supernode
 			fp := forward.NewPacket()
-			fp.SrcMac, err = addr.GetMacAddrByDev(star.tuntap.Name)
+			fp.SrcMac, err = addr.GetMacAddrByDev(star.tap.Name)
 			if err != nil {
 				log.Logger.Errorf("get src mac failed, err: %v", err)
 			}
@@ -74,27 +74,31 @@ func (star Star) Start() error {
 			idx := 0
 			newPacket := make([]byte, 2048)
 			idx = packet.EncodeBytes(newPacket, bs, idx)
-			packet.EncodeBytes(newPacket, b[:n], idx)
+			idx = packet.EncodeBytes(newPacket, b[:size], idx)
 			if broad {
-				write2Net(skt, newPacket)
+				write2Net(skt, newPacket[:idx])
 			} else {
 				// go p2p
 				log.Logger.Infof("find peer in edge, destMac: %v", destMac)
 				p := util.FindNode(star.Nodes, destMac)
 				if p == nil {
-					return errors.New("peer not found, may be not registered in registry")
+					write2Net(skt, newPacket[:idx])
+					log.Logger.Warnf("peer not found, go through super node")
+				} else {
+					write2Net(p.Socket, newPacket[:idx])
 				}
-				write2Net(p.Socket, newPacket)
 			}
 			return nil
 		}
 
 		star.socketFunc = func(device *tuntap.Tuntap, skt socket.Socket) error {
-			fmt.Println("exec net skt.")
 			if star.Protocol == option.UDP {
 				udpBytes := make([]byte, 2048)
-				n, err := skt.Read(udpBytes)
-				log.Logger.Infof("star net skt receive size: %d, data: (%v)", n, udpBytes)
+				size, err := skt.Read(udpBytes)
+				if size < 0 {
+					return errors.New("no data exists")
+				}
+				log.Logger.Infof("star net skt receive size: %d, data: (%v)", size, udpBytes[:size])
 				if err != nil {
 					if err == io.EOF {
 						//no data exists, continue read next frame continue
@@ -104,25 +108,25 @@ func (star Star) Start() error {
 					}
 				}
 
-				cp, err := common.Decode(udpBytes)
+				cp, err := common.Decode(udpBytes[:size])
 				if err != nil {
 					log.Logger.Errorf("decode err: %v", err)
 				}
 
 				switch cp.Flags {
 				case option.MsgTypeRegisterAck:
-					regAck, err := ack.Decode(udpBytes)
+					regAck, err := ack.Decode(udpBytes[:size])
 					if err != nil {
 						return err
 					}
 					log.Logger.Infof("got registry registry ack: (%v)", regAck)
 					//设置IP
-					if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", star.tuntap.Name, regAck.AutoIP.String(), regAck.Mask.String(), 1420)); err != nil {
+					if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", star.tap.Name, regAck.AutoIP.String(), regAck.Mask.String(), 1420)); err != nil {
 						return err
 					}
 					break
 				case option.MsgTypeQueryPeer:
-					peerPacketAck, err := peerack.Decode(udpBytes)
+					peerPacketAck, err := peerack.Decode(udpBytes[:size])
 					if err != nil {
 						return err
 					}
@@ -148,22 +152,22 @@ func (star Star) Start() error {
 					}
 					break
 				case option.MsgTypePacket:
-					forwardPacket, err := forward.Decode(udpBytes)
+					forwardPacket, err := forward.Decode(udpBytes[:size])
 					if err != nil {
 						return err
 					}
-					log.Logger.Infof("got through packet: %v, srcMac: %v, current tap macAddr: %v", forwardPacket, forwardPacket.SrcMac, star.tuntap.MacAddr)
+					log.Logger.Infof("got through packet: %v, srcMac: %v, current tap macAddr: %v", forwardPacket, forwardPacket.SrcMac, star.tap.MacAddr)
 
-					if forwardPacket.SrcMac.String() == star.tuntap.MacAddr.String() {
+					if forwardPacket.SrcMac.String() == star.tap.MacAddr.String() {
 						//self, drop packet
-						log.Logger.Warnf("self packet droped: %v, srcMac: %v, current tap macAddr: %v", forwardPacket, forwardPacket.SrcMac, star.tuntap.MacAddr)
+						log.Logger.Infof("self packet droped: %v, srcMac: %v, current tap macAddr: %v", forwardPacket, forwardPacket.SrcMac, star.tap.MacAddr)
 					} else {
 						//写入到tap
 						idx := unsafe.Sizeof(forwardPacket)
-						if _, err := star.tuntap.Write(udpBytes[idx:n]); err != nil {
+						if _, err := star.tap.Write(udpBytes[idx:size]); err != nil {
 							log.Logger.Errorf("write to tap failed. (%v)", err.Error())
 						}
-						log.Logger.Infof("net write to tap as tap response to client. size: %d", n-int(idx))
+						log.Logger.Infof("net write to tap as tap response to client. size: %d", size-int(idx))
 					}
 					break
 				}
@@ -172,7 +176,7 @@ func (star Star) Start() error {
 		}
 
 		if err != nil {
-			log.Logger.Errorf("create or connect tuntap failed, err: (%v)", err)
+			log.Logger.Errorf("create or connect tap failed, err: (%v)", err)
 		}
 
 		if err := star.register(); err != nil {

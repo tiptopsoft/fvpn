@@ -101,7 +101,7 @@ func (r *RegStar) start(address string) error {
 
 func (r *RegStar) Execute(socket socket.Socket) error {
 	data := make([]byte, 2048)
-	_, addr, err := socket.ReadFromUdp(data)
+	size, addr, err := socket.ReadFromUdp(data)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -114,13 +114,13 @@ func (r *RegStar) Execute(socket socket.Socket) error {
 	switch p.Flags {
 
 	case option2.MsgTypeRegisterSuper:
-		r.processRegister(addr, data, nil)
+		r.processRegister(addr, data[:size], nil)
 		break
 	case option2.MsgTypeQueryPeer:
 		r.processFindPeer(addr)
 		break
 	case option2.MsgTypePacket:
-		r.forward(data, &p)
+		r.forward(data[:size], &p)
 		break
 	}
 

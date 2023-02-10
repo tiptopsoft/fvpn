@@ -8,7 +8,7 @@ import (
 var Logger *zap.SugaredLogger
 
 func init() {
-	logger, _ := zap.NewProduction()
+	logger, _ := zap.NewDevelopment()
 	defer func(logger *zap.Logger) {
 		err := logger.Sync()
 		if err != nil {
