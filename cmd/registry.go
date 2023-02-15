@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"github.com/interstellar-cloud/star/pkg/registry"
+	"github.com/interstellar-cloud/star/pkg/util/handler/auth"
+	"github.com/interstellar-cloud/star/pkg/util/handler/encrypt"
 	"github.com/interstellar-cloud/star/pkg/util/option"
 	"github.com/spf13/cobra"
 )
@@ -39,7 +41,9 @@ func runSuper(opts *RegStarOptions) error {
 		return err
 	}
 	s := registry.RegStar{
-		RegConfig: config.Reg,
+		RegConfig:      config.Reg,
+		AuthHandler:    new(auth.AuthHandler),
+		EncryptHandler: new(encrypt.EncryptHandler),
 	}
 
 	return s.Start(config.Reg.Listen)

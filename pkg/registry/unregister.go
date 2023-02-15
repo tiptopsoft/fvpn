@@ -11,12 +11,7 @@ import (
 func (r *RegStar) processUnregister(addr unix.Sockaddr, socket socket.Socket, data []byte, cp *common.CommonPacket) {
 	var regPacket register.RegPacket
 	var err error
-	if cp != nil {
-		regPacket, err = register.DecodeWithCommonPacket(data, *cp)
-	} else {
-		regPacket, err = register.Decode(data)
-	}
-
+	regPacket, err = register.Decode(data)
 	if err := r.unRegister(regPacket); err != nil {
 		log.Logger.Errorf("registry failed. err: %v", err)
 	}

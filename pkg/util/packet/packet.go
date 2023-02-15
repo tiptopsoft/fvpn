@@ -43,17 +43,16 @@ import (
 Now , we just impl ipv4, and have only one group.
 */
 
-type Encoder interface {
-	Encode() ([]byte, error)
+type Packet struct {
+	dstBuff []byte
+	srcBuff []byte
 }
 
-type Decoder interface {
-	Decode(bs []byte) (interface{}, error)
-}
-
-type EnDecoder interface {
-	Encode() ([]byte, error)
-	Decode(bs []byte) (interface{}, error)
+func New() Packet {
+	return Packet{
+		dstBuff: make([]byte, 2048),
+		srcBuff: make([]byte, 2048),
+	}
 }
 
 func EncodeBytes(dst, src []byte, idx int) int {
