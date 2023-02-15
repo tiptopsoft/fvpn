@@ -65,16 +65,6 @@ func (r *RegStar) start(address string) error {
 		}
 		log.Logger.Infof("registry start at: %s", address)
 
-		//start http
-		rs := RegistryServer{
-			RegStar: r,
-		}
-		go func() {
-			if err := rs.Start(); err != nil {
-				log.Logger.Errorf("this is udp server, listen http failed.")
-			}
-		}()
-
 		if err != nil {
 			return err
 		}
