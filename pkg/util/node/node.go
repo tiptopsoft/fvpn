@@ -17,6 +17,7 @@ type Node struct {
 	MacAddr net.HardwareAddr
 	IP      net.IP
 	Port    uint16
+	P2P     bool
 }
 
 func New() NodesCache {

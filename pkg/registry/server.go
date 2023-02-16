@@ -43,7 +43,6 @@ func (r *RegStar) start(address string) error {
 	switch r.Protocol {
 	case option2.UDP:
 		addr, err := ResolveAddr(address)
-
 		if err != nil {
 			return err
 		}

@@ -18,11 +18,13 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 	"unsafe"
 )
 
 var (
-	once sync.Once
+	once     sync.Once
+	EdgePort = 6061
 )
 
 type Star struct {
@@ -183,6 +185,15 @@ func (star Star) Start() error {
 		if err := star.register(); err != nil {
 			log.Logger.Errorf("registry failed. (%v)", err)
 		}
+
+		go func() {
+			for {
+				star.queryPeer()
+				//连通
+				star.dialNode()
+				time.Sleep(30 * time.Second)
+			}
+		}()
 	})
 	star.starLoop()
 	return nil

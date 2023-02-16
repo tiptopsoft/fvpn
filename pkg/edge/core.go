@@ -140,3 +140,18 @@ func write2Net(socket socket.Socket, b []byte) {
 		log.Logger.Errorf("tap write to net failed. (%v)", err)
 	}
 }
+
+func (star Star) dialNode() {
+
+	for _, v := range star.cache.Nodes {
+		addr := v.Addr.(*unix.SockaddrInet4).Addr
+		newAddr := &unix.SockaddrInet4{Addr: addr, Port: EdgePort}
+		if !v.P2P {
+			if err := star.Socket.Connect(newAddr); err != nil {
+				return
+			}
+		}
+		//如果连通，则更新cache中的状态
+		v.P2P = true
+	}
+}
