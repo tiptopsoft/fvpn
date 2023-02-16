@@ -6,6 +6,7 @@ import (
 	"github.com/interstellar-cloud/star/pkg/util"
 	"github.com/interstellar-cloud/star/pkg/util/addr"
 	"github.com/interstellar-cloud/star/pkg/util/log"
+	"github.com/interstellar-cloud/star/pkg/util/node"
 	"github.com/interstellar-cloud/star/pkg/util/option"
 	"github.com/interstellar-cloud/star/pkg/util/packet"
 	"github.com/interstellar-cloud/star/pkg/util/packet/common"
@@ -28,7 +29,7 @@ type Star struct {
 	*option.StarConfig
 	tap *tuntap.Tuntap
 	socket.Socket
-	Nodes      util.Nodes //获取回来的Peers  mac: Node
+	cache      node.NodesCache //获取回来的Peers  mac: Node
 	socketFunc func(device *tuntap.Tuntap, socket socket.Socket) error
 	tapFunc    func(device *tuntap.Tuntap, socket socket.Socket) error
 	inbound    []chan *packet.Packet
@@ -40,7 +41,7 @@ func (star Star) Start() error {
 		if err := star.conn(); err != nil {
 
 		}
-		star.Nodes = make(util.Nodes, 1)
+		star.cache = node.New()
 		star.Protocol = option.UDP
 		tap, err := tuntap.New(tuntap.TAP)
 		star.tap = tap
@@ -80,7 +81,7 @@ func (star Star) Start() error {
 			} else {
 				// go p2p
 				log.Logger.Infof("find peer in edge, destMac: %v", destMac)
-				p := util.FindNode(star.Nodes, destMac)
+				p := node.FindNode(star.cache, destMac)
 				if p == nil {
 					write2Net(skt, newPacket[:idx])
 					log.Logger.Warnf("peer not found, go through super node")
@@ -142,13 +143,13 @@ func (star Star) Start() error {
 						if err != nil {
 							return err
 						}
-						peerInfo := &util.Node{
+						peerInfo := &node.Node{
 							Socket:  sock,
 							MacAddr: info.Mac,
 							IP:      info.Host,
 							Port:    info.Port,
 						}
-						star.Nodes[info.Mac.String()] = peerInfo
+						star.cache.Nodes[info.Mac.String()] = peerInfo
 					}
 					break
 				case option.MsgTypePacket:

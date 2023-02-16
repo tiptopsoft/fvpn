@@ -1,14 +1,11 @@
 package registry
 
 import (
-	"context"
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/util"
 	"github.com/interstellar-cloud/star/pkg/util/epoller"
 	"github.com/interstellar-cloud/star/pkg/util/handler"
-	"github.com/interstellar-cloud/star/pkg/util/handler/auth"
-	"github.com/interstellar-cloud/star/pkg/util/handler/encrypt"
 	"github.com/interstellar-cloud/star/pkg/util/log"
+	"github.com/interstellar-cloud/star/pkg/util/node"
 	option2 "github.com/interstellar-cloud/star/pkg/util/option"
 	"github.com/interstellar-cloud/star/pkg/util/packet/common"
 	"github.com/interstellar-cloud/star/pkg/util/socket"
@@ -25,8 +22,10 @@ var (
 type RegStar struct {
 	*option2.RegConfig
 	handler.ChainHandler
-	socket socket.Socket
-	Nodes  util.Nodes
+	socket         socket.Socket
+	cache          node.NodesCache
+	AuthHandler    handler.Handler
+	EncryptHandler handler.Handler
 }
 
 func (r *RegStar) Start(address string) error {
@@ -35,20 +34,10 @@ func (r *RegStar) Start(address string) error {
 
 // Node register node for net, and for user create edge
 func (r *RegStar) start(address string) error {
-	var ctx = context.Background()
 	sock := socket.NewSocket()
 	r.socket = sock
-	r.ChainHandler = handler.NewChainHandler()
-	if r.OpenAuth {
-		r.AddHandler(ctx, &auth.AuthHandler{})
-	}
-
-	if r.OpenEncrypt {
-		r.AddHandler(ctx, &encrypt.StarEncrypt{})
-	}
-
 	once.Do(func() {
-		r.Nodes = make(util.Nodes)
+		r.cache = node.New()
 	})
 
 	switch r.Protocol {
@@ -64,21 +53,9 @@ func (r *RegStar) start(address string) error {
 			return err
 		}
 		log.Logger.Infof("registry start at: %s", address)
-
-		//start http
-		rs := RegistryServer{
-			RegStar: r,
-		}
-		go func() {
-			if err := rs.Start(); err != nil {
-				log.Logger.Errorf("this is udp server, listen http failed.")
-			}
-		}()
-
 		if err != nil {
 			return err
 		}
-		//defer conn.Close()
 
 		eventLoop, err := epoller.NewEventLoop()
 		eventLoop.Protocol = r.Protocol

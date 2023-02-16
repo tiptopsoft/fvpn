@@ -1,9 +1,9 @@
 package registry
 
 import (
-	"github.com/interstellar-cloud/star/pkg/util"
 	"github.com/interstellar-cloud/star/pkg/util/addr"
 	"github.com/interstellar-cloud/star/pkg/util/log"
+	"github.com/interstellar-cloud/star/pkg/util/node"
 	"github.com/interstellar-cloud/star/pkg/util/option"
 	"github.com/interstellar-cloud/star/pkg/util/packet/common"
 	"github.com/interstellar-cloud/star/pkg/util/packet/register"
@@ -15,11 +15,7 @@ import (
 func (r *RegStar) processRegister(remoteAddr unix.Sockaddr, data []byte, cp *common.CommonPacket) {
 	var regPacket register.RegPacket
 	var err error
-	if cp != nil {
-		regPacket, err = register.DecodeWithCommonPacket(data, *cp)
-	} else {
-		regPacket, err = register.Decode(data)
-	}
+	regPacket, err = register.Decode(data)
 
 	// build an ack
 	f, err := r.registerAck(remoteAddr, regPacket.SrcMac)
@@ -46,7 +42,7 @@ func (r *RegStar) registerAck(peerAddr unix.Sockaddr, srcMac net.HardwareAddr) (
 	p.Mask = endpoint.Mask
 	p.CommonPacket = common.NewPacket(option.MsgTypeRegisterAck)
 
-	ackNode := &util.Node{
+	ackNode := &node.Node{
 		Socket:  r.socket,
 		Addr:    peerAddr,
 		MacAddr: endpoint.Mac,
@@ -54,6 +50,7 @@ func (r *RegStar) registerAck(peerAddr unix.Sockaddr, srcMac net.HardwareAddr) (
 		Port:    0,
 	}
 
-	r.Nodes[endpoint.Mac.String()] = ackNode
+	r.cache.Nodes[endpoint.Mac.String()] = ackNode
+	r.cache.IPNodes[endpoint.IP.String()] = ackNode
 	return ack.Encode(p)
 }

@@ -4,10 +4,10 @@ import (
 	"context"
 )
 
-type StarEncrypt struct {
+type EncryptHandler struct {
 }
 
-func (se *StarEncrypt) Handle(ctx context.Context, udpBytes []byte) error {
+func (se *EncryptHandler) Handle(ctx context.Context, udpBytes []byte) error {
 
 	return nil
 }
