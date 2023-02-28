@@ -2,13 +2,13 @@ package edge
 
 import (
 	"fmt"
+	"github.com/interstellar-cloud/star/pkg/addr"
+	"github.com/interstellar-cloud/star/pkg/log"
+	"github.com/interstellar-cloud/star/pkg/option"
+	"github.com/interstellar-cloud/star/pkg/packet/peer"
+	"github.com/interstellar-cloud/star/pkg/packet/register"
+	"github.com/interstellar-cloud/star/pkg/socket"
 	"github.com/interstellar-cloud/star/pkg/util"
-	"github.com/interstellar-cloud/star/pkg/util/addr"
-	"github.com/interstellar-cloud/star/pkg/util/log"
-	"github.com/interstellar-cloud/star/pkg/util/option"
-	"github.com/interstellar-cloud/star/pkg/util/packet/peer"
-	"github.com/interstellar-cloud/star/pkg/util/packet/register"
-	"github.com/interstellar-cloud/star/pkg/util/socket"
 	"golang.org/x/sys/unix"
 )
 
@@ -31,7 +31,7 @@ func (star *Star) conn() error {
 
 func (star *Star) queryPeer() error {
 	cp := peer.NewPacket()
-	data, err := peer.Encode(cp)
+	data, err := cp.Encode()
 	if err != nil {
 		return err
 	}
@@ -39,7 +39,7 @@ func (star *Star) queryPeer() error {
 	switch star.Protocol {
 	case option.UDP:
 		log.Logger.Infof("start to query star peer info, data: (%v)", data)
-		if _, err := star.Write(data); err != nil {
+		if _, err := star.Socket.Write(data); err != nil {
 			return nil
 		}
 		break
@@ -53,7 +53,7 @@ func (star *Star) register() error {
 	rp := register.NewPacket()
 	rp.SrcMac, _ = addr.GetMacAddrByDev(star.tap.Name)
 	log.Logger.Infof("register src mac: %v to registry", rp.SrcMac.String())
-	data, err := register.Encode(rp)
+	data, err := rp.Encode()
 	log.Logger.Infof("sending registry data: %v", data)
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func (star *Star) register() error {
 	switch star.Protocol {
 	case option.UDP:
 		log.Logger.Infof("star start to register to registry: %v", rp)
-		if _, err := star.Write(data); err != nil {
+		if _, err := star.Socket.Write(data); err != nil {
 			return err
 		}
 		break
@@ -75,7 +75,7 @@ func (star *Star) unregister() error {
 
 	rp := register.NewUnregisterPacket()
 	rp.SrcMac = star.tap.MacAddr
-	data, err := register.Encode(rp)
+	data, err := rp.Encode()
 	fmt.Println("sending unregister data: ", data)
 	if err != nil {
 		return err
@@ -93,7 +93,7 @@ func (star *Star) unregister() error {
 }
 
 func (star *Star) starLoop() {
-	netFd := star.Socket.Fd
+	netFd := star.Socket.(socket.Socket).Fd
 	tapFd := star.tap.Fd
 	var FdSet unix.FdSet
 	var maxFd int
@@ -133,19 +133,18 @@ func (star *Star) starLoop() {
 	}
 }
 
-//use host socket write so destination, superNode or use p2p
-func write2Net(socket socket.Socket, b []byte) {
-	log.Logger.Infof("tap write to net packet: (%v)", b)
+//use host socket write to destination, superNode or use p2p
+func write2Net(socket socket.Interface, b []byte) {
+	log.Logger.Debugf("tap write to net packet: (%v)", b)
 	if _, err := socket.Write(b); err != nil {
 		log.Logger.Errorf("tap write to net failed. (%v)", err)
 	}
 }
 
 func (star Star) dialNode() {
-
 	for _, v := range star.cache.Nodes {
-		addr := v.Addr.(*unix.SockaddrInet4).Addr
-		newAddr := &unix.SockaddrInet4{Addr: addr, Port: EdgePort}
+		dstAddr := v.Addr.(*unix.SockaddrInet4).Addr
+		newAddr := &unix.SockaddrInet4{Addr: dstAddr, Port: DefaultEdgePort}
 		if !v.P2P {
 			if err := star.Socket.Connect(newAddr); err != nil {
 				return

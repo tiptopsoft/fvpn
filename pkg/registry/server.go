@@ -2,13 +2,15 @@ package registry
 
 import (
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/util/epoller"
-	"github.com/interstellar-cloud/star/pkg/util/handler"
-	"github.com/interstellar-cloud/star/pkg/util/log"
-	"github.com/interstellar-cloud/star/pkg/util/node"
-	option2 "github.com/interstellar-cloud/star/pkg/util/option"
-	"github.com/interstellar-cloud/star/pkg/util/packet/common"
-	"github.com/interstellar-cloud/star/pkg/util/socket"
+	"github.com/interstellar-cloud/star/pkg/epoller"
+	"github.com/interstellar-cloud/star/pkg/handler"
+	"github.com/interstellar-cloud/star/pkg/log"
+	"github.com/interstellar-cloud/star/pkg/node"
+	"github.com/interstellar-cloud/star/pkg/option"
+	"github.com/interstellar-cloud/star/pkg/packet"
+	"github.com/interstellar-cloud/star/pkg/packet/common"
+	"github.com/interstellar-cloud/star/pkg/packet/register"
+	socket2 "github.com/interstellar-cloud/star/pkg/socket"
 	"golang.org/x/sys/unix"
 	"net"
 	"sync"
@@ -20,12 +22,11 @@ var (
 
 //RegStar use as registry
 type RegStar struct {
-	*option2.RegConfig
-	handler.ChainHandler
-	socket         socket.Socket
-	cache          node.NodesCache
-	AuthHandler    handler.Handler
-	EncryptHandler handler.Handler
+	*option.RegConfig
+	socket      socket2.Interface
+	cache       node.NodesCache
+	AuthHandler handler.Interface
+	packet      packet.Interface
 }
 
 func (r *RegStar) Start(address string) error {
@@ -34,14 +35,13 @@ func (r *RegStar) Start(address string) error {
 
 // Node register node for net, and for user create edge
 func (r *RegStar) start(address string) error {
-	sock := socket.NewSocket()
-	r.socket = sock
+	r.socket = socket2.NewSocket()
 	once.Do(func() {
 		r.cache = node.New()
 	})
 
 	switch r.Protocol {
-	case option2.UDP:
+	case option.UDP:
 		addr, err := ResolveAddr(address)
 		if err != nil {
 			return err
@@ -75,27 +75,30 @@ func (r *RegStar) start(address string) error {
 	return nil
 }
 
-func (r *RegStar) Execute(socket socket.Socket) error {
+func (r *RegStar) Execute(socket socket2.Interface) error {
 	data := make([]byte, 2048)
 	size, addr, err := socket.ReadFromUdp(data)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	p, err := common.Decode(data)
+	pInterface, err := common.NewPacketWithoutType().Decode(data)
+	p := pInterface.(common.CommonPacket)
+
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	switch p.Flags {
 
-	case option2.MsgTypeRegisterSuper:
+	case option.MsgTypeRegisterSuper:
+		r.packet = register.NewPacket()
 		r.processRegister(addr, data[:size], nil)
 		break
-	case option2.MsgTypeQueryPeer:
+	case option.MsgTypeQueryPeer:
 		r.processFindPeer(addr)
 		break
-	case option2.MsgTypePacket:
+	case option.MsgTypePacket:
 		r.forward(data[:size], &p)
 		break
 	}

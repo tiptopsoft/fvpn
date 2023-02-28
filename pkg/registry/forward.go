@@ -1,16 +1,18 @@
 package registry
 
 import (
+	"github.com/interstellar-cloud/star/pkg/log"
+	"github.com/interstellar-cloud/star/pkg/node"
+	"github.com/interstellar-cloud/star/pkg/packet/common"
+	"github.com/interstellar-cloud/star/pkg/packet/forward"
 	"github.com/interstellar-cloud/star/pkg/util"
-	"github.com/interstellar-cloud/star/pkg/util/log"
-	"github.com/interstellar-cloud/star/pkg/util/node"
-	"github.com/interstellar-cloud/star/pkg/util/packet/common"
-	"github.com/interstellar-cloud/star/pkg/util/packet/forward"
 )
 
 func (r *RegStar) forward(data []byte, cp *common.CommonPacket) {
 	log.Logger.Infof("registry got forward packet: %v", data)
-	fp, err := forward.Decode(data)
+	fpInterface, err := forward.NewPacket().Decode(data)
+	fp := fpInterface.(forward.ForwardPacket)
+
 	if err != nil {
 		log.Logger.Errorf("decode forward packet failed. err: %v", err)
 	}

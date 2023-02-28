@@ -1,9 +1,9 @@
 package registry
 
 import (
-	"github.com/interstellar-cloud/star/pkg/util/log"
-	"github.com/interstellar-cloud/star/pkg/util/node"
-	"github.com/interstellar-cloud/star/pkg/util/packet/peer/ack"
+	"github.com/interstellar-cloud/star/pkg/log"
+	"github.com/interstellar-cloud/star/pkg/node"
+	"github.com/interstellar-cloud/star/pkg/packet/peer/ack"
 	"golang.org/x/sys/unix"
 )
 
@@ -49,5 +49,5 @@ func peerAckBuild(infos []ack.EdgeInfo, size uint8) ([]byte, error) {
 	peerPacket.Size = size
 	peerPacket.PeerInfos = infos
 
-	return ack.Encode(peerPacket)
+	return peerPacket.Encode()
 }

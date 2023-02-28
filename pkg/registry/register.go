@@ -1,24 +1,22 @@
 package registry
 
 import (
-	"github.com/interstellar-cloud/star/pkg/util/addr"
-	"github.com/interstellar-cloud/star/pkg/util/log"
-	"github.com/interstellar-cloud/star/pkg/util/node"
-	"github.com/interstellar-cloud/star/pkg/util/option"
-	"github.com/interstellar-cloud/star/pkg/util/packet/common"
-	"github.com/interstellar-cloud/star/pkg/util/packet/register"
-	"github.com/interstellar-cloud/star/pkg/util/packet/register/ack"
+	"github.com/interstellar-cloud/star/pkg/addr"
+	"github.com/interstellar-cloud/star/pkg/log"
+	"github.com/interstellar-cloud/star/pkg/node"
+	"github.com/interstellar-cloud/star/pkg/option"
+	"github.com/interstellar-cloud/star/pkg/packet/common"
+	"github.com/interstellar-cloud/star/pkg/packet/register"
+	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
 	"golang.org/x/sys/unix"
 	"net"
 )
 
 func (r *RegStar) processRegister(remoteAddr unix.Sockaddr, data []byte, cp *common.CommonPacket) {
-	var regPacket register.RegPacket
-	var err error
-	regPacket, err = register.Decode(data)
+	packet, err := r.packet.Decode(data)
 
 	// build an ack
-	f, err := r.registerAck(remoteAddr, regPacket.SrcMac)
+	f, err := r.registerAck(remoteAddr, packet.(register.RegPacket).SrcMac)
 	log.Logger.Infof("build a registry ack: %v", f)
 	if err != nil {
 		log.Logger.Errorf("build resp failed. err: %v", err)
@@ -52,5 +50,5 @@ func (r *RegStar) registerAck(peerAddr unix.Sockaddr, srcMac net.HardwareAddr) (
 
 	r.cache.Nodes[endpoint.Mac.String()] = ackNode
 	r.cache.IPNodes[endpoint.IP.String()] = ackNode
-	return ack.Encode(p)
+	return p.Encode()
 }
