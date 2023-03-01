@@ -72,7 +72,6 @@ func (star *Star) register() error {
 // register register a edgestar to center.
 func (star *Star) unregister() error {
 	var err error
-
 	rp := register.NewUnregisterPacket()
 	rp.SrcMac = star.tap.MacAddr
 	data, err := rp.Encode()
@@ -120,13 +119,13 @@ func (star *Star) starLoop() {
 		}
 
 		if FdSet.IsSet(tapFd) {
-			if err := star.tapFunc(star.tap, star.Socket); err != nil {
+			if err := star.executor[tapFd].Execute(star.Socket); err != nil {
 				log.Logger.Errorf("tap socket failed. (%v)", err)
 			}
 		}
 
 		if FdSet.IsSet(netFd) {
-			if err := star.socketFunc(star.tap, star.Socket); err != nil {
+			if err := star.executor[netFd].Execute(star.Socket); err != nil {
 				log.Logger.Errorf("socket func failed. (%v)", err)
 			}
 		}
