@@ -71,7 +71,7 @@ func (eventLoop *EventLoop) EventLoop(executor executor.Executor) {
 			if skt != nil {
 				go func() {
 					if err := executor.Execute(*skt); err != nil {
-						log.Logger.Errorf("executor exec failed. (%v)", err)
+						log.Errorf("executor exec failed. (%v)", err)
 					}
 				}()
 			}

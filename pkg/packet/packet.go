@@ -30,7 +30,7 @@ import (
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 32 :                                                               !
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-36 ! Socket Flags (v=IPv4)         ! Destination UDP Port          !
+36 ! socket Flags (v=IPv4)         ! Destination UDP Port          !
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 40 ! Destination IPv4 Address                                      !
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -39,7 +39,7 @@ import (
 48 ! Payload
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-   Socket Flags can be ipv6
+   socket Flags can be ipv6
 
 Now , we just impl ipv4, and have only one group.
 */

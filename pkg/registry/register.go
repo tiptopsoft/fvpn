@@ -17,15 +17,15 @@ func (r *RegStar) processRegister(remoteAddr unix.Sockaddr, data []byte, cp *com
 
 	// build an ack
 	f, err := r.registerAck(remoteAddr, packet.(register.RegPacket).SrcMac)
-	log.Logger.Infof("build a registry ack: %v", f)
+	log.Infof("build a registry ack: %v", f)
 	if err != nil {
-		log.Logger.Errorf("build resp failed. err: %v", err)
+		log.Errorf("build resp failed. err: %v", err)
 	}
 	err = r.socket.WriteToUdp(f, remoteAddr)
 	if err != nil {
-		log.Logger.Errorf("registry write failed. err: %v", err)
+		log.Errorf("registry write failed. err: %v", err)
 	}
-	log.Logger.Infof("write a registry ack to remote: %v, data: %v", remoteAddr, f)
+	log.Infof("write a registry ack to remote: %v, data: %v", remoteAddr, f)
 
 }
 

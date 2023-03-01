@@ -165,7 +165,7 @@ func main() {
 
 	s, err := Listen("127.0.0.1", 8080)
 	if err != nil {
-		log.Println("Failed to create Socket:", err)
+		log.Println("Failed to create socket:", err)
 		os.Exit(1)
 	}
 

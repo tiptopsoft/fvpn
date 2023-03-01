@@ -20,7 +20,7 @@ var (
 type Star struct {
 	*option.StarConfig
 	tap      *tuntap.Tuntap
-	Socket   socket.Interface
+	socket   socket.Interface
 	cache    node.NodesCache //获取回来的Peers  mac: Node
 	executor map[int]executor.Executor
 	inbound  []chan *packet.Packet
@@ -28,9 +28,9 @@ type Star struct {
 
 func (star Star) Start() error {
 	once.Do(func() {
-		star.Socket = socket.NewSocket()
+		star.socket = socket.NewSocket()
 		if err := star.conn(); err != nil {
-			log.Logger.Errorf("failed to connect to registry: %v", err)
+			log.Errorf("failed to connect to registry: %v", err)
 		}
 		star.cache = node.New()
 		star.Protocol = option.UDP
@@ -38,11 +38,11 @@ func (star Star) Start() error {
 		star.tap = tap
 
 		if err != nil {
-			log.Logger.Errorf("create or connect tap failed, err: (%v)", err)
+			log.Errorf("create or connect tap failed, err: (%v)", err)
 		}
 
 		if err := star.register(); err != nil {
-			log.Logger.Errorf("registry failed. (%v)", err)
+			log.Errorf("registry failed. (%v)", err)
 		}
 
 		star.initExecutor()
@@ -73,5 +73,5 @@ func (star Star) initExecutor() {
 		Protocol: star.Protocol,
 		cache:    star.cache,
 	}
-	star.executor[star.Socket.(socket.Socket).Fd] = s
+	star.executor[star.socket.(socket.Socket).Fd] = s
 }

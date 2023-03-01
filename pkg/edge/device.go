@@ -26,7 +26,7 @@ func (t TapExecutor) Execute(skt socket.Interface) error {
 	destMac := util.GetMacAddr(b)
 	fmt.Println(fmt.Sprintf("Read %d bytes from device %s, will write to dest %s", size, device.Name, destMac))
 	if err != nil {
-		log.Logger.Errorf("tap read failed. (%v)", err)
+		log.Errorf("tap read failed. (%v)", err)
 		return err
 	}
 	broad := addr.IsBroadCast(destMac)
@@ -34,16 +34,16 @@ func (t TapExecutor) Execute(skt socket.Interface) error {
 	fp := forward.NewPacket()
 	fp.SrcMac, err = addr.GetMacAddrByDev(device.Name)
 	if err != nil {
-		log.Logger.Errorf("get src mac failed, err: %v", err)
+		log.Errorf("get src mac failed, err: %v", err)
 	}
 	fp.DstMac, err = net.ParseMAC(destMac)
 	if err != nil {
-		log.Logger.Errorf("get src mac failed, err: %v", err)
+		log.Errorf("get src mac failed, err: %v", err)
 	}
 
 	bs, err := fp.Encode()
 	if err != nil {
-		log.Logger.Errorf("encode forward failed, err: %v", err)
+		log.Errorf("encode forward failed, err: %v", err)
 	}
 
 	idx := 0
@@ -54,11 +54,11 @@ func (t TapExecutor) Execute(skt socket.Interface) error {
 		write2Net(skt, newPacket[:idx])
 	} else {
 		// go p2p
-		log.Logger.Infof("find peer in edge, destMac: %v", destMac)
+		log.Infof("find peer in edge, destMac: %v", destMac)
 		p := node.FindNode(t.cache, destMac)
 		if p == nil {
 			write2Net(skt, newPacket[:idx])
-			log.Logger.Warnf("peer not found, go through super node")
+			log.Warnf("peer not found, go through super node")
 		} else {
 			write2Net(p.Socket, newPacket[:idx])
 		}

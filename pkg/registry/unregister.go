@@ -12,17 +12,17 @@ import (
 func (r *RegStar) processUnregister(addr unix.Sockaddr, socket socket.Socket, data []byte, cp *common.CommonPacket) {
 	regPacket, err := r.packet.Decode(data)
 	if err := r.unRegister(regPacket); err != nil {
-		log.Logger.Errorf("registry failed. err: %v", err)
+		log.Errorf("registry failed. err: %v", err)
 	}
 	// build a ack
 	f, err := r.registerAck(addr, regPacket.(register.RegPacket).SrcMac)
-	log.Logger.Infof("build a registry ack: %v", f)
+	log.Infof("build a registry ack: %v", f)
 	if err != nil {
-		log.Logger.Errorf("build resp p failed. err: %v", err)
+		log.Errorf("build resp p failed. err: %v", err)
 	}
 	err = socket.WriteToUdp(f, addr)
 	if err != nil {
-		log.Logger.Errorf("registry write failed. err: %v", err)
+		log.Errorf("registry write failed. err: %v", err)
 	}
 }
 

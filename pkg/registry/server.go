@@ -51,7 +51,7 @@ func (r *RegStar) start(address string) error {
 		if err != nil {
 			return err
 		}
-		log.Logger.Infof("registry start at: %s", address)
+		log.Infof("registry start at: %s", address)
 		if err != nil {
 			return err
 		}
@@ -59,7 +59,7 @@ func (r *RegStar) start(address string) error {
 		eventLoop, err := epoller.NewEventLoop()
 		eventLoop.Protocol = r.Protocol
 		if err := eventLoop.AddFd(r.socket); err != nil {
-			log.Logger.Errorf("add fd to epoller failed. err: (%v)", err)
+			log.Errorf("add fd to epoller failed. err: (%v)", err)
 			return err
 		}
 
@@ -69,7 +69,7 @@ func (r *RegStar) start(address string) error {
 
 		eventLoop.EventLoop(r)
 	default:
-		log.Logger.Info("this is a tcp server")
+		log.Info("this is a tcp server")
 	}
 
 	return nil
