@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"github.com/interstellar-cloud/star/pkg/edge"
-	"github.com/interstellar-cloud/star/pkg/util/handler/auth"
-	option2 "github.com/interstellar-cloud/star/pkg/util/option"
+	"github.com/interstellar-cloud/star/pkg/handler/auth"
+	option2 "github.com/interstellar-cloud/star/pkg/option"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +18,7 @@ func EdgeCmd() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:          "edge",
 		SilenceUsage: true,
-		Short:        "start up a edge, for net proxy",
+		Short:        "start up a edge, for private net proxy",
 		Long:         `Start up a edge, for private net proxy`,
 
 		PreRunE: func(cmd *cobra.Command, args []string) error {
@@ -42,7 +42,7 @@ func runEdge(opts *upOptions) error {
 		return err
 	}
 
-	s := edge.Star{
+	s := &edge.Star{
 		StarConfig: config.Star,
 	}
 	return s.Start()

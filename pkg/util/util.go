@@ -8,7 +8,6 @@ import (
 )
 
 func GetAddress(address string, port int) (unix.SockaddrInet4, error) {
-
 	ad, err := netip.ParseAddr(address)
 	return unix.SockaddrInet4{
 		Port: port,
