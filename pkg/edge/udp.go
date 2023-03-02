@@ -41,7 +41,7 @@ func (s SocketExecutor) Execute(skt socket.Interface) error {
 		}
 
 		cpInterface, err := common.NewPacketWithoutType().Decode(udpBytes[:size])
-		cp := cpInterface.(common.CommonPacket)
+		cp := cpInterface.(common.PacketHeader)
 		if err != nil {
 			logger.Errorf("decode err: %v", err)
 		}

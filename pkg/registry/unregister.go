@@ -8,7 +8,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func (r *RegStar) processUnregister(addr unix.Sockaddr, socket socket.Socket, data []byte, cp *common.CommonPacket) {
+func (r *RegStar) processUnregister(addr unix.Sockaddr, socket socket.Socket, data []byte, cp *common.PacketHeader) {
 	regPacket, err := r.packet.Decode(data)
 	if err := r.unRegister(regPacket); err != nil {
 		logger.Errorf("registry failed. err: %v", err)

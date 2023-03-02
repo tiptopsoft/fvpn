@@ -7,7 +7,7 @@ import (
 	"github.com/interstellar-cloud/star/pkg/util"
 )
 
-func (r *RegStar) forward(data []byte, cp *common.CommonPacket) {
+func (r *RegStar) forward(data []byte, cp *common.PacketHeader) {
 	logger.Infof("registry got forward packet: %v", data)
 	fpInterface, err := forward.NewPacket().Decode(data)
 	fp := fpInterface.(forward.ForwardPacket)

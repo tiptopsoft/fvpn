@@ -3,7 +3,6 @@ package registry
 import (
 	"github.com/interstellar-cloud/star/pkg/addr"
 	"github.com/interstellar-cloud/star/pkg/node"
-	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"github.com/interstellar-cloud/star/pkg/packet/register"
 	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
@@ -11,7 +10,7 @@ import (
 	"net"
 )
 
-func (r *RegStar) processRegister(remoteAddr unix.Sockaddr, data []byte, cp *common.CommonPacket) {
+func (r *RegStar) processRegister(remoteAddr unix.Sockaddr, data []byte, cp *common.PacketHeader) {
 	packet, err := r.packet.Decode(data)
 
 	// build an ack
@@ -37,7 +36,6 @@ func (r *RegStar) registerAck(peerAddr unix.Sockaddr, srcMac net.HardwareAddr) (
 	p.RegMac = endpoint.Mac
 	p.AutoIP = endpoint.IP
 	p.Mask = endpoint.Mask
-	p.CommonPacket = common.NewPacket(option.MsgTypeRegisterAck)
 
 	ackNode := &node.Node{
 		Socket:  r.socket,

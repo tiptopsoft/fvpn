@@ -5,28 +5,27 @@ import (
 	"github.com/interstellar-cloud/star/pkg/option"
 	packet2 "github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
-	common2 "github.com/interstellar-cloud/star/pkg/packet/common"
 	"net"
 	"unsafe"
 )
 
 //ForwardPacket is through packet used in registry
 type ForwardPacket struct {
-	common2.CommonPacket
+	header common.PacketHeader
 	SrcMac net.HardwareAddr
 	DstMac net.HardwareAddr
 }
 
 func NewPacket() ForwardPacket {
-	cmPacket := common2.NewPacket(option.MsgTypePacket)
+	cmPacket := common.NewPacket(option.MsgTypePacket)
 	return ForwardPacket{
-		CommonPacket: cmPacket,
+		header: cmPacket,
 	}
 }
 
 func (fp ForwardPacket) Encode() ([]byte, error) {
 	b := make([]byte, unsafe.Sizeof(ForwardPacket{}))
-	commonBytes, err := fp.CommonPacket.Encode()
+	commonBytes, err := fp.header.Encode()
 	if err != nil {
 		return nil, errors.New("encode common packet failed")
 	}
@@ -44,8 +43,8 @@ func (fp ForwardPacket) Decode(udpBytes []byte) (packet2.Interface, error) {
 		return ForwardPacket{}, errors.New("decode common packet failed")
 	}
 	idx := 0
-	res.CommonPacket = cp.(common.CommonPacket)
-	idx += int(unsafe.Sizeof(common2.CommonPacket{}))
+	res.header = cp.(common.PacketHeader)
+	idx += int(unsafe.Sizeof(common.PacketHeader{}))
 	var srcMac = make([]byte, 6)
 	idx = packet2.DecodeBytes(&srcMac, udpBytes, idx)
 	res.SrcMac = srcMac

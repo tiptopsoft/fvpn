@@ -12,7 +12,7 @@ import (
 
 func TestNewPacket(t *testing.T) {
 
-	size := unsafe.Sizeof(common.CommonPacket{})
+	size := unsafe.Sizeof(common.PacketHeader{})
 	fmt.Println(size)
 
 	RecMac := "01:01:03:02:03:01"

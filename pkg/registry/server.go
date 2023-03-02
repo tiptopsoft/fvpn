@@ -84,7 +84,7 @@ func (r *RegStar) Execute(socket socket2.Interface) error {
 	}
 
 	pInterface, err := common.NewPacketWithoutType().Decode(data)
-	p := pInterface.(common.CommonPacket)
+	p := pInterface.(common.PacketHeader)
 
 	if err != nil {
 		fmt.Println(err)

@@ -4,28 +4,27 @@ import (
 	"github.com/interstellar-cloud/star/pkg/option"
 	packet "github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
-	common2 "github.com/interstellar-cloud/star/pkg/packet/common"
 	"net"
 	"unsafe"
 )
 
 type RegPacketAck struct {
-	common2.CommonPacket                  //8 byte
-	RegMac               net.HardwareAddr //6 byte
-	AutoIP               net.IP           //4byte
-	Mask                 net.IP
+	header common.PacketHeader //8 byte
+	RegMac net.HardwareAddr    //6 byte
+	AutoIP net.IP              //4byte
+	Mask   net.IP
 }
 
 func NewPacket() RegPacketAck {
-	cmPacket := common2.NewPacket(option.MsgTypeRegisterAck)
+	cmPacket := common.NewPacket(option.MsgTypeRegisterAck)
 	return RegPacketAck{
-		CommonPacket: cmPacket,
+		header: cmPacket,
 	}
 }
 
 func (r RegPacketAck) Encode() ([]byte, error) {
 	b := make([]byte, unsafe.Sizeof(RegPacketAck{}))
-	cp, err := r.CommonPacket.Encode()
+	cp, err := r.header.Encode()
 	if err != nil {
 		return nil, err
 	}
@@ -38,14 +37,14 @@ func (r RegPacketAck) Encode() ([]byte, error) {
 }
 
 func (r RegPacketAck) Decode(udpBytes []byte) (packet.Interface, error) {
-	size := unsafe.Sizeof(common.CommonPacket{})
+	size := unsafe.Sizeof(common.PacketHeader{})
 	res := RegPacketAck{}
 	p, err := common.NewPacketWithoutType().Decode(udpBytes[:size])
 	if err != nil {
 		return RegPacketAck{}, err
 	}
 	var idx = 0
-	res.CommonPacket = p.(common.CommonPacket)
+	res.header = p.(common.PacketHeader)
 	idx += int(size)
 	mac := make([]byte, packet.MAC_SIZE)
 	idx = packet.DecodeBytes(&mac, udpBytes, idx)

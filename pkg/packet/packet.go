@@ -5,7 +5,7 @@ import (
 	"net"
 )
 
-// Packet edge's Packet
+// PacketHeader edge's PacketHeader
 /**
   As learn from edge, our packet is form of below:
  Version 1

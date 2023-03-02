@@ -13,7 +13,7 @@ type StarAuth struct {
 }
 
 type AuthHandler struct {
-	packet common.CommonPacket
+	packet common.PacketHeader
 }
 
 func (ah *AuthHandler) Handle(ctx context.Context, buff []byte) error {

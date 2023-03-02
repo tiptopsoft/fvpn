@@ -87,7 +87,6 @@ func InitConfig() (config *Config, err error) {
 			return nil, errors.New("invalid config")
 		}
 	}
-
 	if err = viper.UnmarshalExact(&config); err != nil {
 		return nil, err
 	}
