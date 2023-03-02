@@ -8,7 +8,6 @@ import (
 	"github.com/interstellar-cloud/star/pkg/node"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet"
-	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"github.com/interstellar-cloud/star/pkg/packet/register"
 	socket2 "github.com/interstellar-cloud/star/pkg/socket"
 	"golang.org/x/sys/unix"
@@ -83,8 +82,8 @@ func (r *RegStar) Execute(socket socket2.Interface) error {
 		fmt.Println(err)
 	}
 
-	pInterface, err := common.NewPacketWithoutType().Decode(data)
-	p := pInterface.(common.PacketHeader)
+	pInterface, err := packet.NewPacketWithoutType().Decode(data)
+	p := pInterface.(packet.Header)
 
 	if err != nil {
 		fmt.Println(err)

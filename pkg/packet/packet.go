@@ -5,7 +5,7 @@ import (
 	"net"
 )
 
-// PacketHeader edge's PacketHeader
+// Header edge's Header
 /**
   As learn from edge, our packet is form of below:
  Version 1
@@ -54,12 +54,12 @@ type Packet struct {
 	srcBuff []byte
 }
 
-func New() Packet {
-	return Packet{
-		dstBuff: make([]byte, 2048),
-		srcBuff: make([]byte, 2048),
-	}
-}
+//func NewHeader() Packet {
+//	return Packet{
+//		dstBuff: make([]byte, 2048),
+//		srcBuff: make([]byte, 2048),
+//	}
+//}
 
 func EncodeBytes(dst, src []byte, idx int) int {
 	copy(dst[idx:idx+len(src)], src[:])

@@ -3,14 +3,14 @@ package registry
 import (
 	"github.com/interstellar-cloud/star/pkg/addr"
 	"github.com/interstellar-cloud/star/pkg/node"
-	"github.com/interstellar-cloud/star/pkg/packet/common"
+	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/register"
 	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
 	"golang.org/x/sys/unix"
 	"net"
 )
 
-func (r *RegStar) processRegister(remoteAddr unix.Sockaddr, data []byte, cp *common.PacketHeader) {
+func (r *RegStar) processRegister(remoteAddr unix.Sockaddr, data []byte, cp *packet.Header) {
 	packet, err := r.packet.Decode(data)
 
 	// build an ack

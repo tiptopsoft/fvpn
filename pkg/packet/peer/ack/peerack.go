@@ -3,7 +3,6 @@ package ack
 import (
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet"
-	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"net"
 	"unsafe"
 )
@@ -18,13 +17,13 @@ type EdgeInfo struct {
 
 // EdgePacketAck ack for size of EdgeInfo
 type EdgePacketAck struct {
-	header    common.PacketHeader
+	header    packet.Header
 	Size      uint8
 	PeerInfos []EdgeInfo
 }
 
 func NewPacket() EdgePacketAck {
-	cmPacket := common.NewPacket(option.MsgTypeQueryPeer)
+	cmPacket := packet.NewHeader(option.MsgTypeQueryPeer)
 	return EdgePacketAck{
 		header: cmPacket,
 	}
@@ -51,9 +50,9 @@ func (ack EdgePacketAck) Encode() ([]byte, error) {
 
 func (ack EdgePacketAck) Decode(udpBytes []byte) (packet.Interface, error) {
 	idx := 0
-	cp, err := common.NewPacketWithoutType().Decode(udpBytes)
-	idx += int(unsafe.Sizeof(common.PacketHeader{}))
-	ack.header = cp.(common.PacketHeader)
+	cp, err := packet.NewPacketWithoutType().Decode(udpBytes)
+	idx += int(unsafe.Sizeof(packet.Header{}))
+	ack.header = cp.(packet.Header)
 
 	idx = packet.DecodeUint8(&ack.Size, udpBytes, idx)
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/interstellar-cloud/star/pkg/node"
 	"github.com/interstellar-cloud/star/pkg/option"
-	"github.com/interstellar-cloud/star/pkg/packet/common"
+	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/forward"
 	peerack "github.com/interstellar-cloud/star/pkg/packet/peer/ack"
 	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
@@ -40,8 +40,8 @@ func (s SocketExecutor) Execute(skt socket.Interface) error {
 			}
 		}
 
-		cpInterface, err := common.NewPacketWithoutType().Decode(udpBytes[:size])
-		cp := cpInterface.(common.PacketHeader)
+		cpInterface, err := packet.NewPacketWithoutType().Decode(udpBytes[:size])
+		cp := cpInterface.(packet.Header)
 		if err != nil {
 			logger.Errorf("decode err: %v", err)
 		}

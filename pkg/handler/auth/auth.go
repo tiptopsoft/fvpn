@@ -2,7 +2,7 @@ package auth
 
 import (
 	"context"
-	"github.com/interstellar-cloud/star/pkg/packet/common"
+	"github.com/interstellar-cloud/star/pkg/packet"
 )
 
 type StarAuth struct {
@@ -13,7 +13,7 @@ type StarAuth struct {
 }
 
 type AuthHandler struct {
-	packet common.PacketHeader
+	packet packet.Header
 }
 
 func (ah *AuthHandler) Handle(ctx context.Context, buff []byte) error {

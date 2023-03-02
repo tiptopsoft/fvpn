@@ -4,7 +4,6 @@ import (
 	"errors"
 	"github.com/interstellar-cloud/star/pkg/option"
 	packet "github.com/interstellar-cloud/star/pkg/packet"
-	common "github.com/interstellar-cloud/star/pkg/packet/common"
 	"net"
 	"reflect"
 	"unsafe"
@@ -12,19 +11,19 @@ import (
 
 // RegPacket registry a edge to registry
 type RegPacket struct {
-	header common.PacketHeader
+	header packet.Header
 	SrcMac net.HardwareAddr
 }
 
 func NewPacket() RegPacket {
-	cmPacket := common.NewPacket(option.MsgTypeRegisterSuper)
+	cmPacket := packet.NewHeader(option.MsgTypeRegisterSuper)
 	return RegPacket{
 		header: cmPacket,
 	}
 }
 
 func NewUnregisterPacket() RegPacket {
-	cmPacket := common.NewPacket(option.MsgTypeUnregisterSuper)
+	cmPacket := packet.NewHeader(option.MsgTypeUnregisterSuper)
 	return RegPacket{
 		header: cmPacket,
 	}
@@ -45,7 +44,7 @@ func (r RegPacket) Encode() ([]byte, error) {
 func (r RegPacket) Decode(buff []byte) (packet.Interface, error) {
 	res := NewPacket()
 	idx := 0
-	idx += int(unsafe.Sizeof(common.PacketHeader{}))
+	idx += int(unsafe.Sizeof(packet.Header{}))
 	var mac = make([]byte, 6)
 	packet.DecodeBytes(&mac, buff, idx)
 	res.SrcMac = mac

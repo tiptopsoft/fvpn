@@ -2,12 +2,12 @@ package registry
 
 import (
 	"github.com/interstellar-cloud/star/pkg/node"
-	"github.com/interstellar-cloud/star/pkg/packet/common"
+	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/forward"
 	"github.com/interstellar-cloud/star/pkg/util"
 )
 
-func (r *RegStar) forward(data []byte, cp *common.PacketHeader) {
+func (r *RegStar) forward(data []byte, cp *packet.Header) {
 	logger.Infof("registry got forward packet: %v", data)
 	fpInterface, err := forward.NewPacket().Decode(data)
 	fp := fpInterface.(forward.ForwardPacket)
