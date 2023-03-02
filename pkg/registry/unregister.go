@@ -1,7 +1,6 @@
 package registry
 
 import (
-	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"github.com/interstellar-cloud/star/pkg/packet/register"
@@ -12,17 +11,17 @@ import (
 func (r *RegStar) processUnregister(addr unix.Sockaddr, socket socket.Socket, data []byte, cp *common.CommonPacket) {
 	regPacket, err := r.packet.Decode(data)
 	if err := r.unRegister(regPacket); err != nil {
-		log.Errorf("registry failed. err: %v", err)
+		logger.Errorf("registry failed. err: %v", err)
 	}
 	// build a ack
 	f, err := r.registerAck(addr, regPacket.(register.RegPacket).SrcMac)
-	log.Infof("build a registry ack: %v", f)
+	logger.Infof("build a registry ack: %v", f)
 	if err != nil {
-		log.Errorf("build resp p failed. err: %v", err)
+		logger.Errorf("build resp p failed. err: %v", err)
 	}
 	err = socket.WriteToUdp(f, addr)
 	if err != nil {
-		log.Errorf("registry write failed. err: %v", err)
+		logger.Errorf("registry write failed. err: %v", err)
 	}
 }
 

@@ -17,7 +17,8 @@ import (
 )
 
 var (
-	once sync.Once
+	once   sync.Once
+	logger = log.Log()
 )
 
 //RegStar use as registry
@@ -51,7 +52,7 @@ func (r *RegStar) start(address string) error {
 		if err != nil {
 			return err
 		}
-		log.Infof("registry start at: %s", address)
+		logger.Infof("registry start at: %s", address)
 		if err != nil {
 			return err
 		}
@@ -59,7 +60,7 @@ func (r *RegStar) start(address string) error {
 		eventLoop, err := epoller.NewEventLoop()
 		eventLoop.Protocol = r.Protocol
 		if err := eventLoop.AddFd(r.socket); err != nil {
-			log.Errorf("add fd to epoller failed. err: (%v)", err)
+			logger.Errorf("add fd to epoller failed. err: (%v)", err)
 			return err
 		}
 
@@ -69,7 +70,7 @@ func (r *RegStar) start(address string) error {
 
 		eventLoop.EventLoop(r)
 	default:
-		log.Info("this is a tcp server")
+		logger.Info("this is a tcp server")
 	}
 
 	return nil

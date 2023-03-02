@@ -3,7 +3,6 @@ package edge
 import (
 	"fmt"
 	"github.com/interstellar-cloud/star/pkg/addr"
-	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/node"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet"
@@ -26,7 +25,7 @@ func (t TapExecutor) Execute(skt socket.Interface) error {
 	destMac := util.GetMacAddr(b)
 	fmt.Println(fmt.Sprintf("Read %d bytes from device %s, will write to dest %s", size, device.Name, destMac))
 	if err != nil {
-		log.Errorf("tap read failed. (%v)", err)
+		logger.Errorf("tap read failed. (%v)", err)
 		return err
 	}
 	broad := addr.IsBroadCast(destMac)
@@ -34,16 +33,16 @@ func (t TapExecutor) Execute(skt socket.Interface) error {
 	fp := forward.NewPacket()
 	fp.SrcMac, err = addr.GetMacAddrByDev(device.Name)
 	if err != nil {
-		log.Errorf("get src mac failed, err: %v", err)
+		logger.Errorf("get src mac failed, err: %v", err)
 	}
 	fp.DstMac, err = net.ParseMAC(destMac)
 	if err != nil {
-		log.Errorf("get src mac failed, err: %v", err)
+		logger.Errorf("get src mac failed, err: %v", err)
 	}
 
 	bs, err := fp.Encode()
 	if err != nil {
-		log.Errorf("encode forward failed, err: %v", err)
+		logger.Errorf("encode forward failed, err: %v", err)
 	}
 
 	idx := 0
@@ -54,11 +53,11 @@ func (t TapExecutor) Execute(skt socket.Interface) error {
 		write2Net(skt, newPacket[:idx])
 	} else {
 		// go p2p
-		log.Infof("find peer in edge, destMac: %v", destMac)
+		logger.Infof("find peer in edge, destMac: %v", destMac)
 		p := node.FindNode(t.cache, destMac)
 		if p == nil {
 			write2Net(skt, newPacket[:idx])
-			log.Warnf("peer not found, go through super node")
+			logger.Warnf("peer not found, go through super node")
 		} else {
 			write2Net(p.Socket, newPacket[:idx])
 		}

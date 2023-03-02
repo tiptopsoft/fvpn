@@ -15,6 +15,8 @@ const (
 	MaxEpollEvents = 32
 )
 
+var logger = log.Log()
+
 type EventLoop struct {
 	epfd           int
 	events         [MaxEpollEvents]syscall.EpollEvent
@@ -71,7 +73,7 @@ func (eventLoop *EventLoop) EventLoop(executor executor.Executor) {
 			if skt != nil {
 				go func() {
 					if err := executor.Execute(*skt); err != nil {
-						log.Errorf("executor exec failed. (%v)", err)
+						logger.Errorf("executor exec failed. (%v)", err)
 					}
 				}()
 			}

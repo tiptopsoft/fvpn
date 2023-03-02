@@ -2,7 +2,6 @@ package edge
 
 import (
 	"github.com/interstellar-cloud/star/pkg/executor"
-	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/node"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet"
@@ -26,11 +25,11 @@ type Star struct {
 	inbound  []chan *packet.Packet
 }
 
-func (star Star) Start() error {
+func (star *Star) Start() error {
 	once.Do(func() {
 		star.socket = socket.NewSocket()
 		if err := star.conn(); err != nil {
-			log.Errorf("failed to connect to registry: %v", err)
+			logger.Errorf("failed to connect to registry: %v", err)
 		}
 		star.cache = node.New()
 		star.Protocol = option.UDP
@@ -38,11 +37,11 @@ func (star Star) Start() error {
 		star.tap = tap
 
 		if err != nil {
-			log.Errorf("create or connect tap failed, err: (%v)", err)
+			logger.Errorf("create or connect tap failed, err: (%v)", err)
 		}
 
 		if err := star.register(); err != nil {
-			log.Errorf("registry failed. (%v)", err)
+			logger.Errorf("registry failed. (%v)", err)
 		}
 
 		star.initExecutor()
@@ -59,7 +58,7 @@ func (star Star) Start() error {
 	return nil
 }
 
-func (star Star) initExecutor() {
+func (star *Star) initExecutor() {
 	star.executor = make(map[int]executor.Executor, 1)
 	t := TapExecutor{
 		device: star.tap,

@@ -42,7 +42,7 @@ func runEdge(opts *upOptions) error {
 		return err
 	}
 
-	s := edge.Star{
+	s := &edge.Star{
 		StarConfig: config.Star,
 	}
 	return s.Start()

@@ -12,6 +12,8 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+var logger = log.Log()
+
 func (star *Star) conn() error {
 	var err error
 	switch star.Protocol {
@@ -24,7 +26,7 @@ func (star *Star) conn() error {
 		if err = star.socket.Connect(&remoteAddr); err != nil {
 			return err
 		}
-		log.Infof("star connected to registry: (%v)", star.Registry)
+		logger.Infof("star connected to registry: (%v)", star.Registry)
 	}
 	return err
 }
@@ -38,7 +40,7 @@ func (star *Star) queryPeer() error {
 
 	switch star.Protocol {
 	case option.UDP:
-		log.Infof("start to query star peer info, data: (%v)", data)
+		logger.Infof("start to query star peer info, data: (%v)", data)
 		if _, err := star.socket.Write(data); err != nil {
 			return nil
 		}
@@ -52,15 +54,15 @@ func (star *Star) register() error {
 	var err error
 	rp := register.NewPacket()
 	rp.SrcMac, _ = addr.GetMacAddrByDev(star.tap.Name)
-	log.Infof("register src mac: %v to registry", rp.SrcMac.String())
+	logger.Infof("register src mac: %v to registry", rp.SrcMac.String())
 	data, err := rp.Encode()
-	log.Infof("sending registry data: %v", data)
+	logger.Infof("sending registry data: %v", data)
 	if err != nil {
 		return err
 	}
 	switch star.Protocol {
 	case option.UDP:
-		log.Infof("star start to register to registry: %v", rp)
+		logger.Infof("star start to register to registry: %v", rp)
 		if _, err := star.socket.Write(data); err != nil {
 			return err
 		}
@@ -82,7 +84,7 @@ func (star *Star) unregister() error {
 
 	switch star.Protocol {
 	case option.UDP:
-		log.Infof("star start to registry self to registry: %v", rp)
+		logger.Infof("star start to registry self to registry: %v", rp)
 		if _, err := star.socket.Write(data); err != nil {
 			return err
 		}
@@ -120,13 +122,13 @@ func (star *Star) starLoop() {
 
 		if FdSet.IsSet(tapFd) {
 			if err := star.executor[tapFd].Execute(star.socket); err != nil {
-				log.Errorf("tap socket failed. (%v)", err)
+				logger.Errorf("tap socket failed. (%v)", err)
 			}
 		}
 
 		if FdSet.IsSet(netFd) {
 			if err := star.executor[netFd].Execute(star.socket); err != nil {
-				log.Errorf("socket func failed. (%v)", err)
+				logger.Errorf("socket func failed. (%v)", err)
 			}
 		}
 	}
@@ -134,22 +136,25 @@ func (star *Star) starLoop() {
 
 //use host socket write to destination, superNode or use p2p
 func write2Net(socket socket.Interface, b []byte) {
-	log.Debugf("tap write to net packet: (%v)", b)
+	logger.Debugf("tap write to net packet: (%v)", b)
 	if _, err := socket.Write(b); err != nil {
-		log.Errorf("tap write to net failed. (%v)", err)
+		logger.Errorf("tap write to net failed. (%v)", err)
 	}
 }
 
 func (star Star) dialNode() {
 	for _, v := range star.cache.Nodes {
-		dstAddr := v.Addr.(*unix.SockaddrInet4).Addr
-		newAddr := &unix.SockaddrInet4{Addr: dstAddr, Port: DefaultEdgePort}
-		if !v.P2P {
-			if err := star.socket.Connect(newAddr); err != nil {
-				return
+		if v != nil && v.Addr != nil {
+			dstAddr := v.Addr.(*unix.SockaddrInet4).Addr
+			newAddr := &unix.SockaddrInet4{Addr: dstAddr, Port: DefaultEdgePort}
+			if !v.P2P {
+				if err := star.socket.Connect(newAddr); err != nil {
+					return
+				}
 			}
+			//如果连通，则更新cache中的状态
+			v.P2P = true
 		}
-		//如果连通，则更新cache中的状态
-		v.P2P = true
+
 	}
 }

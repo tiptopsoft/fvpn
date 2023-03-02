@@ -3,7 +3,6 @@ package edge
 import (
 	"errors"
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/node"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet/common"
@@ -31,20 +30,20 @@ func (s SocketExecutor) Execute(skt socket.Interface) error {
 		if size < 0 {
 			return errors.New("no data exists")
 		}
-		log.Infof("star net skt receive size: %d, data: (%v)", size, udpBytes[:size])
+		logger.Infof("star net skt receive size: %d, data: (%v)", size, udpBytes[:size])
 		if err != nil {
 			if err == io.EOF {
 				//no data exists, continue read next frame continue
-				log.Errorf("not data exists")
+				logger.Errorf("not data exists")
 			} else {
-				log.Errorf("read from remote error: %v", err)
+				logger.Errorf("read from remote error: %v", err)
 			}
 		}
 
 		cpInterface, err := common.NewPacketWithoutType().Decode(udpBytes[:size])
 		cp := cpInterface.(common.CommonPacket)
 		if err != nil {
-			log.Errorf("decode err: %v", err)
+			logger.Errorf("decode err: %v", err)
 		}
 
 		switch cp.Flags {
@@ -55,7 +54,7 @@ func (s SocketExecutor) Execute(skt socket.Interface) error {
 			if err != nil {
 				return err
 			}
-			log.Infof("got registry registry ack: (%v)", udpBytes[:size])
+			logger.Infof("got registry registry ack: (%v)", udpBytes[:size])
 			//设置IP
 			if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", device.Name, regAck.AutoIP.String(), regAck.Mask.String(), 1420)); err != nil {
 				return err
@@ -68,11 +67,11 @@ func (s SocketExecutor) Execute(skt socket.Interface) error {
 				return err
 			}
 			infos := peerPacketAck.PeerInfos
-			log.Infof("got registry peers: (%v)", infos)
+			logger.Infof("got registry peers: (%v)", infos)
 			for _, info := range infos {
 				address, err := util.GetAddress(info.Host.String(), int(info.Port))
 				if err != nil {
-					log.Errorf("resolve addr failed, err: %v", err)
+					logger.Errorf("resolve addr failed, err: %v", err)
 				}
 				sock := socket.NewSocket()
 				err = sock.Connect(&address)
@@ -94,18 +93,18 @@ func (s SocketExecutor) Execute(skt socket.Interface) error {
 			if err != nil {
 				return err
 			}
-			log.Infof("got through packet: %v, srcMac: %v, current tap macAddr: %v", forwardPacket, forwardPacket.SrcMac, device.MacAddr)
+			logger.Infof("got through packet: %v, srcMac: %v, current tap macAddr: %v", forwardPacket, forwardPacket.SrcMac, device.MacAddr)
 
 			if forwardPacket.SrcMac.String() == device.MacAddr.String() {
 				//self, drop packet
-				log.Infof("self packet droped: %v, srcMac: %v, current tap macAddr: %v", forwardPacket, forwardPacket.SrcMac, device.MacAddr)
+				logger.Infof("self packet droped: %v, srcMac: %v, current tap macAddr: %v", forwardPacket, forwardPacket.SrcMac, device.MacAddr)
 			} else {
 				//写入到tap
 				idx := unsafe.Sizeof(forwardPacket)
 				if _, err := device.Write(udpBytes[idx:size]); err != nil {
-					log.Errorf("write to tap failed. (%v)", err.Error())
+					logger.Errorf("write to tap failed. (%v)", err.Error())
 				}
-				log.Infof("net write to tap as tap response to client. size: %d", size-int(idx))
+				logger.Infof("net write to tap as tap response to client. size: %d", size-int(idx))
 			}
 			break
 		}
