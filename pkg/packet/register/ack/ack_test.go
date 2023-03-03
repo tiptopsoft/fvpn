@@ -2,12 +2,13 @@ package ack
 
 import (
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/option"
-	"github.com/interstellar-cloud/star/pkg/packet"
-	"github.com/magiconair/properties/assert"
 	"net"
 	"testing"
 	"unsafe"
+
+	"github.com/interstellar-cloud/star/pkg/option"
+	"github.com/interstellar-cloud/star/pkg/packet"
+	"github.com/magiconair/properties/assert"
 )
 
 func TestNewPacket(t *testing.T) {
@@ -31,7 +32,7 @@ func TestNewPacket(t *testing.T) {
 	fmt.Println(ipsize)
 	p.AutoIP = vip
 	p.Mask = net.ParseIP(Mask)
-	p.CommonPacket = packet.NewHeader(option.MsgTypeRegisterAck)
+	p.header = packet.NewHeader(option.MsgTypeRegisterAck)
 
 	buff, err := p.Encode()
 	fmt.Println(buff)

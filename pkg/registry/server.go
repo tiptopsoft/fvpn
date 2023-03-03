@@ -2,6 +2,9 @@ package registry
 
 import (
 	"fmt"
+	"net"
+	"sync"
+
 	"github.com/interstellar-cloud/star/pkg/epoller"
 	"github.com/interstellar-cloud/star/pkg/handler"
 	"github.com/interstellar-cloud/star/pkg/log"
@@ -9,10 +12,8 @@ import (
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/register"
-	socket2 "github.com/interstellar-cloud/star/pkg/socket"
+	"github.com/interstellar-cloud/star/pkg/socket"
 	"golang.org/x/sys/unix"
-	"net"
-	"sync"
 )
 
 var (
@@ -23,7 +24,7 @@ var (
 //RegStar use as registry
 type RegStar struct {
 	*option.RegConfig
-	socket      socket2.Interface
+	socket      socket.Interface
 	cache       node.NodesCache
 	AuthHandler handler.Interface
 	packet      packet.Interface
@@ -35,7 +36,7 @@ func (r *RegStar) Start(address string) error {
 
 // Node register node for net, and for user create edge
 func (r *RegStar) start(address string) error {
-	r.socket = socket2.NewSocket()
+	r.socket = socket.NewSocket()
 	once.Do(func() {
 		r.cache = node.New()
 	})
@@ -75,7 +76,7 @@ func (r *RegStar) start(address string) error {
 	return nil
 }
 
-func (r *RegStar) Execute(socket socket2.Interface) error {
+func (r *RegStar) Execute(socket socket.Interface) error {
 	data := make([]byte, 2048)
 	size, addr, err := socket.ReadFromUdp(data)
 	if err != nil {
