@@ -1,16 +1,18 @@
 package handler
 
-import (
-	"context"
-)
+type Middleware func(Interface) Interface
 
-func Chains(ctx context.Context, buff []byte, handlers ...Interface) error {
-	for _, h := range handlers {
-		err := h.Handle(ctx, buff)
-		if err != nil {
-			return err
+// Chain wrap middleware in order execute
+func Chain(middlewares ...Middleware) func(Interface) Interface {
+	return func(h Interface) Interface {
+		for i := len(middlewares) - 1; i >= 0; i-- {
+			h = middlewares[i](h)
 		}
-	}
 
-	return nil
+		return h
+	}
+}
+
+func WithMiddlewares(handler Interface, middlewares ...Middleware) Interface {
+	return Chain(middlewares...)(handler)
 }
