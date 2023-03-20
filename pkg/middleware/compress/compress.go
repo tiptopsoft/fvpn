@@ -1,4 +1,4 @@
-package encrypt
+package compress
 
 import (
 	"context"
@@ -8,9 +8,7 @@ import (
 func Middleeare() func(handler.Handler) handler.Handler {
 	return func(next handler.Handler) handler.Handler {
 		return handler.HandlerFunc(func(ctx context.Context, buff []byte) error {
-
-			next.Handle(ctx, buff)
-			return nil
+			return next.Handle(ctx, buff)
 		})
 	}
 }

@@ -20,8 +20,7 @@ type AuthHandler struct {
 func Middleware() func(handler handler.Handler) handler.Handler {
 	return func(next handler.Handler) handler.Handler {
 		return handler.HandlerFunc(func(ctx context.Context, buff []byte) error {
-			next.Handle(ctx, buff)
-			return nil
+			return next.Handle(ctx, buff)
 		})
 	}
 }
