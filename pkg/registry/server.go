@@ -2,6 +2,7 @@ package registry
 
 import (
 	"fmt"
+	"github.com/interstellar-cloud/star/pkg/http"
 	"net"
 	"sync"
 
@@ -26,10 +27,26 @@ type RegStar struct {
 	socket socket.Interface
 	cache  node.NodesCache
 	packet packet.Interface
+	ws     sync.WaitGroup
+}
+
+func (r *RegStar) Cache() node.NodesCache {
+	return r.cache
 }
 
 func (r *RegStar) Start(address string) error {
-	return r.start(address)
+	go func() {
+		r.start(address)
+	}()
+
+	go func() {
+		hs := http.New(r.cache)
+		hs.Start()
+	}()
+
+	r.ws.Add(1)
+	r.ws.Wait()
+	return nil
 }
 
 // Node register node for net, and for user create edge
