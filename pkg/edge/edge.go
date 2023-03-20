@@ -1,14 +1,21 @@
 package edge
 
 import (
+	"github.com/interstellar-cloud/star/pkg/handler/device"
+	"github.com/interstellar-cloud/star/pkg/handler/udp"
+	"sync"
+	"time"
+
 	"github.com/interstellar-cloud/star/pkg/executor"
+	"github.com/interstellar-cloud/star/pkg/middleware"
+	"github.com/interstellar-cloud/star/pkg/middleware/auth"
 	"github.com/interstellar-cloud/star/pkg/node"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet"
+	processordevice "github.com/interstellar-cloud/star/pkg/processor/device"
+	processorudp "github.com/interstellar-cloud/star/pkg/processor/udp"
 	"github.com/interstellar-cloud/star/pkg/socket"
 	"github.com/interstellar-cloud/star/pkg/tuntap"
-	"sync"
-	"time"
 )
 
 var (
@@ -18,11 +25,12 @@ var (
 
 type Star struct {
 	*option.StarConfig
-	tap      *tuntap.Tuntap
-	socket   socket.Interface
-	cache    node.NodesCache //获取回来的Peers  mac: Node
-	executor map[int]executor.Executor
-	inbound  []chan *packet.Packet
+	tap       *tuntap.Tuntap
+	socket    socket.Interface
+	cache     node.NodesCache //获取回来的Peers  mac: Node
+	executor  map[int]executor.Executor
+	processor sync.Map
+	inbound   []chan *packet.Packet
 }
 
 func (star *Star) Start() error {
@@ -44,7 +52,8 @@ func (star *Star) Start() error {
 			logger.Errorf("registry failed. (%v)", err)
 		}
 
-		star.initExecutor()
+		//star.initExecutor()
+		star.initProcessor()
 		go func() {
 			for {
 				star.queryPeer()
@@ -58,19 +67,12 @@ func (star *Star) Start() error {
 	return nil
 }
 
-func (star *Star) initExecutor() {
-	star.executor = make(map[int]executor.Executor, 1)
-	t := TapExecutor{
-		device: star.tap,
-		cache:  star.cache,
-	}
+func (star *Star) initProcessor() {
+	deviceHandler := middleware.WithMiddlewares(device.New(), auth.Middleware())
+	deviceProcessor := processordevice.New(star.tap, deviceHandler)
+	udpHandler := middleware.WithMiddlewares(udp.New(), auth.Middleware())
+	udpProcessor := processorudp.New(udpHandler)
 
-	star.executor[star.tap.Fd] = t
-
-	s := SocketExecutor{
-		device:   star.tap,
-		Protocol: star.Protocol,
-		cache:    star.cache,
-	}
-	star.executor[star.socket.(socket.Socket).Fd] = s
+	star.processor.Store(star.tap.Fd, deviceProcessor)
+	star.processor.Store(star.socket.(socket.Socket).Fd, udpProcessor)
 }

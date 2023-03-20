@@ -2,15 +2,16 @@ package tuntap
 
 import (
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/addr"
-	"golang.org/x/sys/unix"
 	"net"
 	"os"
 	"syscall"
 	"unsafe"
+
+	"github.com/interstellar-cloud/star/pkg/addr"
+	"golang.org/x/sys/unix"
 )
 
-//Tuntap a tuntap for net
+// Tuntap a tuntap for net
 type Tuntap struct {
 	file    *os.File
 	Fd      int

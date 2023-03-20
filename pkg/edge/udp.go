@@ -3,6 +3,9 @@ package edge
 import (
 	"errors"
 	"fmt"
+	"io"
+	"unsafe"
+
 	"github.com/interstellar-cloud/star/pkg/node"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet"
@@ -12,8 +15,6 @@ import (
 	"github.com/interstellar-cloud/star/pkg/socket"
 	"github.com/interstellar-cloud/star/pkg/tuntap"
 	"github.com/interstellar-cloud/star/pkg/util"
-	"io"
-	"unsafe"
 )
 
 type SocketExecutor struct {

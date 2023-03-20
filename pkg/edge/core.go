@@ -7,6 +7,7 @@ import (
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet/peer"
 	"github.com/interstellar-cloud/star/pkg/packet/register"
+	"github.com/interstellar-cloud/star/pkg/processor"
 	"github.com/interstellar-cloud/star/pkg/socket"
 	"github.com/interstellar-cloud/star/pkg/util"
 	"golang.org/x/sys/unix"
@@ -121,20 +122,24 @@ func (star *Star) starLoop() {
 		}
 
 		if FdSet.IsSet(tapFd) {
-			if err := star.executor[tapFd].Execute(star.socket); err != nil {
-				logger.Errorf("tap socket failed. (%v)", err)
+			if p, ok := star.processor.Load(tapFd); ok {
+				p.(processor.Processor).Process(star.socket)
+			} else {
+				logger.Errorf("can not found tap socket")
 			}
 		}
 
 		if FdSet.IsSet(netFd) {
-			if err := star.executor[netFd].Execute(star.socket); err != nil {
-				logger.Errorf("socket func failed. (%v)", err)
+			if p, ok := star.processor.Load(netFd); ok {
+				p.(processor.Processor).Process(star.socket)
+			} else {
+				logger.Errorf("can not found net socket")
 			}
 		}
 	}
 }
 
-//use host socket write to destination, superNode or use p2p
+// use host socket write to destination, superNode or use p2p
 func write2Net(socket socket.Interface, b []byte) {
 	logger.Debugf("tap write to net packet: (%v)", b)
 	if _, err := socket.Write(b); err != nil {

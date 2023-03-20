@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/interstellar-cloud/star/pkg/epoller"
-	"github.com/interstellar-cloud/star/pkg/handler"
 	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/node"
 	"github.com/interstellar-cloud/star/pkg/option"
@@ -21,13 +20,12 @@ var (
 	logger = log.Log()
 )
 
-//RegStar use as registry
+// RegStar use as registry
 type RegStar struct {
 	*option.RegConfig
-	socket      socket.Interface
-	cache       node.NodesCache
-	AuthHandler handler.Interface
-	packet      packet.Interface
+	socket socket.Interface
+	cache  node.NodesCache
+	packet packet.Interface
 }
 
 func (r *RegStar) Start(address string) error {
