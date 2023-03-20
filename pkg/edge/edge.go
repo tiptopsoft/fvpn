@@ -65,10 +65,10 @@ func (star *Star) Start() error {
 }
 
 func (star *Star) initProcessor() {
-	deviceHandler := middleware.WithMiddlewares(device.New(), auth.Middleware())
+	deviceHandler := middleware.WithMiddlewares(device.New(star.tap, star.socket, star.cache), auth.Middleware())
 	deviceProcessor := processordevice.New(star.tap, deviceHandler)
 	udpHandler := middleware.WithMiddlewares(udp.New(star.tap, star.cache), auth.Middleware())
-	udpProcessor := processorudp.New(star.tap, udpHandler)
+	udpProcessor := processorudp.New(star.tap, udpHandler, star.socket)
 
 	star.processor.Store(star.tap.Fd, deviceProcessor)
 	star.processor.Store(star.socket.(socket.Socket).Fd, udpProcessor)

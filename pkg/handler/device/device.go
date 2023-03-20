@@ -2,19 +2,17 @@ package device
 
 import (
 	"context"
-	"fmt"
+	"github.com/interstellar-cloud/star/pkg/util"
 	"net"
 
 	"github.com/interstellar-cloud/star/pkg/addr"
 	"github.com/interstellar-cloud/star/pkg/handler"
 	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/node"
-	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/forward"
 	"github.com/interstellar-cloud/star/pkg/socket"
 	"github.com/interstellar-cloud/star/pkg/tuntap"
-	"github.com/interstellar-cloud/star/pkg/util"
 )
 
 var (
@@ -22,26 +20,23 @@ var (
 )
 
 type DeviceHandler struct {
-	net     socket.Interface
-	destNet socket.Interface
-	cache   node.NodesCache
-	device  *tuntap.Tuntap
+	net    socket.Interface
+	cache  node.NodesCache
+	device *tuntap.Tuntap
 }
 
-func New() handler.Handler {
-	return DeviceHandler{}
+func New(device *tuntap.Tuntap, netSocket socket.Interface, cache node.NodesCache) handler.Handler {
+	return DeviceHandler{
+		net:    netSocket,
+		device: device,
+		cache:  cache,
+	}
 }
 
 func (dh DeviceHandler) Handle(ctx context.Context, buff []byte) error {
 	device := dh.device
-	b := make([]byte, option.STAR_PKT_BUFF_SIZE)
-	size, err := device.Read(b)
-	destMac := util.GetMacAddr(b)
-	fmt.Println(fmt.Sprintf("Read %d bytes from device %s, will write to dest %s", size, device.Name, destMac))
-	if err != nil {
-		logger.Errorf("tap read failed. (%v)", err)
-		return err
-	}
+	var err error
+	destMac := util.GetMacAddr(buff)
 
 	broad := addr.IsBroadCast(destMac)
 	//broad frame, go through supernode
@@ -63,7 +58,7 @@ func (dh DeviceHandler) Handle(ctx context.Context, buff []byte) error {
 	idx := 0
 	newPacket := make([]byte, 2048)
 	idx = packet.EncodeBytes(newPacket, bs, idx)
-	idx = packet.EncodeBytes(newPacket, b[:size], idx)
+	idx = packet.EncodeBytes(newPacket, buff[:], idx)
 	if broad {
 		dh.write2Net(newPacket[:idx])
 	} else {

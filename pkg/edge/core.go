@@ -123,7 +123,9 @@ func (star *Star) starLoop() {
 
 		if FdSet.IsSet(tapFd) {
 			if p, ok := star.processor.Load(tapFd); ok {
-				p.(processor.Processor).Process(star.socket)
+				if err := p.(processor.Processor).Process(); err != nil {
+					logger.Errorf("tap process failed. %v", err)
+				}
 			} else {
 				logger.Errorf("can not found tap socket")
 			}
@@ -131,7 +133,9 @@ func (star *Star) starLoop() {
 
 		if FdSet.IsSet(netFd) {
 			if p, ok := star.processor.Load(netFd); ok {
-				p.(processor.Processor).Process(star.socket)
+				if err := p.(processor.Processor).Process(); err != nil {
+					logger.Errorf("net process failed. %v", err)
+				}
 			} else {
 				logger.Errorf("can not found net socket")
 			}

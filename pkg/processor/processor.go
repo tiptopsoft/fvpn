@@ -1,9 +1,6 @@
 package processor
 
-import (
-	"github.com/interstellar-cloud/star/pkg/socket"
-)
-
+// Processor core login for loop
 type Processor interface {
-	Process(socket.Interface) error
+	Process() error
 }

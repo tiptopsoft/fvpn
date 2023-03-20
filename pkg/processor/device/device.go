@@ -8,7 +8,6 @@ import (
 	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/processor"
-	"github.com/interstellar-cloud/star/pkg/socket"
 	"github.com/interstellar-cloud/star/pkg/tuntap"
 	"github.com/interstellar-cloud/star/pkg/util"
 )
@@ -29,7 +28,7 @@ func New(device *tuntap.Tuntap, h handler.Handler) processor.Processor {
 	}
 }
 
-func (dp DeviceProcessor) Process(sket socket.Interface) error {
+func (dp DeviceProcessor) Process() error {
 	ctx := context.Background()
 	b := make([]byte, option.STAR_PKT_BUFF_SIZE)
 	size, err := dp.device.Read(b)
@@ -39,5 +38,5 @@ func (dp DeviceProcessor) Process(sket socket.Interface) error {
 		logger.Errorf("tap read failed. (%v)", err)
 	}
 
-	dp.h.Handle(ctx, b)
+	return dp.h.Handle(ctx, b[:size])
 }
