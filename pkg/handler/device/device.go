@@ -1,33 +1,43 @@
-package edge
+package device
 
 import (
-	"fmt"
+	"context"
+	"github.com/interstellar-cloud/star/pkg/util"
+	"net"
+
 	"github.com/interstellar-cloud/star/pkg/addr"
+	"github.com/interstellar-cloud/star/pkg/handler"
+	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/node"
-	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/forward"
 	"github.com/interstellar-cloud/star/pkg/socket"
 	"github.com/interstellar-cloud/star/pkg/tuntap"
-	"github.com/interstellar-cloud/star/pkg/util"
-	"net"
 )
 
-type TapExecutor struct {
-	device *tuntap.Tuntap
+var (
+	logger = log.Log()
+)
+
+type DeviceHandler struct {
+	net    socket.Interface
 	cache  node.NodesCache
+	device *tuntap.Tuntap
 }
 
-func (t TapExecutor) Execute(skt socket.Interface) error {
-	device := t.device
-	b := make([]byte, option.STAR_PKT_BUFF_SIZE)
-	size, err := device.Read(b)
-	destMac := util.GetMacAddr(b)
-	fmt.Println(fmt.Sprintf("Read %d bytes from device %s, will write to dest %s", size, device.Name, destMac))
-	if err != nil {
-		logger.Errorf("tap read failed. (%v)", err)
-		return err
+func New(device *tuntap.Tuntap, netSocket socket.Interface, cache node.NodesCache) handler.Handler {
+	return DeviceHandler{
+		net:    netSocket,
+		device: device,
+		cache:  cache,
 	}
+}
+
+func (dh DeviceHandler) Handle(ctx context.Context, buff []byte) error {
+	device := dh.device
+	var err error
+	destMac := util.GetMacAddr(buff)
+
 	broad := addr.IsBroadCast(destMac)
 	//broad frame, go through supernode
 	fp := forward.NewPacket()
@@ -48,19 +58,27 @@ func (t TapExecutor) Execute(skt socket.Interface) error {
 	idx := 0
 	newPacket := make([]byte, 2048)
 	idx = packet.EncodeBytes(newPacket, bs, idx)
-	idx = packet.EncodeBytes(newPacket, b[:size], idx)
+	idx = packet.EncodeBytes(newPacket, buff[:], idx)
 	if broad {
-		write2Net(skt, newPacket[:idx])
+		dh.write2Net(newPacket[:idx])
 	} else {
 		// go p2p
 		logger.Infof("find peer in edge, destMac: %v", destMac)
-		p := node.FindNode(t.cache, destMac)
+		p := node.FindNode(dh.cache, destMac)
 		if p == nil {
-			write2Net(skt, newPacket[:idx])
+			dh.write2Net(newPacket[:idx])
 			logger.Warnf("peer not found, go through super node")
 		} else {
-			write2Net(p.Socket, newPacket[:idx])
+			dh.write2Net(newPacket[:idx])
 		}
 	}
 	return nil
+}
+
+// use host socket write to destination, superNode or use p2p
+func (dh DeviceHandler) write2Net(b []byte) {
+	logger.Debugf("tap write to net packet: (%v)", b)
+	if _, err := dh.net.Write(b); err != nil {
+		logger.Errorf("tap write to net failed. (%v)", err)
+	}
 }

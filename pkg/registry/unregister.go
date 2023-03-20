@@ -2,13 +2,12 @@ package registry
 
 import (
 	"github.com/interstellar-cloud/star/pkg/packet"
-	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"github.com/interstellar-cloud/star/pkg/packet/register"
 	"github.com/interstellar-cloud/star/pkg/socket"
 	"golang.org/x/sys/unix"
 )
 
-func (r *RegStar) processUnregister(addr unix.Sockaddr, socket socket.Socket, data []byte, cp *common.CommonPacket) {
+func (r *RegStar) processUnregister(addr unix.Sockaddr, socket socket.Socket, data []byte, cp *packet.Header) {
 	regPacket, err := r.packet.Decode(data)
 	if err := r.unRegister(regPacket); err != nil {
 		logger.Errorf("registry failed. err: %v", err)

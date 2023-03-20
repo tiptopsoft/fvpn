@@ -1,7 +1,8 @@
 package option
 
 import (
-	"fmt"
+	"bytes"
+	"errors"
 	"github.com/spf13/viper"
 )
 
@@ -14,6 +15,20 @@ const (
 
 var (
 	STAR_PKT_BUFF_SIZE = 2048
+	defaultYaml        = []byte(`star:
+  listen: :3000
+  registry: :4000
+  tap: tap0
+  ip: 192.168.0.1
+  mask: 255.255.255.0
+  mac: 01:02:0f:0E:04:01
+  type: udp
+
+#-------------------分割线
+registry:
+  listen: 127.0.0.1:4000
+  httpListen: :4009
+  type: udp`)
 )
 
 type SuperStar struct {
@@ -66,9 +81,12 @@ func InitConfig() (config *Config, err error) {
 	viper.AddConfigPath(".")           // optionally look for config in the working directory
 	viper.AddConfigPath("./conf/")
 	if err = viper.ReadInConfig(); err != nil { // Handle errors reading the config file
-		panic(fmt.Errorf("fatal error config file: %w", err))
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			viper.ReadConfig(bytes.NewBuffer(defaultYaml))
+		} else {
+			return nil, errors.New("invalid config")
+		}
 	}
-
 	if err = viper.UnmarshalExact(&config); err != nil {
 		return nil, err
 	}

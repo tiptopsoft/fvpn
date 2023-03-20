@@ -2,9 +2,7 @@ package ack
 
 import (
 	"github.com/interstellar-cloud/star/pkg/option"
-	packet2 "github.com/interstellar-cloud/star/pkg/packet"
-	"github.com/interstellar-cloud/star/pkg/packet/common"
-	common2 "github.com/interstellar-cloud/star/pkg/packet/common"
+	"github.com/interstellar-cloud/star/pkg/packet"
 	"net"
 	"unsafe"
 )
@@ -19,55 +17,55 @@ type EdgeInfo struct {
 
 // EdgePacketAck ack for size of EdgeInfo
 type EdgePacketAck struct {
-	common2.CommonPacket
+	header    packet.Header
 	Size      uint8
 	PeerInfos []EdgeInfo
 }
 
 func NewPacket() EdgePacketAck {
-	cmPacket := common2.NewPacket(option.MsgTypeQueryPeer)
+	cmPacket := packet.NewHeader(option.MsgTypeQueryPeer)
 	return EdgePacketAck{
-		CommonPacket: cmPacket,
+		header: cmPacket,
 	}
 }
 
 func (ack EdgePacketAck) Encode() ([]byte, error) {
 	b := make([]byte, 2048)
-	cp, err := ack.CommonPacket.Encode()
+	cp, err := ack.header.Encode()
 	if err != nil {
 		return nil, err
 	}
 
 	idx := 0
-	idx = packet2.EncodeBytes(b, cp, idx)
-	idx = packet2.EncodeUint8(b, ack.Size, idx)
+	idx = packet.EncodeBytes(b, cp, idx)
+	idx = packet.EncodeUint8(b, ack.Size, idx)
 	for _, v := range ack.PeerInfos {
-		idx = packet2.EncodeBytes(b, v.Mac, idx)
-		idx = packet2.EncodeBytes(b, v.Host, idx)
-		idx = packet2.EncodeUint16(b, v.Port, idx)
+		idx = packet.EncodeBytes(b, v.Mac, idx)
+		idx = packet.EncodeBytes(b, v.Host, idx)
+		idx = packet.EncodeUint16(b, v.Port, idx)
 	}
 
 	return b, nil
 }
 
-func (ack EdgePacketAck) Decode(udpBytes []byte) (packet2.Interface, error) {
+func (ack EdgePacketAck) Decode(udpBytes []byte) (packet.Interface, error) {
 	idx := 0
-	cp, err := common.NewPacketWithoutType().Decode(udpBytes)
-	idx += int(unsafe.Sizeof(common2.CommonPacket{}))
-	ack.CommonPacket = cp.(common.CommonPacket)
+	cp, err := packet.NewPacketWithoutType().Decode(udpBytes)
+	idx += int(unsafe.Sizeof(packet.Header{}))
+	ack.header = cp.(packet.Header)
 
-	idx = packet2.DecodeUint8(&ack.Size, udpBytes, idx)
+	idx = packet.DecodeUint8(&ack.Size, udpBytes, idx)
 
 	var info []EdgeInfo
 	for i := 0; uint8(i) < ack.Size; i++ {
 		peer := EdgeInfo{}
 		var mac = make([]byte, 6)
-		idx = packet2.DecodeBytes(&mac, udpBytes, idx)
+		idx = packet.DecodeBytes(&mac, udpBytes, idx)
 		peer.Mac = mac
 		var ip = make([]byte, 16)
-		idx = packet2.DecodeBytes(&ip, udpBytes, idx)
+		idx = packet.DecodeBytes(&ip, udpBytes, idx)
 		peer.Host = ip
-		idx = packet2.DecodeUint16(&peer.Port, udpBytes, idx)
+		idx = packet.DecodeUint16(&peer.Port, udpBytes, idx)
 		info = append(info, peer)
 	}
 

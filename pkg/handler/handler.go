@@ -1,16 +1,13 @@
 package handler
 
-import (
-	"context"
-)
+import "context"
 
-func Chains(ctx context.Context, buff []byte, handlers ...Interface) error {
-	for _, h := range handlers {
-		err := h.Handle(ctx, buff)
-		if err != nil {
-			return err
-		}
-	}
+type Handler interface {
+	Handle(ctx context.Context, buff []byte) error
+}
 
-	return nil
+type HandlerFunc func(context.Context, []byte) error
+
+func (f HandlerFunc) Handle(ctx context.Context, buff []byte) error {
+	return f(ctx, buff)
 }

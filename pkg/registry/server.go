@@ -2,18 +2,18 @@ package registry
 
 import (
 	"fmt"
+	"github.com/interstellar-cloud/star/pkg/http"
+	"net"
+	"sync"
+
 	"github.com/interstellar-cloud/star/pkg/epoller"
-	"github.com/interstellar-cloud/star/pkg/handler"
 	"github.com/interstellar-cloud/star/pkg/log"
 	"github.com/interstellar-cloud/star/pkg/node"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet"
-	"github.com/interstellar-cloud/star/pkg/packet/common"
 	"github.com/interstellar-cloud/star/pkg/packet/register"
-	socket2 "github.com/interstellar-cloud/star/pkg/socket"
+	"github.com/interstellar-cloud/star/pkg/socket"
 	"golang.org/x/sys/unix"
-	"net"
-	"sync"
 )
 
 var (
@@ -21,22 +21,37 @@ var (
 	logger = log.Log()
 )
 
-//RegStar use as registry
+// RegStar use as registry
 type RegStar struct {
 	*option.RegConfig
-	socket      socket2.Interface
-	cache       node.NodesCache
-	AuthHandler handler.Interface
-	packet      packet.Interface
+	socket socket.Interface
+	cache  node.NodesCache
+	packet packet.Interface
+	ws     sync.WaitGroup
+}
+
+func (r *RegStar) Cache() node.NodesCache {
+	return r.cache
 }
 
 func (r *RegStar) Start(address string) error {
-	return r.start(address)
+	go func() {
+		r.start(address)
+	}()
+
+	go func() {
+		hs := http.New(r.cache)
+		hs.Start()
+	}()
+
+	r.ws.Add(1)
+	r.ws.Wait()
+	return nil
 }
 
 // Node register node for net, and for user create edge
 func (r *RegStar) start(address string) error {
-	r.socket = socket2.NewSocket()
+	r.socket = socket.NewSocket()
 	once.Do(func() {
 		r.cache = node.New()
 	})
@@ -76,15 +91,15 @@ func (r *RegStar) start(address string) error {
 	return nil
 }
 
-func (r *RegStar) Execute(socket socket2.Interface) error {
+func (r *RegStar) Execute(socket socket.Interface) error {
 	data := make([]byte, 2048)
 	size, addr, err := socket.ReadFromUdp(data)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	pInterface, err := common.NewPacketWithoutType().Decode(data)
-	p := pInterface.(common.CommonPacket)
+	pInterface, err := packet.NewPacketWithoutType().Decode(data)
+	p := pInterface.(packet.Header)
 
 	if err != nil {
 		fmt.Println(err)
