@@ -29,7 +29,7 @@ func New(device *tuntap.Tuntap, h handler.Handler) processor.Processor {
 	}
 }
 
-func (dp DeviceProcessor) Process(sket socket.Interface) {
+func (dp DeviceProcessor) Process(sket socket.Interface) error {
 	ctx := context.Background()
 	b := make([]byte, option.STAR_PKT_BUFF_SIZE)
 	size, err := dp.device.Read(b)

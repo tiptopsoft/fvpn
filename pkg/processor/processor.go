@@ -5,5 +5,5 @@ import (
 )
 
 type Processor interface {
-	Process(socket.Interface)
+	Process(socket.Interface) error
 }
