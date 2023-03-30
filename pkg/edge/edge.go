@@ -1,6 +1,7 @@
 package edge
 
 import (
+	encrypt "github.com/interstellar-cloud/star/pkg/middleware/decrypt"
 	"sync"
 	"time"
 
@@ -65,11 +66,25 @@ func (star *Star) Start() error {
 }
 
 func (star *Star) initProcessor() {
-	deviceHandler := middleware.WithMiddlewares(device.New(star.tap, star.socket, star.cache), auth.Middleware())
+	deviceHandler := middleware.WithMiddlewares(device.New(star.tap, star.socket, star.cache), star.initMiddlewares()...)
 	deviceProcessor := processordevice.New(star.tap, deviceHandler)
-	udpHandler := middleware.WithMiddlewares(udp.New(star.tap, star.cache), auth.Middleware())
+	udpHandler := middleware.WithMiddlewares(udp.New(star.tap, star.cache), star.initMiddlewares()...)
 	udpProcessor := processorudp.New(star.tap, udpHandler, star.socket)
 
 	star.processor.Store(star.tap.Fd, deviceProcessor)
 	star.processor.Store(star.socket.(socket.Socket).Fd, udpProcessor)
+}
+
+func (star *Star) initMiddlewares() []middleware.Middleware {
+	cfg := star.StarConfig
+	var res []middleware.Middleware
+	if cfg.OpenAuth {
+		res = append(res, auth.Middleware())
+	}
+
+	if cfg.OpenEncrypt {
+		res = append(res, encrypt.Middleeare())
+	}
+
+	return res
 }

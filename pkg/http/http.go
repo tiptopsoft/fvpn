@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	logger = log.Log()s
+	logger = log.Log()
 )
 
 type HttpServer struct {
@@ -20,7 +20,7 @@ func New(cache node.NodesCache) HttpServer {
 }
 
 func (hs HttpServer) Start() error {
-	http.HandleFunc("/node/list", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/:group/node/list", func(w http.ResponseWriter, r *http.Request) {
 		n := hs.cache
 		if err := json.NewEncoder(w).Encode(n); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

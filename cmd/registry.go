@@ -6,12 +6,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type RegStarOptions struct {
+type regStarOptions struct {
 	Listen int
 }
 
-func RegCmd() *cobra.Command {
-	var opts RegStarOptions
+func regCmd() *cobra.Command {
+	var opts regStarOptions
 	cmd := &cobra.Command{
 		Use:   "registry",
 		Short: "reg",
@@ -32,7 +32,7 @@ which edge can registry to, also registry can registry packets when edge at a Sy
 	return cmd
 }
 
-func runSuper(opts *RegStarOptions) error {
+func runSuper(opts *regStarOptions) error {
 
 	config, err := option.InitConfig()
 	if err != nil {

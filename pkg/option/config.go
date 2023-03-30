@@ -49,13 +49,15 @@ type Config struct {
 
 // StarConfig read from a config file or cmd flags, or can be assgined from a registry after got the registry ack.
 type StarConfig struct {
-	Registry string   `mapstructure:"registry"`
-	Listen   string   `mapstructure:"listen"`
-	TapName  string   `mapstructure:"tap"`
-	TapIP    string   `mapstructure:"ip"`
-	TapMask  string   `mapstructure:"mask"`
-	MacAddr  string   `mapstructure:"mac"`
-	Protocol Protocol `mapstructure:"type"`
+	Registry    string   `mapstructure:"registry"`
+	Listen      string   `mapstructure:"listen"`
+	TapName     string   `mapstructure:"tap"`
+	TapIP       string   `mapstructure:"ip"`
+	TapMask     string   `mapstructure:"mask"`
+	MacAddr     string   `mapstructure:"mac"`
+	Protocol    Protocol `mapstructure:"type"`
+	OpenAuth    bool
+	OpenEncrypt bool
 }
 
 type Mysql struct {

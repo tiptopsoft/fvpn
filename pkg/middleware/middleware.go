@@ -10,7 +10,6 @@ func Chain(middlewares ...Middleware) func(handler.Handler) handler.Handler {
 		for i := len(middlewares) - 1; i >= 0; i-- {
 			h = middlewares[i](h)
 		}
-
 		return h
 	}
 }

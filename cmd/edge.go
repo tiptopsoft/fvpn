@@ -13,7 +13,7 @@ type upOptions struct {
 	StarConfigFilePath string
 }
 
-func EdgeCmd() *cobra.Command {
+func edgeCmd() *cobra.Command {
 	var opts upOptions
 	var cmd = &cobra.Command{
 		Use:          "edge",
