@@ -18,7 +18,7 @@ GO_LICENSER = $(GO_PATH)/bin/go-licenser
 GO_BUILD_FLAGS = -v
 
 build:
-	GOPROXY=https://goproxy.cn,direct CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/star main.go
+	GOPROXY=https://goproxy.cn,direct CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/fvpn main.go
 
 image: build
 	cd ${shell pwd}/bin/ && docker buildx build  -t star:${tags} -f ${shell pwd}/docker/Dockerfile .

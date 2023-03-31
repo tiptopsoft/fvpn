@@ -1,14 +1,14 @@
-package registry
+package fvpns
 
 import (
-	"github.com/interstellar-cloud/star/pkg/node"
+	"github.com/interstellar-cloud/star/pkg/cache"
 	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/forward"
 	"github.com/interstellar-cloud/star/pkg/util"
 )
 
 func (r *RegStar) forward(data []byte, cp *packet.Header) {
-	logger.Infof("registry got forward packet: %v", data)
+	logger.Infof("fvpns got forward packet: %v", data)
 	fpInterface, err := forward.NewPacket().Decode(data)
 	fp := fpInterface.(forward.ForwardPacket)
 
@@ -17,13 +17,13 @@ func (r *RegStar) forward(data []byte, cp *packet.Header) {
 	}
 
 	//if util.IsBroadCast(fp.DstMac.String()) {
-	peer := node.FindNode(r.cache, fp.DstMac.String())
+	peer := cache.FindPeer(r.cache, fp.DstMac.String())
 	if peer == nil {
 		//用dstIP去查询
 		ip := util.GetDstIP(data)
-		peer = node.FindNodeByIP(r.cache, ip.String())
+		peer = cache.FindPeerByIP(r.cache, ip.String())
 		if peer == nil {
-			logger.Errorf("dst has not registerd in registry. macAddr: %s, addr: %s", fp.DstMac.String())
+			logger.Errorf("dst has not registerd in fvpns. macAddr: %s, addr: %s", fp.DstMac.String())
 		}
 
 		return
@@ -33,15 +33,15 @@ func (r *RegStar) forward(data []byte, cp *packet.Header) {
 		err := r.socket.WriteToUdp(data, v.Addr)
 		logger.Infof("forward packet: (%v), addr: %v", data, v.Addr)
 		if err != nil {
-			logger.Errorf("send to remote edge or registry failed. err: %v", err)
+			logger.Errorf("send to remote fvpnc or fvpns failed. err: %v", err)
 		}
 	}
 
 	//} else {
-	//	// find Addr in registry
+	//	// find Addr in fvpns
 	//	peer := util.FindPeers(r.cache, fp.DstMac.String())
 	//	if peer == nil {
-	//		logger.Errorf("dst has not registerd in registry. macAddr: %s", fp.DstMac.String())
+	//		logger.Errorf("dst has not registerd in fvpns. macAddr: %s", fp.DstMac.String())
 	//	}
 	//}
 }

@@ -1,6 +1,6 @@
 package packet
 
-// Forward forward byte from registry to edge
+// Forward forward byte from fvpns to fvpnc
 func Forward(updBytes []byte) error {
 	return nil
 }

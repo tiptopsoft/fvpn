@@ -1,8 +1,8 @@
-package registry
+package fvpns
 
 import (
 	"github.com/interstellar-cloud/star/pkg/addr"
-	"github.com/interstellar-cloud/star/pkg/node"
+	"github.com/interstellar-cloud/star/pkg/cache"
 	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/register"
 	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
@@ -15,15 +15,15 @@ func (r *RegStar) processRegister(remoteAddr unix.Sockaddr, data []byte, cp *pac
 
 	// build an ack
 	f, err := r.registerAck(remoteAddr, packet.(register.RegPacket).SrcMac)
-	logger.Infof("build a registry ack: %v", f)
+	logger.Infof("build a fvpns ack: %v", f)
 	if err != nil {
 		logger.Errorf("build resp failed. err: %v", err)
 	}
 	err = r.socket.WriteToUdp(f, remoteAddr)
 	if err != nil {
-		logger.Errorf("registry write failed. err: %v", err)
+		logger.Errorf("fvpns write failed. err: %v", err)
 	}
-	logger.Infof("write a registry ack to remote: %v, data: %v", remoteAddr, f)
+	logger.Infof("write a fvpns ack to remote: %v, data: %v", remoteAddr, f)
 
 }
 
@@ -37,7 +37,7 @@ func (r *RegStar) registerAck(peerAddr unix.Sockaddr, srcMac net.HardwareAddr) (
 	p.AutoIP = endpoint.IP
 	p.Mask = endpoint.Mask
 
-	ackNode := &node.Node{
+	ackNode := &cache.Peer{
 		Socket:  r.socket,
 		Addr:    peerAddr,
 		MacAddr: endpoint.Mac,

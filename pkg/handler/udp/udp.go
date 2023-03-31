@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"unsafe"
 
+	"github.com/interstellar-cloud/star/pkg/cache"
 	"github.com/interstellar-cloud/star/pkg/handler"
 	"github.com/interstellar-cloud/star/pkg/log"
-	"github.com/interstellar-cloud/star/pkg/node"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/forward"
@@ -24,10 +24,10 @@ var (
 
 type UdpHandler struct {
 	device *tuntap.Tuntap
-	cache  node.NodesCache
+	cache  cache.PeersCache
 }
 
-func New(device *tuntap.Tuntap, cache node.NodesCache) handler.Handler {
+func New(device *tuntap.Tuntap, cache cache.PeersCache) handler.Handler {
 	return UdpHandler{
 		device: device,
 		cache:  cache,
@@ -49,7 +49,7 @@ func (uh UdpHandler) Handle(ctx context.Context, buff []byte) error {
 		if err != nil {
 			return err
 		}
-		logger.Infof("got registry registry ack: (%v)", buff[:])
+		logger.Infof("got fvpns fvpns ack: (%v)", buff[:])
 		//设置IP
 		if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", uh.device.Name, regAck.AutoIP.String(), regAck.Mask.String(), 1420)); err != nil {
 			return err
@@ -62,7 +62,7 @@ func (uh UdpHandler) Handle(ctx context.Context, buff []byte) error {
 			return err
 		}
 		infos := peerPacketAck.PeerInfos
-		logger.Infof("got registry peers: (%v)", infos)
+		logger.Infof("got fvpns peers: (%v)", infos)
 		for _, info := range infos {
 			address, err := util.GetAddress(info.Host.String(), int(info.Port))
 			if err != nil {
@@ -73,7 +73,7 @@ func (uh UdpHandler) Handle(ctx context.Context, buff []byte) error {
 			if err != nil {
 				return err
 			}
-			peerInfo := &node.Node{
+			peerInfo := &cache.Peer{
 				Socket:  sock,
 				MacAddr: info.Mac,
 				IP:      info.Host,

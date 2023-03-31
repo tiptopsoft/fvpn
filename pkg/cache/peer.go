@@ -1,4 +1,4 @@
-package node
+package cache
 
 import (
 	"github.com/interstellar-cloud/star/pkg/socket"
@@ -6,12 +6,12 @@ import (
 	"net"
 )
 
-type NodesCache struct {
-	Nodes   map[string]*Node
-	IPNodes map[string]*Node
+type PeersCache struct {
+	Nodes   map[string]*Peer
+	IPNodes map[string]*Peer
 }
 
-type Node struct {
+type Peer struct {
 	Socket  socket.Interface
 	Addr    unix.Sockaddr
 	MacAddr net.HardwareAddr
@@ -20,18 +20,18 @@ type Node struct {
 	P2P     bool
 }
 
-func New() NodesCache {
-	return NodesCache{
-		Nodes:   make(map[string]*Node, 1),
-		IPNodes: make(map[string]*Node, 1),
+func New() PeersCache {
+	return PeersCache{
+		Nodes:   make(map[string]*Peer, 1),
+		IPNodes: make(map[string]*Peer, 1),
 	}
 }
 
-func FindNode(cache NodesCache, destMac string) *Node {
+func FindPeer(cache PeersCache, destMac string) *Peer {
 	return cache.Nodes[destMac]
 }
 
-func FindNodeByIP(cache NodesCache, ip string) *Node {
+func FindPeerByIP(cache PeersCache, ip string) *Peer {
 	return cache.IPNodes[ip]
 }
 

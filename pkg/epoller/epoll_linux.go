@@ -21,7 +21,7 @@ type EventLoop struct {
 	epfd           int
 	events         [MaxEpollEvents]syscall.EpollEvent
 	fileDescriptor int
-	//*registry.RegStar
+	//*fvpns.RegStar
 	Protocol option.Protocol
 	sockets  map[int]*socket.Interface
 }
