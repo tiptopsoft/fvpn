@@ -1,4 +1,4 @@
-package edge
+package client
 
 import (
 	encrypt "github.com/interstellar-cloud/star/pkg/middleware/decrypt"
@@ -8,9 +8,9 @@ import (
 	"github.com/interstellar-cloud/star/pkg/handler/device"
 	"github.com/interstellar-cloud/star/pkg/handler/udp"
 
+	"github.com/interstellar-cloud/star/pkg/cache"
 	"github.com/interstellar-cloud/star/pkg/middleware"
 	"github.com/interstellar-cloud/star/pkg/middleware/auth"
-	"github.com/interstellar-cloud/star/pkg/node"
 	"github.com/interstellar-cloud/star/pkg/option"
 	processordevice "github.com/interstellar-cloud/star/pkg/processor/device"
 	processorudp "github.com/interstellar-cloud/star/pkg/processor/udp"
@@ -23,60 +23,60 @@ var (
 	DefaultEdgePort = 6061
 )
 
-type Star struct {
+type Node struct {
 	*option.StarConfig
 	tap       *tuntap.Tuntap
 	socket    socket.Interface
-	cache     node.NodesCache //获取回来的Peers  mac: Node
-	processor sync.Map        //核心处理逻辑
+	cache     cache.PeersCache //获取回来的Peers  mac: Peer
+	processor sync.Map         //核心处理逻辑
 }
 
-func (star *Star) Start() error {
+func (node *Node) Start() error {
 	once.Do(func() {
-		star.socket = socket.NewSocket()
-		if err := star.conn(); err != nil {
+		node.socket = socket.NewSocket()
+		if err := node.conn(); err != nil {
 			logger.Errorf("failed to connect to registry: %v", err)
 		}
-		star.cache = node.New()
-		star.Protocol = option.UDP
+		node.cache = cache.New()
+		node.Protocol = option.UDP
 		tap, err := tuntap.New(tuntap.TAP)
-		star.tap = tap
+		node.tap = tap
 
 		if err != nil {
 			logger.Errorf("create or connect tap failed, err: (%v)", err)
 		}
 
-		if err := star.register(); err != nil {
+		if err := node.register(); err != nil {
 			logger.Errorf("registry failed. (%v)", err)
 		}
 
-		//star.initExecutor()
-		star.initProcessor()
+		//fvpn.initExecutor()
+		node.initProcessor()
 		go func() {
 			for {
-				star.queryPeer()
+				node.queryPeer()
 				//连通
-				star.dialNode()
+				node.dialNode()
 				time.Sleep(30 * time.Second)
 			}
 		}()
 	})
-	star.starLoop()
+	node.starLoop()
 	return nil
 }
 
-func (star *Star) initProcessor() {
-	deviceHandler := middleware.WithMiddlewares(device.New(star.tap, star.socket, star.cache), star.initMiddlewares()...)
-	deviceProcessor := processordevice.New(star.tap, deviceHandler)
-	udpHandler := middleware.WithMiddlewares(udp.New(star.tap, star.cache), star.initMiddlewares()...)
-	udpProcessor := processorudp.New(star.tap, udpHandler, star.socket)
+func (node *Node) initProcessor() {
+	deviceHandler := middleware.WithMiddlewares(device.New(node.tap, node.socket, node.cache), node.initMiddlewares()...)
+	deviceProcessor := processordevice.New(node.tap, deviceHandler)
+	udpHandler := middleware.WithMiddlewares(udp.New(node.tap, node.cache), node.initMiddlewares()...)
+	udpProcessor := processorudp.New(node.tap, udpHandler, node.socket)
 
-	star.processor.Store(star.tap.Fd, deviceProcessor)
-	star.processor.Store(star.socket.(socket.Socket).Fd, udpProcessor)
+	node.processor.Store(node.tap.Fd, deviceProcessor)
+	node.processor.Store(node.socket.(socket.Socket).Fd, udpProcessor)
 }
 
-func (star *Star) initMiddlewares() []middleware.Middleware {
-	cfg := star.StarConfig
+func (node *Node) initMiddlewares() []middleware.Middleware {
+	cfg := node.StarConfig
 	var res []middleware.Middleware
 	if cfg.OpenAuth {
 		res = append(res, auth.Middleware())

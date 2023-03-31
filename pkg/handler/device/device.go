@@ -6,9 +6,9 @@ import (
 	"net"
 
 	"github.com/interstellar-cloud/star/pkg/addr"
+	"github.com/interstellar-cloud/star/pkg/cache"
 	"github.com/interstellar-cloud/star/pkg/handler"
 	"github.com/interstellar-cloud/star/pkg/log"
-	"github.com/interstellar-cloud/star/pkg/node"
 	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/forward"
 	"github.com/interstellar-cloud/star/pkg/socket"
@@ -21,11 +21,11 @@ var (
 
 type DeviceHandler struct {
 	net    socket.Interface
-	cache  node.NodesCache
+	cache  cache.PeersCache
 	device *tuntap.Tuntap
 }
 
-func New(device *tuntap.Tuntap, netSocket socket.Interface, cache node.NodesCache) handler.Handler {
+func New(device *tuntap.Tuntap, netSocket socket.Interface, cache cache.PeersCache) handler.Handler {
 	return DeviceHandler{
 		net:    netSocket,
 		device: device,
@@ -63,11 +63,11 @@ func (dh DeviceHandler) Handle(ctx context.Context, buff []byte) error {
 		dh.write2Net(newPacket[:idx])
 	} else {
 		// go p2p
-		logger.Infof("find peer in edge, destMac: %v", destMac)
-		p := node.FindNode(dh.cache, destMac)
+		logger.Infof("find peer in client, destMac: %v", destMac)
+		p := cache.FindPeer(dh.cache, destMac)
 		if p == nil {
 			dh.write2Net(newPacket[:idx])
-			logger.Warnf("peer not found, go through super node")
+			logger.Warnf("peer not found, go through super cache")
 		} else {
 			dh.write2Net(newPacket[:idx])
 		}

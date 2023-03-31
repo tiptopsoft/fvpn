@@ -15,7 +15,7 @@ const (
 
 var (
 	STAR_PKT_BUFF_SIZE = 2048
-	defaultYaml        = []byte(`star:
+	defaultYaml        = []byte(`fvpn:
   listen: :3000
   registry: :4000
   tap: tap0
@@ -43,7 +43,7 @@ type Star struct {
 }
 
 type Config struct {
-	Star *StarConfig `mapstructure:"star"`
+	Star *StarConfig `mapstructure:"fvpn"`
 	Reg  *RegConfig  `mapstructure:"registry"`
 }
 
@@ -78,8 +78,8 @@ type RegConfig struct {
 func InitConfig() (config *Config, err error) {
 	viper.SetConfigName("app")         // name of config file (without extension)
 	viper.SetConfigType("yaml")        // REQUIRED if the config file does not have the extension in the name
-	viper.AddConfigPath("/etc/star/")  // path to look for the config file in
-	viper.AddConfigPath("$HOME/.star") // call multiple times to add many search paths
+	viper.AddConfigPath("/etc/fvpn/")  // path to look for the config file in
+	viper.AddConfigPath("$HOME/.fvpn") // call multiple times to add many search paths
 	viper.AddConfigPath(".")           // optionally look for config in the working directory
 	viper.AddConfigPath("./conf/")
 	if err = viper.ReadInConfig(); err != nil { // Handle errors reading the config file

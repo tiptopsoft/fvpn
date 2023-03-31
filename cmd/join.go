@@ -2,13 +2,13 @@ package cmd
 
 import "github.com/spf13/cobra"
 
-type loginOptions struct {
+type joinOptions struct {
 }
 
-func loginCmd() *cobra.Command {
-	var opts loginOptions
+func joinCmd() *cobra.Command {
+	var opts joinOptions
 	var cmd = &cobra.Command{
-		Use:          "login",
+		Use:          "join",
 		SilenceUsage: true,
 		Short:        "user login user username and password which registered in our website",
 		Long:         `user login user username and password which registered in our website`,
@@ -18,7 +18,7 @@ func loginCmd() *cobra.Command {
 		},
 
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runLogin(&opts)
+			return runJoin(&opts)
 		},
 	}
 	//fs := cmd.Flags()
@@ -27,7 +27,7 @@ func loginCmd() *cobra.Command {
 	return cmd
 }
 
-func runLogin(opts *loginOptions) error {
+func runJoin(opts *joinOptions) error {
 	//TODO to be implemented
 	return nil
 }

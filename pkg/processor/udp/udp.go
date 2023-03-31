@@ -35,7 +35,7 @@ func (up UdpProcessor) Process() error {
 	if size < 0 {
 		return errors.New("no data exists")
 	}
-	logger.Infof("star net skt receive size: %d, data: (%v)", size, udpBytes[:size])
+	logger.Infof("fvpn net skt receive size: %d, data: (%v)", size, udpBytes[:size])
 	if err != nil {
 		if err == io.EOF {
 			//no data exists, continue read next frame continue

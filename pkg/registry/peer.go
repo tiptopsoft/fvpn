@@ -1,7 +1,7 @@
 package registry
 
 import (
-	"github.com/interstellar-cloud/star/pkg/node"
+	"github.com/interstellar-cloud/star/pkg/cache"
 	"github.com/interstellar-cloud/star/pkg/packet/peer/ack"
 	"golang.org/x/sys/unix"
 )
@@ -29,7 +29,7 @@ func (r *RegStar) processFindPeer(addr unix.Sockaddr) {
 	logger.Infof("finish process query peers")
 }
 
-func getPeerInfo(peers node.NodesCache) ([]ack.EdgeInfo, uint8, error) {
+func getPeerInfo(peers cache.PeersCache) ([]ack.EdgeInfo, uint8, error) {
 	var result []ack.EdgeInfo
 	for _, peer := range peers.Nodes {
 		info := ack.EdgeInfo{

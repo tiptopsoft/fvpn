@@ -6,9 +6,9 @@ import (
 	"net"
 	"sync"
 
+	"github.com/interstellar-cloud/star/pkg/cache"
 	"github.com/interstellar-cloud/star/pkg/epoller"
 	"github.com/interstellar-cloud/star/pkg/log"
-	"github.com/interstellar-cloud/star/pkg/node"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/register"
@@ -25,12 +25,12 @@ var (
 type RegStar struct {
 	*option.RegConfig
 	socket socket.Interface
-	cache  node.NodesCache
+	cache  cache.PeersCache
 	packet packet.Interface
 	ws     sync.WaitGroup
 }
 
-func (r *RegStar) Cache() node.NodesCache {
+func (r *RegStar) Cache() cache.PeersCache {
 	return r.cache
 }
 
@@ -49,11 +49,11 @@ func (r *RegStar) Start(address string) error {
 	return nil
 }
 
-// Node register node for net, and for user create edge
+// Peer register cache for net, and for user create client
 func (r *RegStar) start(address string) error {
 	r.socket = socket.NewSocket()
 	once.Do(func() {
-		r.cache = node.New()
+		r.cache = cache.New()
 	})
 
 	switch r.Protocol {

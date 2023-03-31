@@ -1,6 +1,6 @@
 package http
 
-// Client star client to get token from user center, then use token and group to transfer data.
+// Client fvpn client to get token from user center, then use token and group to transfer data.
 type Client interface {
 	Login(username, password string) (*Response, error)
 	Logout(username string) (*Response, error)

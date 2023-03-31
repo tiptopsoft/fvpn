@@ -15,8 +15,8 @@ func regCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "registry",
 		Short: "reg",
-		Long: `registry edge, using for finding other machine in a group,
-which edge can registry to, also registry can registry packets when edge at a Symetric Nat.`,
+		Long: `registry client, using for finding other machine in a group,
+which client can registry to, also registry can registry packets when client at a Symetric Nat.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 
 			return nil

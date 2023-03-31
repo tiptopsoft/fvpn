@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"unsafe"
 
+	"github.com/interstellar-cloud/star/pkg/cache"
 	"github.com/interstellar-cloud/star/pkg/handler"
 	"github.com/interstellar-cloud/star/pkg/log"
-	"github.com/interstellar-cloud/star/pkg/node"
 	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/forward"
@@ -24,10 +24,10 @@ var (
 
 type UdpHandler struct {
 	device *tuntap.Tuntap
-	cache  node.NodesCache
+	cache  cache.PeersCache
 }
 
-func New(device *tuntap.Tuntap, cache node.NodesCache) handler.Handler {
+func New(device *tuntap.Tuntap, cache cache.PeersCache) handler.Handler {
 	return UdpHandler{
 		device: device,
 		cache:  cache,
@@ -73,7 +73,7 @@ func (uh UdpHandler) Handle(ctx context.Context, buff []byte) error {
 			if err != nil {
 				return err
 			}
-			peerInfo := &node.Node{
+			peerInfo := &cache.Peer{
 				Socket:  sock,
 				MacAddr: info.Mac,
 				IP:      info.Host,

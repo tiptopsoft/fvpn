@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/interstellar-cloud/star/pkg/edge"
+	"github.com/interstellar-cloud/star/pkg/client"
 	"github.com/interstellar-cloud/star/pkg/middleware/auth"
 	option2 "github.com/interstellar-cloud/star/pkg/option"
 	"github.com/spf13/cobra"
@@ -13,13 +13,13 @@ type upOptions struct {
 	StarConfigFilePath string
 }
 
-func edgeCmd() *cobra.Command {
+func nodeCmd() *cobra.Command {
 	var opts upOptions
 	var cmd = &cobra.Command{
-		Use:          "edge",
+		Use:          "cache",
 		SilenceUsage: true,
-		Short:        "start up a edge, for private net proxy",
-		Long:         `Start up a edge, for private net proxy`,
+		Short:        "start up a cache, for private net proxy",
+		Long:         `Start up a cache, for private net proxy`,
 
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return nil
@@ -30,19 +30,19 @@ func edgeCmd() *cobra.Command {
 		},
 	}
 	fs := cmd.Flags()
-	fs.StringVarP(&opts.StarConfigFilePath, "config", "", "", "config file for edge")
+	fs.StringVarP(&opts.StarConfigFilePath, "config", "", "", "config file for client")
 
 	return cmd
 }
 
-// runEdge run a edge up
+// runEdge run a client up
 func runEdge(opts *upOptions) error {
 	config, err := option2.InitConfig()
 	if err != nil {
 		return err
 	}
 
-	s := &edge.Star{
+	s := &client.Node{
 		StarConfig: config.Star,
 	}
 	return s.Start()

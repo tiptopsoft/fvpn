@@ -9,7 +9,7 @@ import (
 	"unsafe"
 )
 
-// RegPacket registry a edge to registry
+// RegPacket registry a client to registry
 type RegPacket struct {
 	header packet.Header
 	SrcMac net.HardwareAddr

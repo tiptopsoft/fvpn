@@ -14,7 +14,7 @@ import (
 
 var (
 	logger      = log.Log()
-	defaultUser = "http://star.user.internal"
+	defaultUser = "http://fvpn.user.internal"
 )
 
 type StarAuth struct {

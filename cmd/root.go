@@ -7,14 +7,14 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:          "star [command]",
+	Use:          "fvpn [command]",
 	SilenceUsage: true,
-	Short:        "Start a edge, which can visit you own network.",
-	Long:         `Start a edge, use which can visit private net.`,
+	Short:        "Start a client, which can visit you own network.",
+	Long:         `Start a client, use which can visit private net.`,
 }
 
 func Execute() {
-	rootCmd.AddCommand(edgeCmd(), regCmd())
+	rootCmd.AddCommand(nodeCmd(), regCmd())
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(-1)
 	}

@@ -7,9 +7,9 @@ services:
     ports:
       - "3001:3000/udp"
     command:
-      - "edge"
+      - "client"
     volumes:
-      - /Users/francis/workspc/star/conf/app.yaml:/etc/star/app.yaml
+      - /Users/francis/workspc/fvpn/conf/app.yaml:/etc/fvpn/app.yaml
 
   edge:
     image: star:0.1
@@ -19,4 +19,4 @@ services:
     command:
       - "registry"
     volumes:
-      - /Users/francis/workspc/star/conf/app.yaml:/etc/star/app.yaml
+      - /Users/francis/workspc/fvpn/conf/app.yaml:/etc/fvpn/app.yaml

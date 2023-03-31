@@ -2,7 +2,7 @@ package registry
 
 import (
 	"github.com/interstellar-cloud/star/pkg/addr"
-	"github.com/interstellar-cloud/star/pkg/node"
+	"github.com/interstellar-cloud/star/pkg/cache"
 	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/interstellar-cloud/star/pkg/packet/register"
 	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
@@ -37,7 +37,7 @@ func (r *RegStar) registerAck(peerAddr unix.Sockaddr, srcMac net.HardwareAddr) (
 	p.AutoIP = endpoint.IP
 	p.Mask = endpoint.Mask
 
-	ackNode := &node.Node{
+	ackNode := &cache.Peer{
 		Socket:  r.socket,
 		Addr:    peerAddr,
 		MacAddr: endpoint.Mac,
