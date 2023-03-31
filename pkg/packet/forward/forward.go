@@ -8,7 +8,7 @@ import (
 	"unsafe"
 )
 
-//ForwardPacket is through packet used in registry
+// ForwardPacket is through packet used in fvpns
 type ForwardPacket struct {
 	header packet.Header
 	body

@@ -1,4 +1,4 @@
-package edge
+package fvpnc
 
 import (
 	"fmt"
@@ -15,34 +15,34 @@ import (
 
 var logger = log.Log()
 
-func (star *Star) conn() error {
+func (node *Node) conn() error {
 	var err error
-	switch star.Protocol {
+	switch node.Protocol {
 	case option.UDP:
-		remoteAddr, err := util.GetAddress(star.Registry, addr.DefaultPort)
+		remoteAddr, err := util.GetAddress(node.ClientCfg.Registry, addr.DefaultPort)
 		if err != nil {
 			return err
 		}
 
-		if err = star.socket.Connect(&remoteAddr); err != nil {
+		if err = node.socket.Connect(&remoteAddr); err != nil {
 			return err
 		}
-		logger.Infof("star connected to registry: (%v)", star.Registry)
+		logger.Infof("node connected to fvpns: (%v)", node.ClientCfg.Registry)
 	}
 	return err
 }
 
-func (star *Star) queryPeer() error {
+func (node *Node) queryPeer() error {
 	cp := peer.NewPacket()
 	data, err := cp.Encode()
 	if err != nil {
 		return err
 	}
 
-	switch star.Protocol {
+	switch node.Protocol {
 	case option.UDP:
-		logger.Infof("start to query star peer info, data: (%v)", data)
-		if _, err := star.socket.Write(data); err != nil {
+		logger.Infof("start to query node peer info, data: (%v)", data)
+		if _, err := node.socket.Write(data); err != nil {
 			return nil
 		}
 		break
@@ -51,20 +51,20 @@ func (star *Star) queryPeer() error {
 }
 
 // register register a edgestar to center.
-func (star *Star) register() error {
+func (node *Node) register() error {
 	var err error
 	rp := register.NewPacket()
-	rp.SrcMac, _ = addr.GetMacAddrByDev(star.tap.Name)
-	logger.Infof("register src mac: %v to registry", rp.SrcMac.String())
+	rp.SrcMac, _ = addr.GetMacAddrByDev(node.tap.Name)
+	logger.Infof("register src mac: %v to fvpns", rp.SrcMac.String())
 	data, err := rp.Encode()
-	logger.Infof("sending registry data: %v", data)
+	logger.Infof("sending fvpns data: %v", data)
 	if err != nil {
 		return err
 	}
-	switch star.Protocol {
+	switch node.Protocol {
 	case option.UDP:
-		logger.Infof("star start to register to registry: %v", rp)
-		if _, err := star.socket.Write(data); err != nil {
+		logger.Infof("node start to register to fvpns: %v", rp)
+		if _, err := node.socket.Write(data); err != nil {
 			return err
 		}
 		break
@@ -73,20 +73,20 @@ func (star *Star) register() error {
 }
 
 // register register a edgestar to center.
-func (star *Star) unregister() error {
+func (node *Node) unregister() error {
 	var err error
 	rp := register.NewUnregisterPacket()
-	rp.SrcMac = star.tap.MacAddr
+	rp.SrcMac = node.tap.MacAddr
 	data, err := rp.Encode()
 	fmt.Println("sending unregister data: ", data)
 	if err != nil {
 		return err
 	}
 
-	switch star.Protocol {
+	switch node.Protocol {
 	case option.UDP:
-		logger.Infof("star start to registry self to registry: %v", rp)
-		if _, err := star.socket.Write(data); err != nil {
+		logger.Infof("node start to fvpns self to fvpns: %v", rp)
+		if _, err := node.socket.Write(data); err != nil {
 			return err
 		}
 		break
@@ -94,9 +94,9 @@ func (star *Star) unregister() error {
 	return nil
 }
 
-func (star *Star) starLoop() {
-	netFd := star.socket.(socket.Socket).Fd
-	tapFd := star.tap.Fd
+func (node *Node) starLoop() {
+	netFd := node.socket.(socket.Socket).Fd
+	tapFd := node.tap.Fd
 	var FdSet unix.FdSet
 	var maxFd int
 	if netFd > tapFd {
@@ -122,7 +122,7 @@ func (star *Star) starLoop() {
 		}
 
 		if FdSet.IsSet(tapFd) {
-			if p, ok := star.processor.Load(tapFd); ok {
+			if p, ok := node.processor.Load(tapFd); ok {
 				if err := p.(processor.Processor).Process(); err != nil {
 					logger.Errorf("tap process failed. %v", err)
 				}
@@ -132,7 +132,7 @@ func (star *Star) starLoop() {
 		}
 
 		if FdSet.IsSet(netFd) {
-			if p, ok := star.processor.Load(netFd); ok {
+			if p, ok := node.processor.Load(netFd); ok {
 				if err := p.(processor.Processor).Process(); err != nil {
 					logger.Errorf("net process failed. %v", err)
 				}
@@ -151,13 +151,13 @@ func write2Net(socket socket.Interface, b []byte) {
 	}
 }
 
-func (star Star) dialNode() {
-	for _, v := range star.cache.Nodes {
+func (node Node) dialNode() {
+	for _, v := range node.cache.Nodes {
 		if v != nil && v.Addr != nil {
 			dstAddr := v.Addr.(*unix.SockaddrInet4).Addr
 			newAddr := &unix.SockaddrInet4{Addr: dstAddr, Port: DefaultEdgePort}
 			if !v.P2P {
-				if err := star.socket.Connect(newAddr); err != nil {
+				if err := node.socket.Connect(newAddr); err != nil {
 					return
 				}
 			}

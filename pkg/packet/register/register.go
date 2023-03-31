@@ -9,7 +9,7 @@ import (
 	"unsafe"
 )
 
-// RegPacket registry a edge to registry
+// RegPacket fvpns a fvpnc to fvpns
 type RegPacket struct {
 	header packet.Header
 	SrcMac net.HardwareAddr

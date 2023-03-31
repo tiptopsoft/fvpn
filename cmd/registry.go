@@ -1,8 +1,8 @@
 package cmd
 
 import (
+	"github.com/interstellar-cloud/star/pkg/fvpns"
 	"github.com/interstellar-cloud/star/pkg/option"
-	"github.com/interstellar-cloud/star/pkg/registry"
 	"github.com/spf13/cobra"
 )
 
@@ -13,12 +13,10 @@ type RegStarOptions struct {
 func RegCmd() *cobra.Command {
 	var opts RegStarOptions
 	cmd := &cobra.Command{
-		Use:   "registry",
-		Short: "reg",
-		Long: `registry edge, using for finding other machine in a group,
-which edge can registry to, also registry can registry packets when edge at a Symetric Nat.`,
+		Use:   "serve",
+		Short: "s",
+		Long:  `fvpn start a registry, a relay server for node to node mesh.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -38,9 +36,9 @@ func runSuper(opts *RegStarOptions) error {
 	if err != nil {
 		return err
 	}
-	s := registry.RegStar{
-		RegConfig: config.Reg,
+	s := fvpns.RegStar{
+		ServerConfig: config.ServerCfg,
 	}
 
-	return s.Start(config.Reg.Listen)
+	return s.Start(config.ServerCfg.Listen)
 }

@@ -15,9 +15,10 @@ const (
 
 var (
 	STAR_PKT_BUFF_SIZE = 2048
-	defaultYaml        = []byte(`star:
+	defaultYaml        = []byte(
+		`client:
   listen: :3000
-  registry: :4000
+  fvpns: :4000
   tap: tap0
   ip: 192.168.0.1
   mask: 255.255.255.0
@@ -25,7 +26,7 @@ var (
   type: udp
 
 #-------------------分割线
-registry:
+server:
   listen: 127.0.0.1:4000
   httpListen: :4009
   type: udp`)
@@ -43,13 +44,16 @@ type Star struct {
 }
 
 type Config struct {
-	Star *StarConfig `mapstructure:"star"`
-	Reg  *RegConfig  `mapstructure:"registry"`
+	ClientCfg    *ClientConfig `mapstructure:"client"`
+	ServerCfg    *ServerConfig `mapstructure:"server"`
+	OpenAuth     bool          `mapstructure:"openAuth"`
+	OpenEncrypt  bool          `mapstructure:"openEncrypt"`
+	OpenCompress bool          `mapstructure:"openCompress"`
 }
 
-// StarConfig read from a config file or cmd flags, or can be assgined from a registry after got the registry ack.
-type StarConfig struct {
-	Registry string   `mapstructure:"registry"`
+// ClientConfig read from a config file or cmd flags, or can be assgined from a fvpns after got the fvpns ack.
+type ClientConfig struct {
+	Registry string   `mapstructure:"fvpns"`
 	Listen   string   `mapstructure:"listen"`
 	TapName  string   `mapstructure:"tap"`
 	TapIP    string   `mapstructure:"ip"`
@@ -65,12 +69,10 @@ type Mysql struct {
 	Name     string `mapstructure:"name"`
 }
 
-type RegConfig struct {
-	Listen      string   `mapstructure:"listen"`
-	HttpListen  string   `mapstructure:"httpListen"`
-	Protocol    Protocol `mapstructure:"type"`
-	OpenAuth    bool
-	OpenEncrypt bool
+type ServerConfig struct {
+	Listen     string   `mapstructure:"listen"`
+	HttpListen string   `mapstructure:"httpListen"`
+	Protocol   Protocol `mapstructure:"type"`
 }
 
 func InitConfig() (config *Config, err error) {

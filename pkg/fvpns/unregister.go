@@ -1,4 +1,4 @@
-package registry
+package fvpns
 
 import (
 	"github.com/interstellar-cloud/star/pkg/packet"
@@ -10,17 +10,17 @@ import (
 func (r *RegStar) processUnregister(addr unix.Sockaddr, socket socket.Socket, data []byte, cp *packet.Header) {
 	regPacket, err := r.packet.Decode(data)
 	if err := r.unRegister(regPacket); err != nil {
-		logger.Errorf("registry failed. err: %v", err)
+		logger.Errorf("fvpns failed. err: %v", err)
 	}
 	// build a ack
 	f, err := r.registerAck(addr, regPacket.(register.RegPacket).SrcMac)
-	logger.Infof("build a registry ack: %v", f)
+	logger.Infof("build a fvpns ack: %v", f)
 	if err != nil {
 		logger.Errorf("build resp p failed. err: %v", err)
 	}
 	err = socket.WriteToUdp(f, addr)
 	if err != nil {
-		logger.Errorf("registry write failed. err: %v", err)
+		logger.Errorf("fvpns write failed. err: %v", err)
 	}
 }
 
