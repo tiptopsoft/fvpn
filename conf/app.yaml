@@ -1,4 +1,4 @@
-star:
+client:
   listen: :3000
   registry: :4000
   tap: tap0
@@ -8,7 +8,7 @@ star:
   type: udp
 
 #-------------------分割线
-registry:
+server:
   listen: 127.0.0.1:4000
   httpListen: :4009
   type: udp

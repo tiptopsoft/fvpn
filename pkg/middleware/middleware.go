@@ -1,6 +1,6 @@
 package middleware
 
-import "github.com/interstellar-cloud/star/pkg/handler"
+import "github.com/topcloudz/fvpn/pkg/handler"
 
 type Middleware func(handler.Handler) handler.Handler
 

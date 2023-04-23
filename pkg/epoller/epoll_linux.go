@@ -2,10 +2,10 @@ package epoller
 
 import (
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/executor"
-	"github.com/interstellar-cloud/star/pkg/log"
-	"github.com/interstellar-cloud/star/pkg/option"
-	socket "github.com/interstellar-cloud/star/pkg/socket"
+	"github.com/topcloudz/fvpn/pkg/executor"
+	"github.com/topcloudz/fvpn/pkg/log"
+	"github.com/topcloudz/fvpn/pkg/option"
+	socket "github.com/topcloudz/fvpn/pkg/socket"
 	"golang.org/x/sys/unix"
 	"os"
 	"syscall"
@@ -21,7 +21,7 @@ type EventLoop struct {
 	epfd           int
 	events         [MaxEpollEvents]syscall.EpollEvent
 	fileDescriptor int
-	//*fvpns.RegStar
+	//*server.RegStar
 	Protocol option.Protocol
 	sockets  map[int]*socket.Interface
 }

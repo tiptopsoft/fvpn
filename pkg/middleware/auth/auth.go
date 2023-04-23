@@ -2,8 +2,8 @@ package auth
 
 import (
 	"context"
-	"github.com/interstellar-cloud/star/pkg/handler"
-	"github.com/interstellar-cloud/star/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/handler"
+	"github.com/topcloudz/fvpn/pkg/packet"
 )
 
 type StarAuth struct {

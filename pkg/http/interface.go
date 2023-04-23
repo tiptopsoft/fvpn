@@ -1,6 +1,6 @@
 package http
 
-import "github.com/interstellar-cloud/star/pkg/cache"
+import "github.com/topcloudz/fvpn/pkg/cache"
 
 type Interface interface {
 	ListNodes(userId string) []cache.Peer

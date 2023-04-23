@@ -2,13 +2,13 @@ package forward
 
 import (
 	"errors"
-	"github.com/interstellar-cloud/star/pkg/option"
-	"github.com/interstellar-cloud/star/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/option"
+	"github.com/topcloudz/fvpn/pkg/packet"
 	"net"
 	"unsafe"
 )
 
-// ForwardPacket is through packet used in fvpns
+// ForwardPacket is through packet used in server
 type ForwardPacket struct {
 	header packet.Header
 	body

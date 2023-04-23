@@ -1,18 +1,18 @@
-package fvpns
+package server
 
 import (
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/http"
+	"github.com/topcloudz/fvpn/pkg/epoller"
+	"github.com/topcloudz/fvpn/pkg/http"
 	"net"
 	"sync"
 
-	"github.com/interstellar-cloud/star/pkg/cache"
-	"github.com/interstellar-cloud/star/pkg/epoller"
-	"github.com/interstellar-cloud/star/pkg/log"
-	"github.com/interstellar-cloud/star/pkg/option"
-	"github.com/interstellar-cloud/star/pkg/packet"
-	"github.com/interstellar-cloud/star/pkg/packet/register"
-	"github.com/interstellar-cloud/star/pkg/socket"
+	"github.com/topcloudz/fvpn/pkg/cache"
+	"github.com/topcloudz/fvpn/pkg/log"
+	"github.com/topcloudz/fvpn/pkg/option"
+	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet/register"
+	"github.com/topcloudz/fvpn/pkg/socket"
 	"golang.org/x/sys/unix"
 )
 
@@ -21,7 +21,7 @@ var (
 	logger = log.Log()
 )
 
-// RegStar use as fvpns
+// RegStar use as server
 type RegStar struct {
 	*option.ServerConfig
 	socket socket.Interface
@@ -49,7 +49,7 @@ func (r *RegStar) Start(address string) error {
 	return nil
 }
 
-// Peer register cache for net, and for user create fvpnc
+// Peer register cache for net, and for user create client
 func (r *RegStar) start(address string) error {
 	r.socket = socket.NewSocket()
 	once.Do(func() {
@@ -67,7 +67,7 @@ func (r *RegStar) start(address string) error {
 		if err != nil {
 			return err
 		}
-		logger.Infof("fvpns start at: %s", address)
+		logger.Infof("server start at: %s", address)
 		if err != nil {
 			return err
 		}

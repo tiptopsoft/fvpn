@@ -2,8 +2,8 @@ package http
 
 import (
 	"encoding/json"
-	"github.com/interstellar-cloud/star/pkg/cache"
-	"github.com/interstellar-cloud/star/pkg/log"
+	"github.com/topcloudz/fvpn/pkg/cache"
+	"github.com/topcloudz/fvpn/pkg/log"
 	"net/http"
 )
 

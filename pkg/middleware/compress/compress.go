@@ -2,7 +2,7 @@ package compress
 
 import (
 	"context"
-	"github.com/interstellar-cloud/star/pkg/handler"
+	"github.com/topcloudz/fvpn/pkg/handler"
 )
 
 func Middleeare() func(handler.Handler) handler.Handler {

@@ -3,11 +3,10 @@ package udp
 import (
 	"context"
 	"errors"
-	"github.com/interstellar-cloud/star/pkg/handler"
-	"github.com/interstellar-cloud/star/pkg/log"
-	"github.com/interstellar-cloud/star/pkg/processor"
-	"github.com/interstellar-cloud/star/pkg/socket"
-	"github.com/interstellar-cloud/star/pkg/tuntap"
+	"github.com/topcloudz/fvpn/pkg/handler"
+	"github.com/topcloudz/fvpn/pkg/log"
+	"github.com/topcloudz/fvpn/pkg/processor"
+	"github.com/topcloudz/fvpn/pkg/socket"
 	"io"
 )
 
@@ -15,21 +14,19 @@ var (
 	logger = log.Log()
 )
 
-type UdpProcessor struct {
-	h      handler.Handler
-	device *tuntap.Tuntap
-	skt    socket.Interface
+type Processor struct {
+	h   handler.Handler
+	skt socket.Interface
 }
 
-func New(device *tuntap.Tuntap, h handler.Handler, skt socket.Interface) processor.Processor {
-	return UdpProcessor{
-		device: device,
-		h:      h,
-		skt:    skt,
+func New(h handler.Handler, skt socket.Interface) processor.Processor {
+	return Processor{
+		h:   h,
+		skt: skt,
 	}
 }
 
-func (up UdpProcessor) Process() error {
+func (up Processor) Process() error {
 	udpBytes := make([]byte, 2048)
 	size, err := up.skt.Read(udpBytes)
 	if size < 0 {

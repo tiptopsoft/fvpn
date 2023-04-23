@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"github.com/interstellar-cloud/star/pkg/socket"
+	"github.com/topcloudz/fvpn/pkg/socket"
 	"golang.org/x/sys/unix"
 	"net"
 )

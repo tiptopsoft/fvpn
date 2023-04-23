@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"github.com/interstellar-cloud/star/pkg/fvpns"
-	"github.com/interstellar-cloud/star/pkg/option"
 	"github.com/spf13/cobra"
+	"github.com/topcloudz/fvpn/pkg/option"
+	"github.com/topcloudz/fvpn/pkg/server"
 )
 
 type RegStarOptions struct {
@@ -36,7 +36,7 @@ func runSuper(opts *RegStarOptions) error {
 	if err != nil {
 		return err
 	}
-	s := fvpns.RegStar{
+	s := server.RegStar{
 		ServerConfig: config.ServerCfg,
 	}
 
