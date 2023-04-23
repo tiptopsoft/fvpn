@@ -1,7 +1,7 @@
 package executor
 
 import (
-	"github.com/interstellar-cloud/star/pkg/socket"
+	"github.com/topcloudz/fvpn/pkg/socket"
 )
 
 type Executor interface {

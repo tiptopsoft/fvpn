@@ -1,10 +1,10 @@
 package cmd
 
 import (
-	"github.com/interstellar-cloud/star/pkg/fvpnc"
-	"github.com/interstellar-cloud/star/pkg/middleware/auth"
-	option2 "github.com/interstellar-cloud/star/pkg/option"
 	"github.com/spf13/cobra"
+	"github.com/topcloudz/fvpn/pkg/client"
+	"github.com/topcloudz/fvpn/pkg/middleware/auth"
+	option2 "github.com/topcloudz/fvpn/pkg/option"
 )
 
 type upOptions struct {
@@ -17,6 +17,7 @@ func EdgeCmd() *cobra.Command {
 	var opts upOptions
 	var cmd = &cobra.Command{
 		Use:          "node",
+		Aliases:      []string{"n"},
 		SilenceUsage: true,
 		Short:        "start up a node, for private net proxy",
 		Long:         `Start up a node, for private net proxy`,
@@ -35,14 +36,14 @@ func EdgeCmd() *cobra.Command {
 	return cmd
 }
 
-// runEdge run a fvpnc up
+// runEdge run a client up
 func runNode(opts *upOptions) error {
 	config, err := option2.InitConfig()
 	if err != nil {
 		return err
 	}
 
-	s := &fvpnc.Node{
+	s := &client.Node{
 		Config: config,
 	}
 	return s.Start()

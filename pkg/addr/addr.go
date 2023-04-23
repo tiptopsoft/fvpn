@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/interstellar-cloud/star/pkg/errors"
+	"github.com/topcloudz/fvpn/pkg/errors"
 	"go.uber.org/atomic"
 	"math/rand"
 	"net"
@@ -28,7 +28,7 @@ type Endpoint struct {
 	ipNumber uint32
 }
 
-//AddrCache 存储到map里
+// AddrCache 存储到map里
 type AddrCache struct {
 	Group    [4]byte
 	SrcMac   string
@@ -76,14 +76,14 @@ func New(srcMac net.HardwareAddr) (*Endpoint, error) {
 	return &res.Endpoint, nil
 }
 
-//ip到数字
+// ip到数字
 func string2Long(ip string) uint32 {
 	var long uint32
 	binary.Read(bytes.NewBuffer(net.ParseIP(ip).To4()), binary.BigEndian, &long)
 	return long
 }
 
-//数字到IP
+// 数字到IP
 func GenerateIP(ipInt uint32) string {
 	// need to do two bit shifting and “0xff” masking
 	b0 := (ipInt >> 24) & 0xff

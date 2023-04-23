@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/interstellar-cloud/star/cmd"
+	"github.com/topcloudz/fvpn/cmd"
 )
 
 func main() {

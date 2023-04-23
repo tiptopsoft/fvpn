@@ -1,4 +1,4 @@
-module github.com/interstellar-cloud/star
+module github.com/topcloudz/fvpn
 
 go 1.20
 

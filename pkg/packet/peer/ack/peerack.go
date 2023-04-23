@@ -1,8 +1,8 @@
 package ack
 
 import (
-	"github.com/interstellar-cloud/star/pkg/option"
-	"github.com/interstellar-cloud/star/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/option"
+	"github.com/topcloudz/fvpn/pkg/packet"
 	"net"
 	"unsafe"
 )

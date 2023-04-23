@@ -6,9 +6,9 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/interstellar-cloud/star/pkg/option"
-	"github.com/interstellar-cloud/star/pkg/packet"
 	"github.com/magiconair/properties/assert"
+	"github.com/topcloudz/fvpn/pkg/option"
+	"github.com/topcloudz/fvpn/pkg/packet"
 )
 
 func TestNewPacket(t *testing.T) {

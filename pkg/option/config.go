@@ -18,7 +18,7 @@ var (
 	defaultYaml        = []byte(
 		`client:
   listen: :3000
-  fvpns: :4000
+  server: :4000
   tap: tap0
   ip: 192.168.0.1
   mask: 255.255.255.0
@@ -51,9 +51,9 @@ type Config struct {
 	OpenCompress bool          `mapstructure:"openCompress"`
 }
 
-// ClientConfig read from a config file or cmd flags, or can be assgined from a fvpns after got the fvpns ack.
+// ClientConfig read from a config file or cmd flags, or can be assgined from a server after got the server ack.
 type ClientConfig struct {
-	Registry string   `mapstructure:"fvpns"`
+	Registry string   `mapstructure:"server"`
 	Listen   string   `mapstructure:"listen"`
 	TapName  string   `mapstructure:"tap"`
 	TapIP    string   `mapstructure:"ip"`

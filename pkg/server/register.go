@@ -1,11 +1,11 @@
-package fvpns
+package server
 
 import (
-	"github.com/interstellar-cloud/star/pkg/addr"
-	"github.com/interstellar-cloud/star/pkg/cache"
-	"github.com/interstellar-cloud/star/pkg/packet"
-	"github.com/interstellar-cloud/star/pkg/packet/register"
-	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
+	"github.com/topcloudz/fvpn/pkg/addr"
+	"github.com/topcloudz/fvpn/pkg/cache"
+	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet/register"
+	"github.com/topcloudz/fvpn/pkg/packet/register/ack"
 	"golang.org/x/sys/unix"
 	"net"
 )
@@ -15,15 +15,15 @@ func (r *RegStar) processRegister(remoteAddr unix.Sockaddr, data []byte, cp *pac
 
 	// build an ack
 	f, err := r.registerAck(remoteAddr, packet.(register.RegPacket).SrcMac)
-	logger.Infof("build a fvpns ack: %v", f)
+	logger.Infof("build a server ack: %v", f)
 	if err != nil {
 		logger.Errorf("build resp failed. err: %v", err)
 	}
 	err = r.socket.WriteToUdp(f, remoteAddr)
 	if err != nil {
-		logger.Errorf("fvpns write failed. err: %v", err)
+		logger.Errorf("server write failed. err: %v", err)
 	}
-	logger.Infof("write a fvpns ack to remote: %v, data: %v", remoteAddr, f)
+	logger.Infof("write a server ack to remote: %v, data: %v", remoteAddr, f)
 
 }
 

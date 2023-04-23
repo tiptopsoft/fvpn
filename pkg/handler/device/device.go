@@ -2,17 +2,17 @@ package device
 
 import (
 	"context"
-	"github.com/interstellar-cloud/star/pkg/util"
+	"github.com/topcloudz/fvpn/pkg/util"
 	"net"
 
-	"github.com/interstellar-cloud/star/pkg/addr"
-	"github.com/interstellar-cloud/star/pkg/cache"
-	"github.com/interstellar-cloud/star/pkg/handler"
-	"github.com/interstellar-cloud/star/pkg/log"
-	"github.com/interstellar-cloud/star/pkg/packet"
-	"github.com/interstellar-cloud/star/pkg/packet/forward"
-	"github.com/interstellar-cloud/star/pkg/socket"
-	"github.com/interstellar-cloud/star/pkg/tuntap"
+	"github.com/topcloudz/fvpn/pkg/addr"
+	"github.com/topcloudz/fvpn/pkg/cache"
+	"github.com/topcloudz/fvpn/pkg/handler"
+	"github.com/topcloudz/fvpn/pkg/log"
+	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet/forward"
+	"github.com/topcloudz/fvpn/pkg/socket"
+	"github.com/topcloudz/fvpn/pkg/tuntap"
 )
 
 var (
@@ -63,7 +63,7 @@ func (dh DeviceHandler) Handle(ctx context.Context, buff []byte) error {
 		dh.write2Net(newPacket[:idx])
 	} else {
 		// go p2p
-		logger.Infof("find peer in fvpnc, destMac: %v", destMac)
+		logger.Infof("find peer in client, destMac: %v", destMac)
 		p := cache.FindPeer(dh.cache, destMac)
 		if p == nil {
 			dh.write2Net(newPacket[:idx])

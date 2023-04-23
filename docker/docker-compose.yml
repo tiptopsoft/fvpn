@@ -7,7 +7,7 @@ services:
     ports:
       - "3001:3000/udp"
     command:
-      - "fvpnc"
+      - "client"
     volumes:
       - /Users/francis/workspc/star/conf/app.yaml:/etc/star/app.yaml
 
@@ -17,6 +17,6 @@ services:
       - "4000:4000/udp"
       - "4009:4009"
     command:
-      - "fvpns"
+      - "server"
     volumes:
       - /Users/francis/workspc/star/conf/app.yaml:/etc/star/app.yaml

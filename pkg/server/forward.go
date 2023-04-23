@@ -1,14 +1,14 @@
-package fvpns
+package server
 
 import (
-	"github.com/interstellar-cloud/star/pkg/cache"
-	"github.com/interstellar-cloud/star/pkg/packet"
-	"github.com/interstellar-cloud/star/pkg/packet/forward"
-	"github.com/interstellar-cloud/star/pkg/util"
+	"github.com/topcloudz/fvpn/pkg/cache"
+	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet/forward"
+	"github.com/topcloudz/fvpn/pkg/util"
 )
 
 func (r *RegStar) forward(data []byte, cp *packet.Header) {
-	logger.Infof("fvpns got forward packet: %v", data)
+	logger.Infof("server got forward packet: %v", data)
 	fpInterface, err := forward.NewPacket().Decode(data)
 	fp := fpInterface.(forward.ForwardPacket)
 
@@ -23,7 +23,7 @@ func (r *RegStar) forward(data []byte, cp *packet.Header) {
 		ip := util.GetDstIP(data)
 		peer = cache.FindPeerByIP(r.cache, ip.String())
 		if peer == nil {
-			logger.Errorf("dst has not registerd in fvpns. macAddr: %s, addr: %s", fp.DstMac.String())
+			logger.Errorf("dst has not registerd in server. macAddr: %s, addr: %s", fp.DstMac.String())
 		}
 
 		return
@@ -33,15 +33,15 @@ func (r *RegStar) forward(data []byte, cp *packet.Header) {
 		err := r.socket.WriteToUdp(data, v.Addr)
 		logger.Infof("forward packet: (%v), addr: %v", data, v.Addr)
 		if err != nil {
-			logger.Errorf("send to remote fvpnc or fvpns failed. err: %v", err)
+			logger.Errorf("send to remote client or server failed. err: %v", err)
 		}
 	}
 
 	//} else {
-	//	// find Addr in fvpns
+	//	// find Addr in server
 	//	peer := util.FindPeers(r.cache, fp.DstMac.String())
 	//	if peer == nil {
-	//		logger.Errorf("dst has not registerd in fvpns. macAddr: %s", fp.DstMac.String())
+	//		logger.Errorf("dst has not registerd in server. macAddr: %s", fp.DstMac.String())
 	//	}
 	//}
 }

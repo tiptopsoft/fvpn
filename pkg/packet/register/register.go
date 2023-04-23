@@ -2,14 +2,14 @@ package register
 
 import (
 	"errors"
-	"github.com/interstellar-cloud/star/pkg/option"
-	packet "github.com/interstellar-cloud/star/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/option"
+	packet "github.com/topcloudz/fvpn/pkg/packet"
 	"net"
 	"reflect"
 	"unsafe"
 )
 
-// RegPacket fvpns a fvpnc to fvpns
+// RegPacket server a client to server
 type RegPacket struct {
 	header packet.Header
 	SrcMac net.HardwareAddr

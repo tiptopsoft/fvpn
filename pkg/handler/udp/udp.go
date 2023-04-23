@@ -2,20 +2,20 @@ package udp
 
 import (
 	"context"
-	"fmt"
+	"sync"
 	"unsafe"
 
-	"github.com/interstellar-cloud/star/pkg/cache"
-	"github.com/interstellar-cloud/star/pkg/handler"
-	"github.com/interstellar-cloud/star/pkg/log"
-	"github.com/interstellar-cloud/star/pkg/option"
-	"github.com/interstellar-cloud/star/pkg/packet"
-	"github.com/interstellar-cloud/star/pkg/packet/forward"
-	peerack "github.com/interstellar-cloud/star/pkg/packet/peer/ack"
-	"github.com/interstellar-cloud/star/pkg/packet/register/ack"
-	"github.com/interstellar-cloud/star/pkg/socket"
-	"github.com/interstellar-cloud/star/pkg/tuntap"
-	"github.com/interstellar-cloud/star/pkg/util"
+	"github.com/topcloudz/fvpn/pkg/cache"
+	"github.com/topcloudz/fvpn/pkg/handler"
+	"github.com/topcloudz/fvpn/pkg/log"
+	"github.com/topcloudz/fvpn/pkg/option"
+	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet/forward"
+	peerack "github.com/topcloudz/fvpn/pkg/packet/peer/ack"
+	"github.com/topcloudz/fvpn/pkg/packet/register/ack"
+	"github.com/topcloudz/fvpn/pkg/socket"
+	"github.com/topcloudz/fvpn/pkg/tuntap"
+	"github.com/topcloudz/fvpn/pkg/util"
 )
 
 var (
@@ -23,25 +23,25 @@ var (
 )
 
 type UdpHandler struct {
-	device *tuntap.Tuntap
-	cache  cache.PeersCache
+	tun   *sync.Map
+	cache cache.PeersCache
 }
 
-func New(device *tuntap.Tuntap, cache cache.PeersCache) handler.Handler {
-	return UdpHandler{
-		device: device,
-		cache:  cache,
+func New(tun *sync.Map, cache cache.PeersCache) handler.Handler {
+	return &UdpHandler{
+		cache: cache,
+		tun:   tun,
 	}
 }
 
-func (uh UdpHandler) Handle(ctx context.Context, buff []byte) error {
+func (uh *UdpHandler) Handle(ctx context.Context, buff []byte) error {
 	cpInterface, err := packet.NewPacketWithoutType().Decode(buff[:])
-	cp := cpInterface.(packet.Header)
+	header := cpInterface.(packet.Header)
 	if err != nil {
 		logger.Errorf("decode err: %v", err)
 	}
 
-	switch cp.Flags {
+	switch header.Flags {
 	case option.MsgTypeRegisterAck:
 		regAckInterface, err := ack.NewPacket().Decode(buff[:])
 		regAck := regAckInterface.(ack.RegPacketAck)
@@ -49,11 +49,7 @@ func (uh UdpHandler) Handle(ctx context.Context, buff []byte) error {
 		if err != nil {
 			return err
 		}
-		logger.Infof("got fvpns fvpns ack: (%v)", buff[:])
-		//设置IP
-		if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", uh.device.Name, regAck.AutoIP.String(), regAck.Mask.String(), 1420)); err != nil {
-			return err
-		}
+		logger.Infof("got server server ack: (%v)", regAck.AutoIP)
 		break
 	case option.MsgTypeQueryPeer:
 		peerPacketAckIface, err := peerack.NewPacket().Decode(buff[:])
@@ -62,7 +58,7 @@ func (uh UdpHandler) Handle(ctx context.Context, buff []byte) error {
 			return err
 		}
 		infos := peerPacketAck.PeerInfos
-		logger.Infof("got fvpns peers: (%v)", infos)
+		logger.Infof("got server peers: (%v)", infos)
 		for _, info := range infos {
 			address, err := util.GetAddress(info.Host.String(), int(info.Port))
 			if err != nil {
@@ -88,17 +84,15 @@ func (uh UdpHandler) Handle(ctx context.Context, buff []byte) error {
 		if err != nil {
 			return err
 		}
-		logger.Infof("got through packet: %v, srcMac: %v, current tap macAddr: %v", forwardPacket, forwardPacket.SrcMac, uh.device.MacAddr)
+		logger.Infof("got through packet: %v, srcMac: %v", forwardPacket, forwardPacket.SrcMac)
 
-		if forwardPacket.SrcMac.String() == uh.device.MacAddr.String() {
-			//self, drop packet
-			logger.Infof("self packet droped: %v, srcMac: %v, current tap macAddr: %v", forwardPacket, forwardPacket.SrcMac, uh.device.MacAddr)
-		} else {
-			//写入到tap
-			idx := unsafe.Sizeof(forwardPacket)
-			if _, err := uh.device.Write(buff[idx:]); err != nil {
-				logger.Errorf("write to tap failed. (%v)", err.Error())
-			}
+		//写入到tap
+		idx := unsafe.Sizeof(forwardPacket)
+		networkId := header.NetworkId
+		v, _ := uh.tun.Load(networkId)
+		device := v.(*tuntap.Tuntap)
+		if _, err := device.Write(buff[idx:]); err != nil {
+			logger.Errorf("write to tap failed. (%v)", err.Error())
 		}
 		break
 	}
