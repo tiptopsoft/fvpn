@@ -1,4 +1,4 @@
-package http
+package nativehttp
 
 import "github.com/topcloudz/fvpn/pkg/cache"
 

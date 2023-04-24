@@ -3,7 +3,7 @@ package server
 import (
 	"fmt"
 	"github.com/topcloudz/fvpn/pkg/epoller"
-	"github.com/topcloudz/fvpn/pkg/http"
+	"github.com/topcloudz/fvpn/pkg/nativehttp"
 	"net"
 	"sync"
 
@@ -40,7 +40,7 @@ func (r *RegStar) Start(address string) error {
 	}()
 
 	go func() {
-		hs := http.New(r.cache)
+		hs := nativehttp.New(r.cache)
 		hs.Start()
 	}()
 

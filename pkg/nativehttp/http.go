@@ -1,4 +1,4 @@
-package http
+package nativehttp
 
 import (
 	"encoding/json"
@@ -27,6 +27,6 @@ func (hs HttpServer) Start() error {
 		}
 	})
 
-	logger.Infof("http listen at: %s", ":4001")
+	logger.Infof("nativehttp listen at: %s", ":4001")
 	return http.ListenAndServe(":4001", nil)
 }

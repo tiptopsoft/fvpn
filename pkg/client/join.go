@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	httputil "github.com/topcloudz/fvpn/pkg/http"
+	httputil "github.com/topcloudz/fvpn/pkg/nativehttp"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"io"
 	"net/http"
@@ -17,7 +17,7 @@ const (
 
 func (n *Node) RunJoinNetwork(netId string) error {
 	logger.Infof("start to join %s", netId)
-	//user http to get networkId config
+	//user nativehttp to get networkId config
 	type body struct {
 		userId    string
 		networkId string
@@ -59,7 +59,7 @@ func (n *Node) RunJoinNetwork(netId string) error {
 	}
 
 	//request to fvpn to tell that network has been created.
-	fvpnUrl := fmt.Sprintf("%s", "http://localhost:6062/api/v1/join")
+	fvpnUrl := fmt.Sprintf("%s", "http://localhost:6663/api/v1/join")
 
 	req := body{
 		networkId: netId,
@@ -70,6 +70,8 @@ func (n *Node) RunJoinNetwork(netId string) error {
 	if err != nil || resultBuff == nil {
 		return err
 	}
+
+	logger.Infof("join network %s success, resp: %s", networkResp.NetworkId, string(resultBuff))
 
 	return nil
 }

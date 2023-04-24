@@ -1,9 +1,10 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	nativehttp "github.com/topcloudz/fvpn/pkg/http"
+	nativehttp "github.com/topcloudz/fvpn/pkg/nativehttp"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"io"
 	"net/http"
@@ -97,4 +98,33 @@ func (n *Node) addTuns(networkId string) error {
 
 	n.tuns.Store(networkId, tun)
 	return nil
+}
+
+// GetNetworkIds get network ids when node starting, so can monitor the traffic on the device.
+func (n *Node) GetNetworkIds() ([]string, error) {
+	var body struct {
+		userId string
+	}
+
+	body.userId = "1"
+	buff, err := json.Marshal(body)
+
+	if err != nil {
+		return nil, err
+	}
+
+	destUrl := fmt.Sprintf("%s%s", userUrl, "/api/v1/users/user/1/getJoinNetwork")
+	resp, err := nativehttp.Post(destUrl, bytes.NewBuffer(buff))
+
+	if err != nil {
+		return nil, err
+	}
+
+	var result []string
+	err = json.Unmarshal(resp, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

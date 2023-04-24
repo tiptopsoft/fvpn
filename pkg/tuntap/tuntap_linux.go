@@ -4,11 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"github.com/topcloudz/fvpn/pkg/addr"
+	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"golang.org/x/sys/unix"
 	"os"
 	"syscall"
 	"unsafe"
+)
+
+var (
+	logger = log.Log()
 )
 
 func New(mode Mode, ip, mask, networkId string) error {
@@ -21,6 +26,7 @@ func New(mode Mode, ip, mask, networkId string) error {
 		return err
 	}
 
+	logger.Infof("tun name: %s, networkId: %s", name, networkId)
 	var ifr Ifreq
 	copy(ifr.Name[:], name)
 

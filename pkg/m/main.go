@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	http2 "github.com/topcloudz/fvpn/pkg/http"
+	http2 "github.com/topcloudz/fvpn/pkg/nativehttp"
 	"io"
 	"net/http"
 )
