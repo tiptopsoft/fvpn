@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	nativehttp "github.com/topcloudz/fvpn/pkg/http"
+	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"io"
 	"net/http"
 )
@@ -23,7 +24,8 @@ func (n *Node) runHttpServer() error {
 			}
 
 			var body struct {
-				NetworkId string
+				status    int
+				networkId string
 			}
 
 			err = json.Unmarshal(buff, &body)
@@ -34,14 +36,20 @@ func (n *Node) runHttpServer() error {
 			}
 
 			//TODO 把networkId加进来
-			logger.Infof("join network %s success", body.NetworkId)
-			if err = n.RunJoinNetwork(body.NetworkId); err != nil {
+			logger.Infof("join network %s success", body.networkId)
+			if err := n.addTuns(body.networkId); err != nil {
+				w.WriteHeader(500)
+			}
+			body.status = 200
+
+			if err := json.NewEncoder(w).Encode(body); err != nil {
 				w.WriteHeader(500)
 				return
 			}
 
+			w.WriteHeader(200)
 		}
-		w.WriteHeader(200)
+
 	})
 
 	s.HandlerFunc("/api/v1/leave", func(w http.ResponseWriter, r *http.Request) {
@@ -79,4 +87,14 @@ func (n *Node) runHttpServer() error {
 	})
 	logger.Debugf("node start at: %d", DefaultPort)
 	return s.Start(fmt.Sprintf(":%d", DefaultPort))
+}
+
+func (n *Node) addTuns(networkId string) error {
+	tun, err := tuntap.GetTuntap(networkId)
+	if err != nil {
+		return err
+	}
+
+	n.tuns.Store(networkId, tun)
+	return nil
 }

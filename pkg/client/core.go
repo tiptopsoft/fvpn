@@ -110,7 +110,7 @@ func (n *Node) starLoop() {
 	//}
 	for {
 		FdSet.Zero()
-		n.taps.Range(func(key, value any) bool {
+		n.tuns.Range(func(key, value any) bool {
 			tun := value.(*tuntap.Tuntap)
 			FdSet.Set(tun.Fd)
 			return true

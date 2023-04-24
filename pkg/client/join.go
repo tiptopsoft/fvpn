@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	http2 "github.com/topcloudz/fvpn/pkg/http"
+	httputil "github.com/topcloudz/fvpn/pkg/http"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"io"
 	"net/http"
@@ -19,7 +19,8 @@ func (n *Node) RunJoinNetwork(netId string) error {
 	logger.Infof("start to join %s", netId)
 	//user http to get networkId config
 	type body struct {
-		userId string
+		userId    string
+		networkId string
 	}
 
 	request := body{userId: "1"}
@@ -38,7 +39,7 @@ func (n *Node) RunJoinNetwork(netId string) error {
 
 	fmt.Println(string(respBuff))
 
-	var httpResponse http2.HttpResponse
+	var httpResponse httputil.HttpResponse
 	err = json.Unmarshal(respBuff, &httpResponse)
 	if err != nil {
 		panic(err)
@@ -52,7 +53,25 @@ func (n *Node) RunJoinNetwork(netId string) error {
 	}
 
 	logger.Infof("get result ip: %s, mask: %s", networkResp.Ip, networkResp.Mask)
-	return tuntap.New(tuntap.TAP, networkResp.Ip, networkResp.Mask, networkResp.NetworkId)
+	err = tuntap.New(tuntap.TAP, networkResp.Ip, networkResp.Mask, networkResp.NetworkId)
+	if err != nil {
+		return err
+	}
+
+	//request to fvpn to tell that network has been created.
+	fvpnUrl := fmt.Sprintf("%s", "http://localhost:6062/api/v1/join")
+
+	req := body{
+		networkId: netId,
+	}
+	buff1, _ := json.Marshal(req)
+	resultBuff, err := httputil.Post(fvpnUrl, bytes.NewReader(buff1))
+
+	if err != nil || resultBuff == nil {
+		return err
+	}
+
+	return nil
 }
 
 func (n *Node) RunLeaveNetwork(networkId string) error {

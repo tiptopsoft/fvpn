@@ -21,7 +21,7 @@ var (
 type Node struct {
 	*option.Config
 	Protocol  option.Protocol
-	taps      sync.Map //key: netId, value: Tuntap
+	tuns      sync.Map //key: netId, value: Tuntap
 	socket    socket.Interface
 	cache     cache.PeersCache //获取回来的Peers  mac: Peer
 	processor sync.Map         //核心处理逻辑
@@ -43,7 +43,7 @@ func (n *Node) Start() error {
 }
 
 func (n *Node) initUdpHandler() {
-	udpHandler := middleware.WithMiddlewares(udphandler.New(&n.taps, n.cache), n.initMiddleware()...)
+	udpHandler := middleware.WithMiddlewares(udphandler.New(&n.tuns, n.cache), n.initMiddleware()...)
 	udpProcessor := processorudp.New(udpHandler, n.socket)
 	n.processor.Store(n.socket.(socket.Socket).Fd, udpProcessor)
 }

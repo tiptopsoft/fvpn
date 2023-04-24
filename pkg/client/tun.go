@@ -17,7 +17,7 @@ func (n *Node) Join(netId string) error {
 	if err != nil {
 		return err
 	}
-	n.taps.Store(netId, tun)
+	n.tuns.Store(netId, tun)
 	n.newProcessor(tun)
 	//注册tun到registry
 	return n.register(tun)
