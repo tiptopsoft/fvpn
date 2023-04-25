@@ -17,18 +17,18 @@ const (
 
 func (n *Node) RunJoinNetwork(netId string) error {
 	logger.Infof("start to join %s", netId)
-	//user nativehttp to get networkId config
+	//user nativehttp to get NetworkId config
 	type body struct {
-		userId    string
-		networkId string
+		UserId    string `json:"userId"`
+		NetworkId string `json:"networkId"`
 	}
 
-	request := body{userId: "1"}
+	request := body{UserId: "1"}
 	buff, err := json.Marshal(request)
 	if err != nil {
 		return errors.New("invalid body")
 	}
-	destUrl := fmt.Sprintf("%s/api/v1/users/user/%s/network/%s/join", userUrl, request.userId, netId)
+	destUrl := fmt.Sprintf("%s/api/v1/users/user/%s/network/%s/join", userUrl, request.UserId, netId)
 	resp, err := http.Post(destUrl, "application/json", bytes.NewReader(buff))
 	respBuff, err := io.ReadAll(resp.Body)
 	var networkResp struct {
@@ -62,7 +62,7 @@ func (n *Node) RunJoinNetwork(netId string) error {
 	fvpnUrl := fmt.Sprintf("%s", "http://localhost:6663/api/v1/join")
 
 	req := body{
-		networkId: netId,
+		NetworkId: netId,
 	}
 	buff1, _ := json.Marshal(req)
 	resultBuff, err := httputil.Post(fvpnUrl, bytes.NewReader(buff1))

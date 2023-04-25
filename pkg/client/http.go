@@ -24,31 +24,34 @@ func (n *Node) runHttpServer() error {
 				return
 			}
 
-			var body struct {
-				status    int
-				networkId string
+			type body struct {
+				Status    int    `json:"status"`
+				NetworkId string `json:"NetworkId"`
 			}
 
-			err = json.Unmarshal(buff, &body)
+			req := new(body)
+
+			err = json.Unmarshal(buff, &req)
 			if err != nil {
 				w.WriteHeader(500)
 				w.Write([]byte("invalid network"))
 				return
 			}
 
+			logger.Infof("request network is: %s", req.NetworkId)
 			//TODO 把networkId加进来
-			logger.Infof("join network %s success", body.networkId)
-			if err := n.addTuns(body.networkId); err != nil {
+			if err := n.addTuns(req.NetworkId); err != nil {
 				w.WriteHeader(500)
 			}
-			body.status = 200
+			req.Status = 200
 
-			if err := json.NewEncoder(w).Encode(body); err != nil {
+			if err := json.NewEncoder(w).Encode(req); err != nil {
 				w.WriteHeader(500)
 				return
 			}
 
 			w.WriteHeader(200)
+			logger.Infof("join network %s success", req.NetworkId)
 		}
 
 	})
@@ -86,7 +89,7 @@ func (n *Node) runHttpServer() error {
 		}
 		w.WriteHeader(200)
 	})
-	logger.Debugf("node start at: %d", DefaultPort)
+	logger.Debugf("node started at: :%d", DefaultPort)
 	return s.Start(fmt.Sprintf(":%d", DefaultPort))
 }
 
