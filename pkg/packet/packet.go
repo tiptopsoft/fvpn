@@ -7,7 +7,7 @@ import (
 
 // Header client's Header
 /**
-  As learn from client, our packet is form of below:
+  As learn from client, our Packet is form of below:
  Version 1
 
     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1

@@ -2,8 +2,12 @@ package client
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/topcloudz/fvpn/pkg/handler"
+	"github.com/topcloudz/fvpn/pkg/handler/device"
+	"github.com/topcloudz/fvpn/pkg/handler/udp"
 	nativehttp "github.com/topcloudz/fvpn/pkg/nativehttp"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"io"
@@ -49,6 +53,11 @@ func (n *Node) runHttpServer() error {
 				w.WriteHeader(500)
 				return
 			}
+
+			//启动一个goroutine, 处理这个network
+			tun := handler.NewTun(device.Handle, udp.Handle)
+			go tun.ReadFromTun(context.Background(), req.NetworkId)
+			go tun.WriteToUdp()
 
 			w.WriteHeader(200)
 			logger.Infof("join network %s success", req.NetworkId)
