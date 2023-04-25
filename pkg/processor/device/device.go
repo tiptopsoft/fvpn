@@ -30,7 +30,7 @@ func New(device *tuntap.Tuntap, h handler.Handler) processor.Processor {
 
 func (dp DeviceProcessor) Process() error {
 	ctx := context.Background()
-	b := make([]byte, option.STAR_PKT_BUFF_SIZE)
+	b := make([]byte, option.FVPN_PKT_BUFF_SIZE)
 	size, err := dp.device.Read(b)
 	destMac := util.GetMacAddr(b)
 	fmt.Println(fmt.Sprintf("Read %d bytes from device %s, will write to dest %s", size, dp.device.Name, destMac))

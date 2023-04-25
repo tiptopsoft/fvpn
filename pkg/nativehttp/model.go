@@ -1,4 +1,4 @@
-package http
+package nativehttp
 
 type HttpResponse struct {
 	Code    int         `json:"code"`

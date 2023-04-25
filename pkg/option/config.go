@@ -14,7 +14,7 @@ const (
 )
 
 var (
-	STAR_PKT_BUFF_SIZE = 2048
+	FVPN_PKT_BUFF_SIZE = 2048
 	defaultYaml        = []byte(
 		`client:
   listen: :3000

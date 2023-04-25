@@ -1,9 +1,15 @@
 package client
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
-	nativehttp "github.com/topcloudz/fvpn/pkg/http"
+	"github.com/topcloudz/fvpn/pkg/handler"
+	"github.com/topcloudz/fvpn/pkg/handler/device"
+	"github.com/topcloudz/fvpn/pkg/handler/udp"
+	nativehttp "github.com/topcloudz/fvpn/pkg/nativehttp"
+	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"io"
 	"net/http"
 )
@@ -22,26 +28,41 @@ func (n *Node) runHttpServer() error {
 				return
 			}
 
-			var body struct {
-				NetworkId string
+			type body struct {
+				Status    int    `json:"status"`
+				NetworkId string `json:"NetworkId"`
 			}
 
-			err = json.Unmarshal(buff, &body)
+			req := new(body)
+
+			err = json.Unmarshal(buff, &req)
 			if err != nil {
 				w.WriteHeader(500)
 				w.Write([]byte("invalid network"))
 				return
 			}
 
+			logger.Infof("request network is: %s", req.NetworkId)
 			//TODO 把networkId加进来
-			logger.Infof("join network %s success", body.NetworkId)
-			if err = n.RunJoinNetwork(body.NetworkId); err != nil {
+			if err := n.addTuns(req.NetworkId); err != nil {
+				w.WriteHeader(500)
+			}
+			req.Status = 200
+
+			if err := json.NewEncoder(w).Encode(req); err != nil {
 				w.WriteHeader(500)
 				return
 			}
 
+			//启动一个goroutine, 处理这个network
+			tun := handler.NewTun(device.Handle, udp.Handle)
+			go tun.ReadFromTun(context.Background(), req.NetworkId)
+			go tun.WriteToUdp()
+
+			w.WriteHeader(200)
+			logger.Infof("join network %s success", req.NetworkId)
 		}
-		w.WriteHeader(200)
+
 	})
 
 	s.HandlerFunc("/api/v1/leave", func(w http.ResponseWriter, r *http.Request) {
@@ -77,6 +98,45 @@ func (n *Node) runHttpServer() error {
 		}
 		w.WriteHeader(200)
 	})
-	logger.Debugf("node start at: %d", DefaultPort)
+	logger.Debugf("node started at: :%d", DefaultPort)
 	return s.Start(fmt.Sprintf(":%d", DefaultPort))
+}
+
+func (n *Node) addTuns(networkId string) error {
+	tun, err := tuntap.GetTuntap(networkId)
+	if err != nil {
+		return err
+	}
+
+	n.tuns.Store(networkId, tun)
+	return nil
+}
+
+// GetNetworkIds get network ids when node starting, so can monitor the traffic on the device.
+func (n *Node) GetNetworkIds() ([]string, error) {
+	var body struct {
+		userId string
+	}
+
+	body.userId = "1"
+	buff, err := json.Marshal(body)
+
+	if err != nil {
+		return nil, err
+	}
+
+	destUrl := fmt.Sprintf("%s%s", userUrl, "/api/v1/users/user/1/getJoinNetwork")
+	resp, err := nativehttp.Post(destUrl, bytes.NewBuffer(buff))
+
+	if err != nil {
+		return nil, err
+	}
+
+	var result []string
+	err = json.Unmarshal(resp, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

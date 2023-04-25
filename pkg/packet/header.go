@@ -1,6 +1,7 @@
 package packet
 
 import (
+	"encoding/hex"
 	"unsafe"
 )
 
@@ -15,27 +16,26 @@ var (
 
 // Header  every time sends util frame.
 type Header struct {
-	Version   uint8   //1
-	TTL       uint8   //1
-	Flags     uint16  //2
-	NetworkId [4]byte //4
+	Version   uint8  //1
+	TTL       uint8  //1
+	Flags     uint16 //2
+	NetworkId string //8
 }
 
 func NewPacketWithoutType() Header {
 	return Header{
-		Version:   Version,
-		TTL:       DefaultTTL,
-		Flags:     0,
-		NetworkId: [4]byte{},
+		Version: Version,
+		TTL:     DefaultTTL,
+		Flags:   0,
 	}
 }
 
-func NewHeader(msgType uint16) Header {
+func NewHeader(msgType uint16, networkId string) Header {
 	return Header{
 		Version:   Version,
 		TTL:       DefaultTTL,
 		Flags:     msgType,
-		NetworkId: [4]byte{},
+		NetworkId: networkId,
 	}
 }
 
@@ -45,7 +45,11 @@ func (cp Header) Encode() ([]byte, error) {
 	idx = EncodeUint8(b, cp.Version, idx)
 	idx = EncodeUint8(b, cp.TTL, idx)
 	idx = EncodeUint16(b, cp.Flags, idx)
-	EncodeBytes(b, cp.NetworkId[:], idx)
+	buff, err := hex.DecodeString(cp.NetworkId)
+	if err != nil {
+		return nil, err
+	}
+	EncodeBytes(b, buff, idx)
 	return b, nil
 }
 
@@ -54,7 +58,6 @@ func (cp Header) Decode(udpByte []byte) (Interface, error) {
 	idx = DecodeUint8(&cp.Version, udpByte, idx)
 	idx = DecodeUint8(&cp.TTL, udpByte, idx)
 	idx = DecodeUint16(&cp.Flags, udpByte, idx)
-	a := cp.NetworkId[:]
-	idx = DecodeBytes(&a, udpByte, idx)
+	idx = DecodeNetworkId(cp.NetworkId, udpByte, idx)
 	return cp, nil
 }

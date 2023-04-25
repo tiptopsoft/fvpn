@@ -1,4 +1,4 @@
-package http
+package nativehttp
 
 import (
 	"net/http"
@@ -15,7 +15,7 @@ func NewServer() Server {
 }
 
 func (s Server) HandlerFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
-	http.HandleFunc(pattern, handler)
+	s.HandleFunc(pattern, handler)
 }
 
 func (s Server) Start(addr string) error {

@@ -7,7 +7,7 @@ import (
 
 // Header client's Header
 /**
-  As learn from client, our packet is form of below:
+  As learn from client, our Packet is form of below:
  Version 1
 
     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -97,6 +97,12 @@ func DecodeUint16(dst *uint16, src []byte, idx int) int {
 func DecodeBytes(dst *[]byte, src []byte, idx int) int {
 	copy(*dst, src[idx:idx+len(*dst)])
 	idx += len(*dst)
+	return idx
+}
+
+func DecodeNetworkId(dst string, src []byte, idx int) int {
+	dst = string(src[8])
+	idx += 8
 	return idx
 }
 

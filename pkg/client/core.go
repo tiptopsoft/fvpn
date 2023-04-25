@@ -109,8 +109,10 @@ func (n *Node) starLoop() {
 	//	maxFd = tapFd
 	//}
 	for {
+		logger.Infof("watching the fd working...")
 		FdSet.Zero()
-		n.taps.Range(func(key, value any) bool {
+		n.tuns.Range(func(key, value any) bool {
+			logger.Infof("network %s is looping", key)
 			tun := value.(*tuntap.Tuntap)
 			FdSet.Set(tun.Fd)
 			return true

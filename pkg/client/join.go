@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	http2 "github.com/topcloudz/fvpn/pkg/http"
+	httputil "github.com/topcloudz/fvpn/pkg/nativehttp"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"io"
 	"net/http"
@@ -17,17 +17,18 @@ const (
 
 func (n *Node) RunJoinNetwork(netId string) error {
 	logger.Infof("start to join %s", netId)
-	//user http to get networkId config
+	//user nativehttp to get NetworkId config
 	type body struct {
-		userId string
+		UserId    string `json:"userId"`
+		NetworkId string `json:"networkId"`
 	}
 
-	request := body{userId: "1"}
+	request := body{UserId: "1"}
 	buff, err := json.Marshal(request)
 	if err != nil {
 		return errors.New("invalid body")
 	}
-	destUrl := fmt.Sprintf("%s/api/v1/users/user/%s/network/%s/join", userUrl, request.userId, netId)
+	destUrl := fmt.Sprintf("%s/api/v1/users/user/%s/network/%s/join", userUrl, request.UserId, netId)
 	resp, err := http.Post(destUrl, "application/json", bytes.NewReader(buff))
 	respBuff, err := io.ReadAll(resp.Body)
 	var networkResp struct {
@@ -38,7 +39,7 @@ func (n *Node) RunJoinNetwork(netId string) error {
 
 	fmt.Println(string(respBuff))
 
-	var httpResponse http2.HttpResponse
+	var httpResponse httputil.HttpResponse
 	err = json.Unmarshal(respBuff, &httpResponse)
 	if err != nil {
 		panic(err)
@@ -52,7 +53,27 @@ func (n *Node) RunJoinNetwork(netId string) error {
 	}
 
 	logger.Infof("get result ip: %s, mask: %s", networkResp.Ip, networkResp.Mask)
-	return tuntap.New(tuntap.TAP, networkResp.Ip, networkResp.Mask, networkResp.NetworkId)
+	err = tuntap.New(tuntap.TAP, networkResp.Ip, networkResp.Mask, networkResp.NetworkId)
+	if err != nil {
+		return err
+	}
+
+	//request to fvpn to tell that network has been created.
+	fvpnUrl := fmt.Sprintf("%s", "http://localhost:6663/api/v1/join")
+
+	req := body{
+		NetworkId: netId,
+	}
+	buff1, _ := json.Marshal(req)
+	resultBuff, err := httputil.Post(fvpnUrl, bytes.NewReader(buff1))
+
+	if err != nil || resultBuff == nil {
+		return err
+	}
+
+	logger.Infof("join network %s success, resp: %s", networkResp.NetworkId, string(resultBuff))
+
+	return nil
 }
 
 func (n *Node) RunLeaveNetwork(networkId string) error {
