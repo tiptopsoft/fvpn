@@ -100,6 +100,12 @@ func DecodeBytes(dst *[]byte, src []byte, idx int) int {
 	return idx
 }
 
+func DecodeNetworkId(dst string, src []byte, idx int) int {
+	dst = string(src[8])
+	idx += 8
+	return idx
+}
+
 func DecodeMacAddr(src []byte, idx int) (net.HardwareAddr, int) {
 	mac := make([]byte, MAC_SIZE)
 	idx = DecodeBytes(&mac, src, idx)

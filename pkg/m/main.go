@@ -1,23 +1,15 @@
 package main
 
 import (
-	"encoding/json"
+	"encoding/hex"
 	"fmt"
 )
 
 func main() {
 
-	type body struct {
-		NetworkId string `json:"networkId"`
-	}
-
-	req := new(body)
-	req.NetworkId = "xxxxxfdsa"
-
-	buff, err := json.Marshal(req)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(string(buff))
+	str := "ff68b4ff"
+	b, _ := hex.DecodeString(str)
+	encodedStr := hex.EncodeToString(b)
+	fmt.Printf("@@@@--bytes-->%v, length: %d\n", b, len(b))
+	fmt.Printf("@@@@--string-->%s \n", encodedStr)
 }

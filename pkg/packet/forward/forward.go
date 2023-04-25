@@ -19,8 +19,8 @@ type body struct {
 	DstMac net.HardwareAddr
 }
 
-func NewPacket() ForwardPacket {
-	header := packet.NewHeader(option.MsgTypePacket)
+func NewPacket(networkId string) ForwardPacket {
+	header := packet.NewHeader(option.MsgTypePacket, networkId)
 	return ForwardPacket{
 		header: header,
 	}
@@ -40,10 +40,10 @@ func (fp ForwardPacket) Encode() ([]byte, error) {
 }
 
 func (fp ForwardPacket) Decode(udpBytes []byte) (packet.Interface, error) {
-	res := NewPacket()
+	res := NewPacket("")
 	header, err := packet.NewPacketWithoutType().Decode(udpBytes)
 	if err != nil {
-		return ForwardPacket{}, errors.New("decode common packet failed")
+		return ForwardPacket{}, errors.New("decode header packet failed")
 	}
 	idx := 0
 	res.header = header.(packet.Header)
