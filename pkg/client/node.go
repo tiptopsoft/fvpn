@@ -1,10 +1,12 @@
 package client
 
 import (
+	"github.com/topcloudz/fvpn/pkg/handler"
+	"github.com/topcloudz/fvpn/pkg/handler/device"
+	"github.com/topcloudz/fvpn/pkg/handler/udp"
 	"github.com/topcloudz/fvpn/pkg/middleware/encrypt"
 	"sync"
 
-	"github.com/topcloudz/fvpn/pkg/cache"
 	"github.com/topcloudz/fvpn/pkg/middleware"
 	"github.com/topcloudz/fvpn/pkg/middleware/auth"
 	"github.com/topcloudz/fvpn/pkg/option"
@@ -18,11 +20,9 @@ var (
 
 type Node struct {
 	*option.Config
-	Protocol  option.Protocol
-	tuns      sync.Map //key: netId, value: Tuntap
-	socket    socket.Interface
-	cache     cache.PeersCache //获取回来的Peers  mac: Peer
-	processor sync.Map         //核心处理逻辑
+	Protocol option.Protocol
+	tuns     sync.Map //key: netId, value: Tuntap
+	socket   socket.Interface
 }
 
 func (n *Node) Start() error {
@@ -31,12 +31,20 @@ func (n *Node) Start() error {
 		if err := n.conn(); err != nil {
 			logger.Errorf("failed to connect to server: %v", err)
 		}
-		n.cache = cache.New()
 		n.Protocol = option.UDP
-		//n.initExecutor()
 	})
-	go n.starLoop()
+	tun := n.GetTun()
+	go tun.ReadFromUdp()
+	go tun.WriteToDevice()
 	return n.runHttpServer()
+}
+
+func (n *Node) GetTun() handler.Tun {
+	m := n.initMiddleware()
+	tunHandler := middleware.WithMiddlewares(device.Handle(), m...)
+	updHandler := middleware.WithMiddlewares(udp.Handle(), m...)
+	tun := handler.NewTun(tunHandler, updHandler)
+	return *tun
 }
 
 func (n *Node) initMiddleware() []middleware.Middleware {

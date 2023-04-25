@@ -7,12 +7,8 @@ import (
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet/peer"
 	"github.com/topcloudz/fvpn/pkg/packet/register"
-	"github.com/topcloudz/fvpn/pkg/processor"
-	"github.com/topcloudz/fvpn/pkg/socket"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"github.com/topcloudz/fvpn/pkg/util"
-	"golang.org/x/sys/unix"
-	"math"
 )
 
 var (
@@ -98,76 +94,18 @@ func (n *Node) unregister(tun *tuntap.Tuntap) error {
 	return nil
 }
 
-func (n *Node) starLoop() {
-	netFd := n.socket.(socket.Socket).Fd
-	//tapFd := n.tap.Fd
-	var FdSet unix.FdSet
-	//var maxFd int
-	//if netFd > tapFd {
-	//	maxFd = netFd
-	//} else {
-	//	maxFd = tapFd
-	//}
-	for {
-		logger.Infof("watching the fd working...")
-		FdSet.Zero()
-		n.tuns.Range(func(key, value any) bool {
-			logger.Infof("network %s is looping", key)
-			tun := value.(*tuntap.Tuntap)
-			FdSet.Set(tun.Fd)
-			return true
-		})
-		FdSet.Set(netFd)
-		timeout := &unix.Timeval{
-			Sec:  3,
-			Usec: 0,
-		}
-		ret, err := unix.Select(math.MaxInt, &FdSet, nil, nil, timeout)
-		if ret < 0 && err == unix.EINTR {
-			continue
-		}
-
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		//if FdSet.IsSet(tapFd) {
-		//	if p, ok := n.processor.Load(tapFd); ok {
-		//		if err := p.(processor.Processor).Process(); err != nil {
-		//			logger.Errorf("tap process failed. %v", err)
-		//		}
-		//	} else {
-		//		logger.Errorf("can not found tap socket")
-		//	}
-		//}
-
-		if FdSet.IsSet(netFd) {
-			if p, ok := n.processor.Load(netFd); ok {
-				if err := p.(processor.Processor).Process(); err != nil {
-					logger.Errorf("net process failed. %v", err)
-				}
-			} else {
-				logger.Errorf("can not found net socket")
-			}
-		} else {
-			//如果tapFd则处理
-
-		}
-	}
-}
-
-func (n *Node) dialNode() {
-	for _, v := range n.cache.Nodes {
-		if v != nil && v.Addr != nil {
-			dstAddr := v.Addr.(*unix.SockaddrInet4).Addr
-			newAddr := &unix.SockaddrInet4{Addr: dstAddr, Port: DefaultPort}
-			if !v.P2P {
-				if err := n.socket.Connect(newAddr); err != nil {
-					return
-				}
-			}
-			//如果连通，则更新cache中的状态
-			v.P2P = true
-		}
-	}
-}
+//func (n *Node) dialNode() {
+//	for _, v := range n.cache.Nodes {
+//		if v != nil && v.Addr != nil {
+//			dstAddr := v.Addr.(*unix.SockaddrInet4).Addr
+//			newAddr := &unix.SockaddrInet4{Addr: dstAddr, Port: DefaultPort}
+//			if !v.P2P {
+//				if err := n.socket.Connect(newAddr); err != nil {
+//					return
+//				}
+//			}
+//			//如果连通，则更新cache中的状态
+//			v.P2P = true
+//		}
+//	}
+//}

@@ -14,11 +14,11 @@ type Tun struct {
 	Inbound    chan *packet.Frame //used from udp
 	Outbound   chan *packet.Frame //used for tun
 	Cache      cache.PeersCache
-	tunHandler HandlerFunc
-	udpHandler HandlerFunc
+	tunHandler Handler
+	udpHandler Handler
 }
 
-func NewTun(tunHandler, udpHandler HandlerFunc) *Tun {
+func NewTun(tunHandler, udpHandler Handler) *Tun {
 	return &Tun{
 		Inbound:    make(chan *packet.Frame, 15000),
 		Outbound:   make(chan *packet.Frame, 15000),

@@ -16,14 +16,14 @@ type RegPacket struct {
 }
 
 func NewPacket() RegPacket {
-	cmPacket := packet.NewHeader(option.MsgTypeRegisterSuper)
+	cmPacket := packet.NewHeader(option.MsgTypeRegisterSuper, "")
 	return RegPacket{
 		header: cmPacket,
 	}
 }
 
 func NewUnregisterPacket() RegPacket {
-	cmPacket := packet.NewHeader(option.MsgTypeUnregisterSuper)
+	cmPacket := packet.NewHeader(option.MsgTypeUnregisterSuper, "")
 	return RegPacket{
 		header: cmPacket,
 	}

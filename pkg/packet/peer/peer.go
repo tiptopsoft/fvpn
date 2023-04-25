@@ -14,7 +14,7 @@ type PeerPacket struct {
 }
 
 func NewPacket() PeerPacket {
-	cmPacket := packet.NewHeader(option.MsgTypeQueryPeer)
+	cmPacket := packet.NewHeader(option.MsgTypeQueryPeer, "")
 	return PeerPacket{
 		header: cmPacket,
 	}

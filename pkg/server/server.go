@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"github.com/topcloudz/fvpn/pkg/epoller"
 	"github.com/topcloudz/fvpn/pkg/nativehttp"
 	"net"
 	"sync"
@@ -71,19 +70,6 @@ func (r *RegStar) start(address string) error {
 		if err != nil {
 			return err
 		}
-
-		eventLoop, err := epoller.NewEventLoop()
-		eventLoop.Protocol = r.Protocol
-		if err := eventLoop.AddFd(r.socket); err != nil {
-			logger.Errorf("add fd to epoller failed. err: (%v)", err)
-			return err
-		}
-
-		if err != nil {
-			return err
-		}
-
-		eventLoop.EventLoop(r)
 	default:
 		logger.Info("this is a tcp server")
 	}

@@ -9,7 +9,7 @@ import (
 
 func (r *RegStar) forward(data []byte, cp *packet.Header) {
 	logger.Infof("server got forward packet: %v", data)
-	fpInterface, err := forward.NewPacket().Decode(data)
+	fpInterface, err := forward.NewPacket("").Decode(data)
 	fp := fpInterface.(forward.ForwardPacket)
 
 	if err != nil {

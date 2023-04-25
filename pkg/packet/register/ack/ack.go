@@ -15,7 +15,7 @@ type RegPacketAck struct {
 }
 
 func NewPacket() RegPacketAck {
-	cmPacket := packet.NewHeader(option.MsgTypeRegisterAck)
+	cmPacket := packet.NewHeader(option.MsgTypeRegisterAck, "")
 	return RegPacketAck{
 		header: cmPacket,
 	}

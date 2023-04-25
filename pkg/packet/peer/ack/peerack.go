@@ -23,7 +23,7 @@ type EdgePacketAck struct {
 }
 
 func NewPacket() EdgePacketAck {
-	cmPacket := packet.NewHeader(option.MsgTypeQueryPeer)
+	cmPacket := packet.NewHeader(option.MsgTypeQueryPeer, "")
 	return EdgePacketAck{
 		header: cmPacket,
 	}
