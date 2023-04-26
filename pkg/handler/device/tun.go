@@ -55,21 +55,7 @@ func Handle() handler.HandlerFunc {
 		idx = packet.EncodeBytes(newPacket, frame.Buff[:], idx)
 
 		frame.Packet = newPacket[:]
-
-		//if broad {
-		//	tun.write2Net(newPacket[:idx])
-		//} else {
-		//	// go p2p
-		//	logger.Infof("find peer in client, destMac: %v", destMac)
-		//	p := cache.FindPeer(dh.cache, destMac)
-		//	if p == nil {
-		//		dh.write2Net(newPacket[:idx])
-		//		logger.Warnf("peer not found, go through super cache")
-		//	} else {
-		//		dh.write2Net(newPacket[:idx])
-		//	}
-		//}
-		//return nil
+		
 		return nil
 
 	}

@@ -7,10 +7,12 @@ import (
 	"github.com/topcloudz/fvpn/pkg/socket"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"github.com/topcloudz/fvpn/pkg/util"
+	"sync"
 )
 
 type Tun struct {
-	socket     socket.Interface //relay socket
+	socket     socket.Interface // relay or p2p
+	p2pSocket  sync.Map         //p2psocket
 	device     *tuntap.Tuntap
 	Inbound    chan *packet.Frame //used from udp
 	Outbound   chan *packet.Frame //used for tun
@@ -19,14 +21,18 @@ type Tun struct {
 	udpHandler Handler
 }
 
-func NewTun(tunHandler, udpHandler Handler) *Tun {
-	return &Tun{
+func NewTun(tunHandler, udpHandler Handler, socket socket.Interface) *Tun {
+	tun := &Tun{
 		Inbound:    make(chan *packet.Frame, 15000),
 		Outbound:   make(chan *packet.Frame, 15000),
 		cache:      cache.New(),
 		tunHandler: tunHandler,
 		udpHandler: udpHandler,
 	}
+
+	tun.socket = socket
+
+	return tun
 }
 
 func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
@@ -52,26 +58,49 @@ func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
 func (t *Tun) WriteToUdp() {
 	for {
 		pkt := <-t.Outbound
+		//这里先尝试P2p, 没有P2P使用relay server
 		destMac := util.GetMacAddr(pkt.Packet)
-		sock, err := t.GetSock(destMac)
-		if err != nil {
-			logger.Errorf("get socket failed:%v", err)
+
+		p2pSocket := t.GetSocket(destMac)
+		if p2pSocket == nil {
+			nodeInfo, err := t.cache.GetNodeInfo(destMac)
+			if err != nil {
+				logger.Errorf("got nodeInfo failed.")
+			}
+			t.SaveSocket(destMac, nodeInfo.Socket)
+			t.socket.Write(pkt.Packet)
+			//启动一个udp goroutine用于处理P2P的轮询
+			go func() {
+				newTun := NewTun(t.tunHandler, t.udpHandler, nodeInfo.Socket)
+				newTun.ReadFromUdp()
+				newTun.WriteToDevice()
+			}()
+		} else {
+			p2pSocket.Write(pkt.Packet)
 		}
-		sock.Write(pkt.Packet[:])
+
 	}
+}
+
+func (t *Tun) GetSocket(mac string) socket.Interface {
+	v, b := t.p2pSocket.Load(mac)
+	if !b {
+		return nil
+	}
+
+	return v.(socket.Interface)
+}
+
+func (t *Tun) SaveSocket(mac string, s socket.Interface) {
+	t.p2pSocket.Store(mac, s)
 }
 
 func (t *Tun) ReadFromUdp() {
 	for {
 		ctx := context.Background()
 		frame := packet.NewFrame()
-		destMac := util.GetMacAddr(frame.Packet)
-		sock, err := t.GetSock(destMac)
-		if err != nil {
-			logger.Errorf("can not get sock")
-		}
 
-		n, err := sock.Read(frame.Buff[:])
+		n, err := t.socket.Read(frame.Buff[:])
 		if n < 0 || err != nil {
 			continue
 		}
@@ -95,14 +124,4 @@ func (t *Tun) WriteToDevice() {
 		}
 		device.Write(pkt.Packet[:])
 	}
-}
-
-func (t *Tun) GetSock(mac string) (socket.Interface, error) {
-	nodeInfo, err := t.cache.GetNodeInfo(mac)
-	if err != nil {
-		//走releay
-		return nil, err
-	}
-
-	return nodeInfo.Socket, nil
 }

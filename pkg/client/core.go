@@ -32,7 +32,7 @@ func (n *Node) conn() error {
 	return err
 }
 
-func (n *Node) queryPeer() error {
+func (n *Node) queryNodeInfos() error {
 	n.tuns.Range(func(key, value any) bool {
 		networkId := key
 		cp := peer.NewPacket(networkId.(string))

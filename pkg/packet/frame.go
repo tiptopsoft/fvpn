@@ -1,7 +1,9 @@
 package packet
 
 import (
+	"github.com/topcloudz/fvpn/pkg/cache"
 	"github.com/topcloudz/fvpn/pkg/option"
+	"github.com/topcloudz/fvpn/pkg/util"
 	"sync"
 )
 
@@ -17,4 +19,9 @@ func NewFrame() *Frame {
 		Buff:   make([]byte, option.FVPN_PKT_BUFF_SIZE),
 		Packet: make([]byte, option.FVPN_PKT_BUFF_SIZE),
 	}
+}
+
+func (f *Frame) GetNodeInfo(cache cache.Cache) (*cache.NodeInfo, error) {
+	destMac := util.GetMacAddr(f.Packet)
+	return cache.GetNodeInfo(destMac)
 }
