@@ -11,10 +11,10 @@ import (
 )
 
 func (r *RegStar) processRegister(remoteAddr unix.Sockaddr, data []byte, cp *packet.Header) {
-	packet, err := r.packet.Decode(data)
+	registerPacket, err := r.packet.Decode(data)
 
 	// build an ack
-	f, err := r.registerAck(remoteAddr, packet.(register.RegPacket).SrcMac)
+	f, err := r.registerAck(remoteAddr, registerPacket.(register.RegPacket).SrcMac)
 	logger.Infof("build a server ack: %v", f)
 	if err != nil {
 		logger.Errorf("build resp failed. err: %v", err)
@@ -37,15 +37,17 @@ func (r *RegStar) registerAck(peerAddr unix.Sockaddr, srcMac net.HardwareAddr) (
 	p.AutoIP = endpoint.IP
 	p.Mask = endpoint.Mask
 
-	ackNode := &cache.Peer{
-		Socket:  r.socket,
-		Addr:    peerAddr,
-		MacAddr: endpoint.Mac,
-		IP:      endpoint.IP,
-		Port:    0,
+	ackNode := &cache.NodeInfo{
+		Socket:    r.socket,
+		Addr:      peerAddr,
+		NetworkId: "",
+		MacAddr:   endpoint.Mac,
+		IP:        endpoint.IP,
+		Port:      0,
 	}
 
-	r.cache.Nodes[endpoint.Mac.String()] = ackNode
-	r.cache.IPNodes[endpoint.IP.String()] = ackNode
+	r.cache.SetCache(endpoint.Mac.String(), ackNode)
+	//r.cache.Nodes[endpoint.Mac.String()] = ackNode
+	//r.cache.IPNodes[endpoint.IP.String()] = ackNode
 	return p.Encode()
 }

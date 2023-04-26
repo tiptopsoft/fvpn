@@ -20,20 +20,20 @@ var (
 
 type Node struct {
 	*option.Config
-	Protocol option.Protocol
-	tuns     sync.Map //key: netId, value: Tuntap
-	socket   socket.Interface
+	Protocol    option.Protocol
+	tuns        sync.Map //key: netId, value: Tuntap
+	relaySocket socket.Interface
 }
 
 func (n *Node) Start() error {
 	once.Do(func() {
-		n.socket = socket.NewSocket()
+		n.relaySocket = socket.NewSocket()
 		if err := n.conn(); err != nil {
 			logger.Errorf("failed to connect to server: %v", err)
 		}
 		n.Protocol = option.UDP
 	})
-	tun := n.GetTun()
+	tun := n.GetTun() //这里启动的是relaySocket，中继服务器
 	go tun.ReadFromUdp()
 	go tun.WriteToDevice()
 	return n.runHttpServer()
@@ -43,7 +43,8 @@ func (n *Node) GetTun() handler.Tun {
 	m := n.initMiddleware()
 	tunHandler := middleware.WithMiddlewares(device.Handle(), m...)
 	updHandler := middleware.WithMiddlewares(udp.Handle(), m...)
-	tun := handler.NewTun(tunHandler, updHandler)
+	tun := handler.NewTun(tunHandler, updHandler, n.relaySocket)
+
 	return *tun
 }
 

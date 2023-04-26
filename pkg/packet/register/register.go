@@ -15,15 +15,15 @@ type RegPacket struct {
 	SrcMac net.HardwareAddr
 }
 
-func NewPacket() RegPacket {
-	cmPacket := packet.NewHeader(option.MsgTypeRegisterSuper, "")
+func NewPacket(networkId string) RegPacket {
+	cmPacket := packet.NewHeader(option.MsgTypeRegisterSuper, networkId)
 	return RegPacket{
 		header: cmPacket,
 	}
 }
 
-func NewUnregisterPacket() RegPacket {
-	cmPacket := packet.NewHeader(option.MsgTypeUnregisterSuper, "")
+func NewUnregisterPacket(networkId string) RegPacket {
+	cmPacket := packet.NewHeader(option.MsgTypeUnregisterSuper, networkId)
 	return RegPacket{
 		header: cmPacket,
 	}
@@ -42,7 +42,7 @@ func (r RegPacket) Encode() ([]byte, error) {
 }
 
 func (r RegPacket) Decode(buff []byte) (packet.Interface, error) {
-	res := NewPacket()
+	res := NewPacket("")
 	idx := 0
 	idx += int(unsafe.Sizeof(packet.Header{}))
 	var mac = make([]byte, 6)

@@ -96,9 +96,10 @@ func GetTuntap(networkId string) (*Tuntap, error) {
 
 	mac, _ := addr.GetMacAddrByDev(name)
 	return &Tuntap{
-		Name:    name,
-		MacAddr: mac,
-		file:    os.NewFile(uintptr(fd), name),
-		Fd:      fd,
+		Name:      name,
+		MacAddr:   mac,
+		file:      os.NewFile(uintptr(fd), name),
+		Fd:        fd,
+		NetworkId: networkId,
 	}, nil
 }

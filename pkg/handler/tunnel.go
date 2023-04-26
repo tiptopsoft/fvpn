@@ -13,18 +13,19 @@ type Tun struct {
 	device     *tuntap.Tuntap
 	Inbound    chan *packet.Frame //used from udp
 	Outbound   chan *packet.Frame //used for tun
-	Cache      cache.PeersCache
+	cache      *cache.Cache
 	tunHandler Handler
 	udpHandler Handler
 }
 
-func NewTun(tunHandler, udpHandler Handler) *Tun {
+func NewTun(tunHandler, udpHandler Handler, socket socket.Interface) *Tun {
 	return &Tun{
 		Inbound:    make(chan *packet.Frame, 15000),
 		Outbound:   make(chan *packet.Frame, 15000),
-		Cache:      cache.New(),
+		cache:      cache.New(),
 		tunHandler: tunHandler,
 		udpHandler: udpHandler,
+		socket:     socket,
 	}
 }
 

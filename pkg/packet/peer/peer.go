@@ -13,8 +13,8 @@ type PeerPacket struct {
 	SrcMac net.HardwareAddr
 }
 
-func NewPacket() PeerPacket {
-	cmPacket := packet.NewHeader(option.MsgTypeQueryPeer, "")
+func NewPacket(networkId string) PeerPacket {
+	cmPacket := packet.NewHeader(option.MsgTypeQueryPeer, networkId)
 	return PeerPacket{
 		header: cmPacket,
 	}
@@ -34,7 +34,7 @@ func (p PeerPacket) Encode() ([]byte, error) {
 
 func (p PeerPacket) Decode(udpBytes []byte) (packet.Interface, error) {
 
-	res := NewPacket()
+	res := NewPacket("")
 	cp, err := packet.NewPacketWithoutType().Decode(udpBytes)
 	if err != nil {
 		return PeerPacket{}, errors.New("decode common packet failed")
@@ -49,7 +49,7 @@ func (p PeerPacket) Decode(udpBytes []byte) (packet.Interface, error) {
 }
 
 func DecodeWithCommonPacket(udpBytes []byte, cp packet.Header) (PeerPacket, error) {
-	res := NewPacket()
+	res := NewPacket("")
 	idx := 0
 	res.header = cp
 	idx += int(unsafe.Sizeof(packet.Header{}))

@@ -9,7 +9,7 @@ import (
 func (r *RegStar) processFindPeer(addr unix.Sockaddr) {
 	logger.Infof("start to process query peers...")
 	// get peer info
-	peers, size, err := getPeerInfo(r.cache)
+	peers, size, err := getPeerInfo(r.cache.GetNodes())
 	logger.Infof("server peers: (%v), size: (%v)", peers, size)
 	if err != nil {
 		logger.Errorf("get peers from server failed. err: %v", err)
@@ -29,9 +29,10 @@ func (r *RegStar) processFindPeer(addr unix.Sockaddr) {
 	logger.Infof("finish process query peers")
 }
 
-func getPeerInfo(peers cache.PeersCache) ([]ack.EdgeInfo, uint8, error) {
+func getPeerInfo(nodes []*cache.NodeInfo) ([]ack.EdgeInfo, uint8, error) {
 	var result []ack.EdgeInfo
-	for _, peer := range peers.Nodes {
+
+	for _, peer := range nodes {
 		info := ack.EdgeInfo{
 			Mac:  peer.MacAddr,
 			Host: peer.IP,

@@ -58,14 +58,15 @@ func Handle() handler.HandlerFunc {
 				if err != nil {
 					//return err
 				}
-				peerInfo := &cache.Peer{
+				nodeInfo := &cache.NodeInfo{
 					Socket:  sock,
 					MacAddr: info.Mac,
 					IP:      info.Host,
 					Port:    info.Port,
 				}
-				cache := ctx.Value("cache").(cache.PeersCache)
-				cache.Nodes[info.Mac.String()] = peerInfo
+				c := ctx.Value("cache").(*cache.Cache)
+				//cache.Nodes[info.Mac.String()] = nodeInfo
+				c.SetCache(info.Mac.String(), nodeInfo)
 			}
 			break
 		case option.MsgTypePacket:

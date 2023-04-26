@@ -12,10 +12,10 @@ var (
 )
 
 type HttpServer struct {
-	cache cache.PeersCache
+	cache *cache.Cache
 }
 
-func New(cache cache.PeersCache) HttpServer {
+func New(cache *cache.Cache) HttpServer {
 	return HttpServer{cache: cache}
 }
 

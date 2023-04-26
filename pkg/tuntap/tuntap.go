@@ -7,11 +7,12 @@ import (
 
 // Tuntap a tuntap for net
 type Tuntap struct {
-	file    *os.File
-	Fd      int
-	Name    string
-	Mode    Mode
-	MacAddr net.HardwareAddr
+	file      *os.File
+	Fd        int
+	Name      string
+	NetworkId string
+	Mode      Mode
+	MacAddr   net.HardwareAddr
 }
 
 type Mode int

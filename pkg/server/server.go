@@ -24,13 +24,9 @@ var (
 type RegStar struct {
 	*option.ServerConfig
 	socket socket.Interface
-	cache  cache.PeersCache
+	cache  *cache.Cache
 	packet packet.Interface
 	ws     sync.WaitGroup
-}
-
-func (r *RegStar) Cache() cache.PeersCache {
-	return r.cache
 }
 
 func (r *RegStar) Start(address string) error {
@@ -94,7 +90,7 @@ func (r *RegStar) Execute(socket socket.Interface) error {
 	switch p.Flags {
 
 	case option.MsgTypeRegisterSuper:
-		r.packet = register.NewPacket()
+		r.packet = register.NewPacket("")
 		r.processRegister(addr, data[:size], nil)
 		break
 	case option.MsgTypeQueryPeer:

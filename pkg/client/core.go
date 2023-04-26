@@ -24,7 +24,7 @@ func (n *Node) conn() error {
 			return err
 		}
 
-		if err = n.socket.Connect(&remoteAddr); err != nil {
+		if err = n.relaySocket.Connect(&remoteAddr); err != nil {
 			return err
 		}
 		logger.Infof("n connected to server: (%v)", n.ClientCfg.Registry)
@@ -33,27 +33,34 @@ func (n *Node) conn() error {
 }
 
 func (n *Node) queryPeer() error {
-	cp := peer.NewPacket()
-	data, err := cp.Encode()
-	if err != nil {
-		return err
-	}
-
-	switch n.Protocol {
-	case option.UDP:
-		logger.Infof("start to query n peer info, data: (%v)", data)
-		if _, err := n.socket.Write(data); err != nil {
-			return nil
+	n.tuns.Range(func(key, value any) bool {
+		networkId := key
+		cp := peer.NewPacket(networkId.(string))
+		data, err := cp.Encode()
+		if err != nil {
+			logger.Errorf("error occurd when query peers, networkId: %s, err: %v", networkId, err)
+			return false
 		}
-		break
-	}
+
+		switch n.Protocol {
+		case option.UDP:
+			logger.Infof("start to query n peer info, data: (%v)", data)
+			if _, err := n.relaySocket.Write(data); err != nil {
+				logger.Errorf("error occurd when query peers, networkId: %s, err: %v", networkId, err)
+				return false
+			}
+			break
+		}
+		return true
+	})
+
 	return nil
 }
 
 // register register a edgestar to center.
 func (n *Node) register(tun *tuntap.Tuntap) error {
 	var err error
-	rp := register.NewPacket()
+	rp := register.NewPacket(tun.NetworkId)
 	rp.SrcMac, _ = addr.GetMacAddrByDev(tun.Name)
 	logger.Infof("register src mac: %v to server", rp.SrcMac.String())
 	data, err := rp.Encode()
@@ -64,7 +71,7 @@ func (n *Node) register(tun *tuntap.Tuntap) error {
 	switch n.Protocol {
 	case option.UDP:
 		logger.Infof("n start to register to server: %v", rp)
-		if _, err := n.socket.Write(data); err != nil {
+		if _, err := n.relaySocket.Write(data); err != nil {
 			return err
 		}
 		break
@@ -75,7 +82,7 @@ func (n *Node) register(tun *tuntap.Tuntap) error {
 // register register a edgestar to center.
 func (n *Node) unregister(tun *tuntap.Tuntap) error {
 	var err error
-	rp := register.NewUnregisterPacket()
+	rp := register.NewUnregisterPacket(tun.NetworkId)
 	rp.SrcMac = tun.MacAddr
 	data, err := rp.Encode()
 	fmt.Println("sending unregister data: ", data)
@@ -85,27 +92,11 @@ func (n *Node) unregister(tun *tuntap.Tuntap) error {
 
 	switch n.Protocol {
 	case option.UDP:
-		logger.Infof("n start to server self to server: %v", rp)
-		if _, err := n.socket.Write(data); err != nil {
+		logger.Infof("node start to server self to server: %v", rp)
+		if _, err := n.relaySocket.Write(data); err != nil {
 			return err
 		}
 		break
 	}
 	return nil
 }
-
-//func (n *Node) dialNode() {
-//	for _, v := range n.cache.Nodes {
-//		if v != nil && v.Addr != nil {
-//			dstAddr := v.Addr.(*unix.SockaddrInet4).Addr
-//			newAddr := &unix.SockaddrInet4{Addr: dstAddr, Port: DefaultPort}
-//			if !v.P2P {
-//				if err := n.socket.Connect(newAddr); err != nil {
-//					return
-//				}
-//			}
-//			//如果连通，则更新cache中的状态
-//			v.P2P = true
-//		}
-//	}
-//}
