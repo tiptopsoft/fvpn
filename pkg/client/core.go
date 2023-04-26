@@ -27,7 +27,7 @@ func (n *Node) conn() error {
 		if err = n.relaySocket.Connect(&remoteAddr); err != nil {
 			return err
 		}
-		logger.Infof("n connected to server: (%v)", n.ClientCfg.Registry)
+		logger.Infof("node connected to server: (%v)", n.ClientCfg.Registry)
 	}
 	return err
 }

@@ -42,12 +42,12 @@ func (n *Node) Start() error {
 func (n *Node) GetTun() handler.Tun {
 	m := n.initMiddleware()
 	tunHandler := middleware.WithMiddlewares(device.Handle(), m...)
-	updHandler := middleware.WithMiddlewares(udp.Handle(), m...)
-	tun := handler.NewTun(tunHandler, updHandler, n.relaySocket)
-
+	udpHandler := middleware.WithMiddlewares(udp.Handle(), m...)
+	tun := handler.NewTun(tunHandler, udpHandler)
 	return *tun
 }
 
+// initMiddleware TODO add impl
 func (n *Node) initMiddleware() []middleware.Middleware {
 	var result []middleware.Middleware
 	if n.OpenAuth {

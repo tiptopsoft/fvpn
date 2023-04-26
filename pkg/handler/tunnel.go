@@ -6,10 +6,11 @@ import (
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/socket"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
+	"github.com/topcloudz/fvpn/pkg/util"
 )
 
 type Tun struct {
-	socket     socket.Interface
+	socket     socket.Interface //relay socket
 	device     *tuntap.Tuntap
 	Inbound    chan *packet.Frame //used from udp
 	Outbound   chan *packet.Frame //used for tun
@@ -18,18 +19,17 @@ type Tun struct {
 	udpHandler Handler
 }
 
-func NewTun(tunHandler, udpHandler Handler, socket socket.Interface) *Tun {
+func NewTun(tunHandler, udpHandler Handler) *Tun {
 	return &Tun{
 		Inbound:    make(chan *packet.Frame, 15000),
 		Outbound:   make(chan *packet.Frame, 15000),
 		cache:      cache.New(),
 		tunHandler: tunHandler,
 		udpHandler: udpHandler,
-		socket:     socket,
 	}
 }
 
-func (t Tun) ReadFromTun(ctx context.Context, networkId string) {
+func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
 	for {
 		ctx = context.WithValue(ctx, "networkId", networkId)
 		networkId := ctx.Value("networkId").(string)
@@ -49,18 +49,29 @@ func (t Tun) ReadFromTun(ctx context.Context, networkId string) {
 	}
 }
 
-func (t Tun) WriteToUdp() {
+func (t *Tun) WriteToUdp() {
 	for {
 		pkt := <-t.Outbound
-		t.socket.Write(pkt.Packet[:])
+		destMac := util.GetMacAddr(pkt.Packet)
+		sock, err := t.GetSock(destMac)
+		if err != nil {
+			logger.Errorf("get socket failed:%v", err)
+		}
+		sock.Write(pkt.Packet[:])
 	}
 }
 
-func (t Tun) ReadFromUdp() {
+func (t *Tun) ReadFromUdp() {
 	for {
 		ctx := context.Background()
 		frame := packet.NewFrame()
-		n, err := t.socket.Read(frame.Buff[:])
+		destMac := util.GetMacAddr(frame.Packet)
+		sock, err := t.GetSock(destMac)
+		if err != nil {
+			logger.Errorf("can not get sock")
+		}
+
+		n, err := sock.Read(frame.Buff[:])
 		if n < 0 || err != nil {
 			continue
 		}
@@ -75,7 +86,7 @@ func (t Tun) ReadFromUdp() {
 }
 
 // WriteToDevice write to device from the queue
-func (t Tun) WriteToDevice() {
+func (t *Tun) WriteToDevice() {
 	for {
 		pkt := <-t.Inbound
 		device, err := tuntap.GetTuntap(pkt.NetworkId)
@@ -84,4 +95,14 @@ func (t Tun) WriteToDevice() {
 		}
 		device.Write(pkt.Packet[:])
 	}
+}
+
+func (t *Tun) GetSock(mac string) (socket.Interface, error) {
+	nodeInfo, err := t.cache.GetNodeInfo(mac)
+	if err != nil {
+		//走releay
+		return nil, err
+	}
+
+	return nodeInfo.Socket, nil
 }
