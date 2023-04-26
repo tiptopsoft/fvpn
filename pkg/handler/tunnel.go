@@ -36,6 +36,7 @@ func NewTun(tunHandler, udpHandler Handler, socket socket.Interface) *Tun {
 }
 
 func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
+	logger.Infof("start a tun loop for networkId: %s", networkId)
 	for {
 		ctx = context.WithValue(ctx, "networkId", networkId)
 		networkId := ctx.Value("networkId").(string)
@@ -96,6 +97,7 @@ func (t *Tun) SaveSocket(mac string, s socket.Interface) {
 }
 
 func (t *Tun) ReadFromUdp() {
+	logger.Infof("start a udp loop socket is: %s", t.socket)
 	for {
 		ctx := context.Background()
 		frame := packet.NewFrame()

@@ -28,10 +28,11 @@ type Node struct {
 func (n *Node) Start() error {
 	once.Do(func() {
 		n.relaySocket = socket.NewSocket()
+		n.Protocol = option.UDP
 		if err := n.conn(); err != nil {
 			logger.Errorf("failed to connect to server: %v", err)
 		}
-		n.Protocol = option.UDP
+
 	})
 	tun := n.GetTun() //这里启动的是relaySocket，中继服务器
 	go tun.ReadFromUdp()
@@ -39,12 +40,12 @@ func (n *Node) Start() error {
 	return n.runHttpServer()
 }
 
-func (n *Node) GetTun() handler.Tun {
+func (n *Node) GetTun() *handler.Tun {
 	m := n.initMiddleware()
 	tunHandler := middleware.WithMiddlewares(device.Handle(), m...)
 	udpHandler := middleware.WithMiddlewares(udp.Handle(), m...)
-	tun := handler.NewTun(tunHandler, udpHandler, n.relaySocket, 0)
-	return *tun
+	tun := handler.NewTun(tunHandler, udpHandler, n.relaySocket)
+	return tun
 }
 
 // initMiddleware TODO add impl
