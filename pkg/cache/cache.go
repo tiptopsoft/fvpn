@@ -9,11 +9,11 @@ import (
 )
 
 type Cache struct {
-	local sync.Map
+	local *sync.Map
 }
 
 func New() *Cache {
-	return &Cache{local: sync.Map{}}
+	return &Cache{local: &sync.Map{}}
 }
 
 // NodeInfo 节点注册到registry时，应保存device ip, NATHost, NATPort
@@ -29,14 +29,21 @@ type NodeInfo struct {
 
 var LocalCache sync.Map
 
-func (c *Cache) SetCache(mac string, node *NodeInfo) {
-	LocalCache.Store(mac, node)
+func (c *Cache) SetCache(networkId, ip string, node *NodeInfo) {
+	var m *sync.Map
+	m.Store(ip, node)
+	LocalCache.Store(networkId, node)
 }
 
-func (c *Cache) GetNodeInfo(mac string) (*NodeInfo, error) {
-	node, b := LocalCache.Load(mac)
+func (c *Cache) GetNodeInfo(networkId, ip string) (*NodeInfo, error) {
+	m, b := LocalCache.Load(networkId)
 	if !b {
-		return nil, errors.New("get NodeInfo from LocalCache failed")
+		return nil, errors.New("not networkId " + networkId + " cached")
+	}
+	s := m.(*sync.Map)
+	node, b := s.Load(ip)
+	if !b {
+		return nil, errors.New("get NodeInfo from " + networkId + " LocalCache failed")
 	}
 	return node.(*NodeInfo), nil
 }

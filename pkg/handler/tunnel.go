@@ -8,6 +8,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"sync"
+	"time"
 )
 
 type Tun struct {
@@ -19,6 +20,7 @@ type Tun struct {
 	cache      *cache.Cache
 	tunHandler Handler
 	udpHandler Handler
+	NetworkId  string
 }
 
 func NewTun(tunHandler, udpHandler Handler, socket socket.Interface) *Tun {
@@ -36,6 +38,7 @@ func NewTun(tunHandler, udpHandler Handler, socket socket.Interface) *Tun {
 }
 
 func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
+	time.Sleep(1 * time.Second)
 	logger.Infof("start a tun loop for networkId: %s", networkId)
 	ctx = context.WithValue(ctx, "networkId", networkId)
 	tun, err := tuntap.GetTuntap(networkId)
@@ -48,9 +51,9 @@ func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
 		n, err := tun.Read(frame.Buff[:])
 		frame.Packet = frame.Buff[:n]
 		frame.Size = n
-		mac, err := util.GetMacAddr(frame.Packet)
+		mac, _, err := util.GetMacAddr(frame.Packet)
 		if err != nil {
-			logger.Infof("no packet...")
+			logger.Debugf("no packet...")
 			continue
 		}
 		ctx = context.WithValue(ctx, "mac", mac)
@@ -67,7 +70,8 @@ func (t *Tun) WriteToUdp() {
 	for {
 		pkt := <-t.Outbound
 		//这里先尝试P2p, 没有P2P使用relay server
-		destMac, err := util.GetMacAddr(pkt.Packet)
+		destMac, destIP, err := util.GetMacAddr(pkt.Packet)
+		logger.Infof("packet will be write to : mac: %s, ip: %s, content: %v", destMac, destIP.String(), pkt.Packet)
 		if err != nil {
 			continue
 		}
@@ -75,7 +79,7 @@ func (t *Tun) WriteToUdp() {
 		p2pSocket := t.GetSocket(destMac)
 		if p2pSocket == nil {
 			t.socket.Write(pkt.Packet)
-			nodeInfo, err := t.cache.GetNodeInfo(destMac)
+			nodeInfo, err := t.cache.GetNodeInfo(t.NetworkId, destIP.String())
 			if err != nil {
 				logger.Errorf("got nodeInfo failed.")
 			} else {

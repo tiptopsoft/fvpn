@@ -16,14 +16,10 @@ func GetAddress(address string, port int) (unix.SockaddrInet4, error) {
 	}, err
 }
 
-func GetMacAddr(buf []byte) (string, error) {
-	if len(buf) == 0 {
-		return "", errors.New("no data exists.")
+// GetMacAddr return dest mac, dest ip, if data provide is null, error returned.
+func GetMacAddr(buff []byte) (string, net.IP, error) {
+	if len(buff) == 0 {
+		return "", nil, errors.New("no data exists")
 	}
-	return fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]), nil
-}
-
-// 从二层数据帧中获取，dmac 6 + srcMac b + 4 + 16 = 32:36
-func GetDstIP(buff []byte) net.IP {
-	return net.IPv4(buff[32], buff[33], buff[34], buff[35])
+	return fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", buff[0], buff[1], buff[2], buff[3], buff[4], buff[5]), net.IPv4(buff[32], buff[33], buff[34], buff[35]), nil
 }

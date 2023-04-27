@@ -11,6 +11,7 @@ import (
 	peerack "github.com/topcloudz/fvpn/pkg/packet/peer/ack"
 	"github.com/topcloudz/fvpn/pkg/packet/register/ack"
 	"github.com/topcloudz/fvpn/pkg/socket"
+	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"unsafe"
 )
@@ -65,8 +66,9 @@ func Handle() handler.HandlerFunc {
 					Port:    info.Port,
 				}
 				c := ctx.Value("cache").(*cache.Cache)
+				tun := ctx.Value("tun").(*tuntap.Tuntap)
 				//cache.Nodes[info.Mac.String()] = nodeInfo
-				c.SetCache(info.Mac.String(), nodeInfo)
+				c.SetCache(tun.NetworkId, info.Host.String(), nodeInfo)
 			}
 			break
 		case option.MsgTypePacket:
