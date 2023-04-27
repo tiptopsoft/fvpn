@@ -14,7 +14,7 @@ var (
 	DefaultPort      uint16 = 3000
 )
 
-// Header  every time sends util frame.
+// Header  every time sends util frame. 12 byte
 type Header struct {
 	Version   uint8  //1
 	TTL       uint8  //1

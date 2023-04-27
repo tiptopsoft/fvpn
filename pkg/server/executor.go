@@ -49,7 +49,7 @@ func (r *RegServer) WriteToUdp() {
 
 			nodeInfo, err := r.cache.GetNodeInfo(pkt.NetworkId, destIP.String())
 			if nodeInfo == nil || err != nil {
-				logger.Debugf("not found destitationß")
+				logger.Debugf("not found destitation")
 			} else {
 				r.socket.WriteToUdp(pkt.Packet[:], nodeInfo.Addr)
 			}
@@ -61,7 +61,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 	return func(ctx context.Context, frame *packet.Frame) error {
 		addr := ctx.Value("addr").(unix.Sockaddr)
 		size := ctx.Value("size").(int)
-		data := frame.Packet[:]
+		data := frame.Packet[:size]
 		pInterface, err := packet.NewPacketWithoutType().Decode(data)
 		p := pInterface.(packet.Header)
 
@@ -99,7 +99,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			frame.Packet = f
 			break
 		case option.MsgTypePacket:
-			logger.Infof("server got forward packet: %v", data)
+			logger.Infof("server got forward packet size:%d, data: %v", size, data)
 			frame.NetworkId = p.NetworkId
 			break
 		}

@@ -51,6 +51,7 @@ func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
 		n, err := tun.Read(frame.Buff[:])
 		frame.Packet = frame.Buff[:n]
 		frame.Size = n
+		logger.Debugf("origin packet size: %d, data: %v", n, frame.Packet)
 		mac, _, err := util.GetMacAddr(frame.Packet)
 		if err != nil {
 			logger.Debugf("no packet...")
@@ -70,7 +71,7 @@ func (t *Tun) WriteToUdp() {
 	for {
 		pkt := <-t.Outbound
 		//这里先尝试P2p, 没有P2P使用relay server
-		destMac, destIP, err := util.GetMacAddr(pkt.Packet)
+		destMac, destIP, err := util.GetMacAddr(pkt.Packet[26:]) // why 26? because header is 12 and tap header is 14
 		logger.Infof("packet will be write to : mac: %s, ip: %s, content: %v", destMac, destIP.String(), pkt.Packet)
 		if err != nil {
 			continue
@@ -81,7 +82,7 @@ func (t *Tun) WriteToUdp() {
 			t.socket.Write(pkt.Packet)
 			nodeInfo, err := t.cache.GetNodeInfo(t.NetworkId, destIP.String())
 			if err != nil {
-				logger.Errorf("got nodeInfo failed.")
+				logger.Debugf("got nodeInfo failed")
 			} else {
 				t.SaveSocket(destMac, nodeInfo.Socket)
 				//启动一个udp goroutine用于处理P2P的轮询
