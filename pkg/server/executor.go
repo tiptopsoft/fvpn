@@ -17,15 +17,20 @@ func (r *RegServer) ReadFromUdp() {
 		ctx := context.Background()
 		frame := packet.NewFrame()
 		n, addr, err := r.socket.ReadFromUdp(frame.Buff[:])
+		frame.Packet = frame.Buff[:n]
+		logger.Debugf("Read from udp %d byte", n)
 		ctx = context.WithValue(ctx, "size", n)
 		ctx = context.WithValue(ctx, "addr", addr)
 		if err != nil || n < 0 {
 			logger.Warnf("no data exists")
 			continue
 		}
-		r.h.Handle(ctx, frame)
+		err = r.h.Handle(ctx, frame)
+		if err != nil {
+			logger.Errorf(err.Error())
+		}
 		r.Outbound <- frame
-
+		logger.Infof("succes handler frame")
 	}
 }
 
@@ -39,11 +44,15 @@ func (r *RegServer) WriteToUdp() {
 			//if util.IsBroadCast(fp.DstMac.String()) {
 			_, destIP, err := util.GetMacAddr(pkt.Packet)
 			if err != nil {
-				logger.Errorf("dest ip :%s not on line", destIP)
+				logger.Debugf("dest ip :%s not on line", destIP)
 			}
 
-			nodeInfo, err := r.cache.GetNodeInfo("", destIP.String())
-			r.socket.WriteToUdp(pkt.Packet[:], nodeInfo.Addr)
+			nodeInfo, err := r.cache.GetNodeInfo(pkt.NetworkId, destIP.String())
+			if nodeInfo == nil || err != nil {
+				logger.Debugf("not found destitationß")
+			} else {
+				r.socket.WriteToUdp(pkt.Packet[:], nodeInfo.Addr)
+			}
 		}
 	}
 }
@@ -91,6 +100,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			break
 		case option.MsgTypePacket:
 			logger.Infof("server got forward packet: %v", data)
+			frame.NetworkId = p.NetworkId
 			break
 		}
 

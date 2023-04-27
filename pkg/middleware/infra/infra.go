@@ -17,9 +17,9 @@ func Middlewares(params ...bool) []middleware.Middleware {
 		result = append(result, encrypt.Middleware())
 	}
 
-	if params[2] {
-		//TODO
-	}
+	//if params[2] {
+	//	//TODO
+	//}
 
 	return result
 }
