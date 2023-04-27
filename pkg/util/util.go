@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"fmt"
 	"golang.org/x/sys/unix"
 	"net"
@@ -15,8 +16,11 @@ func GetAddress(address string, port int) (unix.SockaddrInet4, error) {
 	}, err
 }
 
-func GetMacAddr(buf []byte) string {
-	return fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5])
+func GetMacAddr(buf []byte) (string, error) {
+	if len(buf) == 0 {
+		return "", errors.New("no data exists.")
+	}
+	return fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]), nil
 }
 
 // 从二层数据帧中获取，dmac 6 + srcMac b + 4 + 16 = 32:36

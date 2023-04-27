@@ -1,6 +1,7 @@
 package packet
 
 import (
+	"errors"
 	"github.com/topcloudz/fvpn/pkg/cache"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/util"
@@ -11,6 +12,7 @@ type Frame struct {
 	sync.Mutex
 	Buff      []byte //max length 2000
 	Packet    []byte
+	Size      int
 	NetworkId string
 }
 
@@ -22,6 +24,9 @@ func NewFrame() *Frame {
 }
 
 func (f *Frame) GetNodeInfo(cache cache.Cache) (*cache.NodeInfo, error) {
-	destMac := util.GetMacAddr(f.Packet)
+	destMac, err := util.GetMacAddr(f.Packet)
+	if err != nil {
+		return nil, errors.New("no data exists")
+	}
 	return cache.GetNodeInfo(destMac)
 }

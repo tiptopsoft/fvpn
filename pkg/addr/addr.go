@@ -94,7 +94,7 @@ func GenerateIP(ipInt uint32) string {
 }
 
 func GetMacAddrByDev(name string) (net.HardwareAddr, error) {
-	fa, err := net.InterfaceByName(name)
+	fa, err := net.InterfaceByName(name[:14])
 	if err != nil {
 		return nil, err
 	}

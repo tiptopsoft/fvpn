@@ -37,16 +37,23 @@ func NewTun(tunHandler, udpHandler Handler, socket socket.Interface) *Tun {
 
 func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
 	logger.Infof("start a tun loop for networkId: %s", networkId)
+	ctx = context.WithValue(ctx, "networkId", networkId)
+	tun, err := tuntap.GetTuntap(networkId)
+	ctx = context.WithValue(ctx, "tun", tun)
+	if err != nil {
+		logger.Fatalf("invalid network: %s", networkId)
+	}
 	for {
-		ctx = context.WithValue(ctx, "networkId", networkId)
-		networkId := ctx.Value("networkId").(string)
-		tun, err := tuntap.GetTuntap(networkId)
-		if err != nil {
-			logger.Fatalf("invalid network: %s", networkId)
-		}
 		frame := packet.NewFrame()
 		n, err := tun.Read(frame.Buff[:])
 		frame.Packet = frame.Buff[:n]
+		frame.Size = n
+		mac, err := util.GetMacAddr(frame.Packet)
+		if err != nil {
+			logger.Infof("no packet...")
+			continue
+		}
+		ctx = context.WithValue(ctx, "mac", mac)
 		err = t.tunHandler.Handle(ctx, frame)
 		if err != nil {
 			logger.Errorf("tun handle packet failed: %v", err)
@@ -60,22 +67,26 @@ func (t *Tun) WriteToUdp() {
 	for {
 		pkt := <-t.Outbound
 		//这里先尝试P2p, 没有P2P使用relay server
-		destMac := util.GetMacAddr(pkt.Packet)
+		destMac, err := util.GetMacAddr(pkt.Packet)
+		if err != nil {
+			continue
+		}
 
 		p2pSocket := t.GetSocket(destMac)
 		if p2pSocket == nil {
+			t.socket.Write(pkt.Packet)
 			nodeInfo, err := t.cache.GetNodeInfo(destMac)
 			if err != nil {
 				logger.Errorf("got nodeInfo failed.")
+			} else {
+				t.SaveSocket(destMac, nodeInfo.Socket)
+				//启动一个udp goroutine用于处理P2P的轮询
+				go func() {
+					newTun := NewTun(t.tunHandler, t.udpHandler, nodeInfo.Socket)
+					newTun.ReadFromUdp()
+					newTun.WriteToDevice()
+				}()
 			}
-			t.SaveSocket(destMac, nodeInfo.Socket)
-			t.socket.Write(pkt.Packet)
-			//启动一个udp goroutine用于处理P2P的轮询
-			go func() {
-				newTun := NewTun(t.tunHandler, t.udpHandler, nodeInfo.Socket)
-				newTun.ReadFromUdp()
-				newTun.WriteToDevice()
-			}()
 		} else {
 			p2pSocket.Write(pkt.Packet)
 		}

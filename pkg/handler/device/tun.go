@@ -2,14 +2,12 @@ package device
 
 import (
 	"context"
-	"fmt"
 	"github.com/topcloudz/fvpn/pkg/addr"
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/forward"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
-	"github.com/topcloudz/fvpn/pkg/util"
 	"net"
 )
 
@@ -20,18 +18,11 @@ var (
 func Handle() handler.HandlerFunc {
 	return func(ctx context.Context, frame *packet.Frame) error {
 		networkId := ctx.Value("networkId").(string)
-		tun, err := tuntap.GetTuntap(networkId)
-		if err != nil {
-			logger.Fatalf("invalid network: %s", networkId)
-		}
-		n, err := tun.Read(frame.Buff[:])
-
-		if err != nil {
-			return err
-		}
-
-		destMac := util.GetMacAddr(frame.Buff)
-		fmt.Println(fmt.Sprintf("Read %d bytes from device %s, will write to dest %s", n, tun.Name, destMac))
+		tun := ctx.Value("tun").(*tuntap.Tuntap)
+		destMac := ctx.Value("mac").(string)
+		var err error
+		//destMac := util.GetMacAddr(frame.Buff)
+		//fmt.Println(fmt.Sprintf("Read %d bytes from device %s, will write to dest %s", n, tun.Name, destMac))
 		//broad frame, go through supernode
 		fp := forward.NewPacket(networkId)
 		fp.SrcMac, err = addr.GetMacAddrByDev(tun.Name)
@@ -52,10 +43,10 @@ func Handle() handler.HandlerFunc {
 		idx := 0
 		newPacket := make([]byte, 2048)
 		idx = packet.EncodeBytes(newPacket, bs, idx)
-		idx = packet.EncodeBytes(newPacket, frame.Buff[:], idx)
+		idx = packet.EncodeBytes(newPacket, frame.Buff[:frame.Size], idx)
 
 		frame.Packet = newPacket[:]
-		
+
 		return nil
 
 	}

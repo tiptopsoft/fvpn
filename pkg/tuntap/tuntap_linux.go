@@ -17,7 +17,7 @@ var (
 )
 
 func New(mode Mode, ip, mask, networkId string) error {
-	name := fmt.Sprintf("%s%s", NamePrefix, networkId)
+	name := fmt.Sprintf("%s%s", NamePrefix, networkId[:10])
 	var f = "/dev/net/tun"
 
 	fd, err := unix.Open(f, os.O_RDWR, 0)
@@ -74,7 +74,7 @@ func Delete(networkId string) error {
 }
 
 func GetTuntap(networkId string) (*Tuntap, error) {
-	name := fmt.Sprintf("%s%s", NamePrefix, networkId)
+	name := fmt.Sprintf("%s%s", NamePrefix, networkId[:10])
 	var f = "/dev/net/tun"
 
 	fd, err := unix.Open(f, os.O_RDWR, 0)
@@ -91,12 +91,12 @@ func GetTuntap(networkId string) (*Tuntap, error) {
 	_, _, errno = unix.Syscall(syscall.SYS_IOCTL, uintptr(fd), uintptr(TUNSETIFF), uintptr(unsafe.Pointer(&ifr)))
 
 	if errno < 0 {
-		return nil, errors.New("Get tuntap failed.")
+		return nil, errors.New("get tun failed")
 	}
 
 	mac, _ := addr.GetMacAddrByDev(name)
 	return &Tuntap{
-		Name:      name,
+		Name:      name, // size is 16
 		MacAddr:   mac,
 		file:      os.NewFile(uintptr(fd), name),
 		Fd:        fd,
