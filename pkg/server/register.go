@@ -2,31 +2,12 @@ package server
 
 import (
 	"github.com/topcloudz/fvpn/pkg/addr"
-	"github.com/topcloudz/fvpn/pkg/packet"
-	"github.com/topcloudz/fvpn/pkg/packet/register"
 	"github.com/topcloudz/fvpn/pkg/packet/register/ack"
 	"golang.org/x/sys/unix"
 	"net"
 )
 
-func (r *RegStar) processRegister(remoteAddr unix.Sockaddr, data []byte, cp *packet.Header) {
-	registerPacket, err := r.packet.Decode(data)
-
-	// build an ack
-	f, err := r.registerAck(remoteAddr, registerPacket.(register.RegPacket).SrcMac)
-	logger.Infof("build a server ack: %v", f)
-	if err != nil {
-		logger.Errorf("build resp failed. err: %v", err)
-	}
-	err = r.socket.WriteToUdp(f, remoteAddr)
-	if err != nil {
-		logger.Errorf("server write failed. err: %v", err)
-	}
-	logger.Infof("write a server ack to remote: %v, data: %v", remoteAddr, f)
-
-}
-
-func (r *RegStar) registerAck(peerAddr unix.Sockaddr, srcMac net.HardwareAddr) ([]byte, error) {
+func registerAck(peerAddr unix.Sockaddr, srcMac net.HardwareAddr) ([]byte, error) {
 	endpoint, err := addr.New(srcMac)
 	if err != nil {
 		return nil, err

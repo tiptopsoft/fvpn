@@ -16,7 +16,7 @@ func GetAddress(address string, port int) (unix.SockaddrInet4, error) {
 	}, err
 }
 
-// GetMacAddr return dest mac, dest ip, if data provide is null, error returned.
+// GetMacAddr return dest mac, dest ip, if data provide is null, error returen
 func GetMacAddr(buff []byte) (string, net.IP, error) {
 	if len(buff) == 0 {
 		return "", nil, errors.New("no data exists")

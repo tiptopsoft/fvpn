@@ -47,10 +47,10 @@ func Handle() handler.HandlerFunc {
 			if err != nil {
 				//return err
 			}
-			infos := peerPacketAck.PeerInfos
+			infos := peerPacketAck.NodeInfos
 			logger.Infof("got server peers: (%v)", infos)
 			for _, info := range infos {
-				address, err := util.GetAddress(info.Host.String(), int(info.Port))
+				address, err := util.GetAddress(info.IP.String(), int(info.Port))
 				if err != nil {
 					logger.Errorf("resolve addr failed, err: %v", err)
 				}
@@ -62,13 +62,13 @@ func Handle() handler.HandlerFunc {
 				nodeInfo := &cache.NodeInfo{
 					Socket:  sock,
 					MacAddr: info.Mac,
-					IP:      info.Host,
+					IP:      info.IP,
 					Port:    info.Port,
 				}
 				c := ctx.Value("cache").(*cache.Cache)
 				tun := ctx.Value("tun").(*tuntap.Tuntap)
 				//cache.Nodes[info.Mac.String()] = nodeInfo
-				c.SetCache(tun.NetworkId, info.Host.String(), nodeInfo)
+				c.SetCache(tun.NetworkId, info.IP.String(), nodeInfo)
 			}
 			break
 		case option.MsgTypePacket:

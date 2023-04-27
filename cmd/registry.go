@@ -36,7 +36,7 @@ func runSuper(opts *RegStarOptions) error {
 	if err != nil {
 		return err
 	}
-	s := server.RegStar{
+	s := server.RegServer{
 		ServerConfig: config.ServerCfg,
 	}
 

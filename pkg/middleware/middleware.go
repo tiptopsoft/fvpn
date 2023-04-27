@@ -1,6 +1,8 @@
 package middleware
 
-import "github.com/topcloudz/fvpn/pkg/handler"
+import (
+	"github.com/topcloudz/fvpn/pkg/handler"
+)
 
 type Middleware func(handler.Handler) handler.Handler
 

@@ -4,11 +4,10 @@ import (
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/handler/device"
 	"github.com/topcloudz/fvpn/pkg/handler/udp"
-	"github.com/topcloudz/fvpn/pkg/middleware/encrypt"
+	"github.com/topcloudz/fvpn/pkg/middleware/infra"
 	"sync"
 
 	"github.com/topcloudz/fvpn/pkg/middleware"
-	"github.com/topcloudz/fvpn/pkg/middleware/auth"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/socket"
 )
@@ -50,18 +49,5 @@ func (n *Node) GetTun() *handler.Tun {
 
 // initMiddleware TODO add impl
 func (n *Node) initMiddleware() []middleware.Middleware {
-	var result []middleware.Middleware
-	if n.OpenAuth {
-		result = append(result, auth.Middleware())
-	}
-
-	if n.OpenEncrypt {
-		result = append(result, encrypt.Middleware())
-	}
-
-	if n.OpenCompress {
-		//TODO
-	}
-
-	return result
+	return infra.Middlewares(n.OpenAuth, n.OpenEncrypt)
 }

@@ -1,7 +1,9 @@
 package server
 
 import (
-	"fmt"
+	"github.com/topcloudz/fvpn/pkg/handler"
+	"github.com/topcloudz/fvpn/pkg/middleware"
+	"github.com/topcloudz/fvpn/pkg/middleware/infra"
 	"github.com/topcloudz/fvpn/pkg/nativehttp"
 	"net"
 	"sync"
@@ -10,7 +12,6 @@ import (
 	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
-	"github.com/topcloudz/fvpn/pkg/packet/register"
 	"github.com/topcloudz/fvpn/pkg/socket"
 	"golang.org/x/sys/unix"
 )
@@ -20,19 +21,26 @@ var (
 	logger = log.Log()
 )
 
-// RegStar use as server
-type RegStar struct {
+// RegServer use as server
+type RegServer struct {
 	*option.ServerConfig
-	socket socket.Interface
-	cache  *cache.Cache
-	packet packet.Interface
-	ws     sync.WaitGroup
+	socket   socket.Interface
+	cache    *cache.Cache
+	packet   packet.Interface
+	ws       sync.WaitGroup
+	h        handler.Handler
+	Inbound  chan *packet.Frame //used from udp
+	Outbound chan *packet.Frame //used for tun
 }
 
-func (r *RegStar) Start(address string) error {
+func (r *RegServer) Start(address string) error {
 	go func() {
 		r.start(address)
 	}()
+
+	//启动udp处理goroutine
+	go r.ReadFromUdp()
+	go r.WriteToUdp()
 
 	go func() {
 		hs := nativehttp.New(r.cache)
@@ -45,7 +53,7 @@ func (r *RegStar) Start(address string) error {
 }
 
 // Peer register cache for net, and for user create client
-func (r *RegStar) start(address string) error {
+func (r *RegServer) start(address string) error {
 	r.socket = socket.NewSocket()
 	once.Do(func() {
 		r.cache = cache.New()
@@ -73,35 +81,8 @@ func (r *RegStar) start(address string) error {
 	return nil
 }
 
-func (r *RegStar) Execute(socket socket.Interface) error {
-	data := make([]byte, 2048)
-	size, addr, err := socket.ReadFromUdp(data)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	pInterface, err := packet.NewPacketWithoutType().Decode(data)
-	p := pInterface.(packet.Header)
-
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	switch p.Flags {
-
-	case option.MsgTypeRegisterSuper:
-		r.packet = register.NewPacket("")
-		r.processRegister(addr, data[:size], nil)
-		break
-	case option.MsgTypeQueryPeer:
-		r.processFindPeer(addr)
-		break
-	case option.MsgTypePacket:
-		r.forward(data[:size], &p)
-		break
-	}
-
-	return nil
+func (r *RegServer) initHandler() {
+	r.h = middleware.WithMiddlewares(r.serverUdpHandler(), infra.Middlewares()...)
 }
 
 func ResolveAddr(address string) (unix.Sockaddr, error) {
