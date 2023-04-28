@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/topcloudz/fvpn/pkg/addr"
 	httputil "github.com/topcloudz/fvpn/pkg/nativehttp"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"io"
@@ -19,16 +20,22 @@ func (n *Node) RunJoinNetwork(netId string) error {
 	logger.Infof("start to join %s", netId)
 	//user nativehttp to get NetworkId config
 	type body struct {
-		UserId    string `json:"userId"`
-		NetworkId string `json:"networkId"`
+		SrcMac string `json:"srcMac"`
 	}
 
-	request := body{UserId: "1"}
+	mac, err := addr.GetHostMac()
+	if err != nil {
+		return errors.New("can not found default host mac")
+	}
+
+	request := body{
+		SrcMac: mac.String(),
+	}
 	buff, err := json.Marshal(request)
 	if err != nil {
 		return errors.New("invalid body")
 	}
-	destUrl := fmt.Sprintf("%s/api/v1/users/user/%s/network/%s/join", userUrl, request.UserId, netId)
+	destUrl := fmt.Sprintf("%s/api/v1/users/user/%s/network/%s/join", userUrl, "1", netId)
 	resp, err := http.Post(destUrl, "application/json", bytes.NewReader(buff))
 	respBuff, err := io.ReadAll(resp.Body)
 	var networkResp struct {

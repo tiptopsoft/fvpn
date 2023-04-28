@@ -8,6 +8,7 @@ import (
 	"go.uber.org/atomic"
 	"math/rand"
 	"net"
+	"runtime"
 	"sync"
 )
 
@@ -99,6 +100,17 @@ func GetMacAddrByDev(name string) (net.HardwareAddr, error) {
 		return nil, err
 	}
 	return fa.HardwareAddr, nil
+}
+
+func GetHostMac() (net.HardwareAddr, error) {
+	systemType := runtime.GOOS
+	switch systemType {
+	case "linux":
+		face, err := net.InterfaceByName("eth0")
+		return face.HardwareAddr, err
+	}
+
+	return nil, nil
 }
 
 // RandMac rand gen a mac
