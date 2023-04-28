@@ -2,18 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/topcloudz/fvpn/pkg/tuntap"
+	"net"
 )
 
 func main() {
 
-	//tuntap.GetTuntap("c04d6b84fd4fc978")
+	b := []byte{192, 0, 168, 1}
 
-	ifr := tuntap.Ifreq{}
-
-	net := "fvpnc04d6b84fd4fc978"
-
-	copy(ifr.Name[:], "fvpnc04d6b84fd4fc978")
-	fmt.Println(string(ifr.Name[:]))
-	fmt.Println(net[0:16])
+	ip := net.IPv4(b[0], b[1], b[2], b[3])
+	fmt.Println(ip.String())
 }

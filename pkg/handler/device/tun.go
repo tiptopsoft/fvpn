@@ -37,7 +37,7 @@ func Handle() handler.HandlerFunc {
 		//	logger.Errorf("encode forward failed, err: %v", err)
 		//}
 
-		header := packet.NewHeader(option.MsgTypePacket, networkId)
+		header, _ := packet.NewHeader(option.MsgTypePacket, networkId)
 		headerBuff, err := header.Encode()
 		if err != nil {
 			return err

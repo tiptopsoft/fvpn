@@ -6,7 +6,6 @@ import (
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
-	"github.com/topcloudz/fvpn/pkg/packet/register"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"golang.org/x/sys/unix"
 )
@@ -20,7 +19,7 @@ func (r *RegServer) ReadFromUdp() {
 		frame.Packet = frame.Buff[:n]
 		logger.Debugf("Read from udp %d byte", n)
 		ctx = context.WithValue(ctx, "size", n)
-		ctx = context.WithValue(ctx, "addr", addr)
+		ctx = context.WithValue(ctx, "srcAddr", addr)
 		if err != nil || n < 0 {
 			logger.Warnf("no data exists")
 			continue
@@ -42,12 +41,12 @@ func (r *RegServer) WriteToUdp() {
 			r.socket.WriteToUdp(pkt.Packet[:], pkt.RemoteAddr)
 		} else {
 			//if util.IsBroadCast(fp.DstMac.String()) {
-			_, destIP, err := util.GetMacAddr(pkt.Packet)
+			header, err := util.GetMacAddr(pkt.Packet[13:]) //whe is 13, because we add our header in, header length is 12
 			if err != nil {
-				logger.Debugf("dest ip :%s not on line", destIP)
+				logger.Debugf("dest ip :%s not on line", header.DestinationIP.String())
 			}
 
-			nodeInfo, err := r.cache.GetNodeInfo(pkt.NetworkId, destIP.String())
+			nodeInfo, err := r.cache.GetNodeInfo(pkt.NetworkId, header.DestinationAddr.String())
 			if nodeInfo == nil || err != nil {
 				logger.Debugf("not found destitation")
 			} else {
@@ -59,11 +58,13 @@ func (r *RegServer) WriteToUdp() {
 
 func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 	return func(ctx context.Context, frame *packet.Frame) error {
-		addr := ctx.Value("addr").(unix.Sockaddr)
+		header, nil := getFrameHeader(ctx)
+		srcAddr := ctx.Value("srcAddr").(unix.Sockaddr)
+		networkId := ctx.Value("networkId").(string)
 		size := ctx.Value("size").(int)
-		data := frame.Packet[:size]
+		data := frame.Packet[:]
 		pInterface, err := packet.NewPacketWithoutType().Decode(data)
-		p := pInterface.(packet.Header)
+		p := pInterface.(*packet.Header)
 
 		if err != nil {
 			fmt.Println(err)
@@ -72,17 +73,12 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 		switch p.Flags {
 
 		case option.MsgTypeRegisterSuper:
-			//packet = register.NewPacket("")
-			//processRegister(addr, data[:size], nil)
-			p := register.NewPacket("")
-			registerPacket, err := p.Decode(data[:size])
-
-			// build an ack
-			f, err := registerAck(addr, registerPacket.(register.RegPacket).SrcMac)
-			logger.Infof("build a server ack: %v", f)
+			err = r.registerAck(srcAddr, header.DestinationAddr, header.SourceIP, networkId)
+			header, err := packet.NewHeader(option.MsgTypeRegisterAck, networkId)
 			if err != nil {
 				logger.Errorf("build resp failed. err: %v", err)
 			}
+			f, _ := header.Encode()
 			frame.Packet = f
 			break
 		case option.MsgTypeQueryPeer:
@@ -100,10 +96,13 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			break
 		case option.MsgTypePacket:
 			logger.Infof("server got forward packet size:%d, data: %v", size, data)
-			frame.NetworkId = p.NetworkId
 			break
 		}
 
 		return nil
 	}
+}
+
+func getFrameHeader(ctx context.Context) (*util.FrameHeader, error) {
+	return ctx.Value("header").(*util.FrameHeader), nil
 }

@@ -52,12 +52,12 @@ func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
 		frame.Packet = frame.Buff[:n]
 		frame.Size = n
 		logger.Debugf("origin packet size: %d, data: %v", n, frame.Packet)
-		mac, _, err := util.GetMacAddr(frame.Packet)
+		header, err := util.GetMacAddr(frame.Packet)
 		if err != nil {
 			logger.Debugf("no packet...")
 			continue
 		}
-		ctx = context.WithValue(ctx, "mac", mac)
+		ctx = context.WithValue(ctx, "header", header)
 		err = t.tunHandler.Handle(ctx, frame)
 		if err != nil {
 			logger.Errorf("tun handle packet failed: %v", err)
@@ -71,20 +71,20 @@ func (t *Tun) WriteToUdp() {
 	for {
 		pkt := <-t.Outbound
 		//这里先尝试P2p, 没有P2P使用relay server
-		destMac, destIP, err := util.GetMacAddr(pkt.Packet[26:]) // why 26? because header is 12 and tap header is 14
-		logger.Infof("packet will be write to : mac: %s, ip: %s, content: %v", destMac, destIP.String(), pkt.Packet)
+		header, err := util.GetMacAddr(pkt.Packet[:]) // why 26? because header is 12 and tap header is 14
+		logger.Infof("packet will be write to : mac: %s, ip: %s, content: %v", header.DestinationAddr, header.DestinationIP.String(), pkt.Packet)
 		if err != nil {
 			continue
 		}
 
-		p2pSocket := t.GetSocket(destMac)
+		p2pSocket := t.GetSocket(header.DestinationAddr.String())
 		if p2pSocket == nil {
 			t.socket.Write(pkt.Packet)
-			nodeInfo, err := t.cache.GetNodeInfo(t.NetworkId, destIP.String())
+			nodeInfo, err := t.cache.GetNodeInfo(t.NetworkId, header.DestinationIP.String())
 			if err != nil {
 				logger.Debugf("got nodeInfo failed")
 			} else {
-				t.SaveSocket(destMac, nodeInfo.Socket)
+				t.SaveSocket(header.DestinationAddr.String(), nodeInfo.Socket)
 				//启动一个udp goroutine用于处理P2P的轮询
 				go func() {
 					newTun := NewTun(t.tunHandler, t.udpHandler, nodeInfo.Socket)

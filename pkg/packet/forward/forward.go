@@ -10,7 +10,7 @@ import (
 
 // ForwardPacket is through packet used in server
 type ForwardPacket struct {
-	header packet.Header
+	header *packet.Header
 	body
 }
 
@@ -20,7 +20,7 @@ type body struct {
 }
 
 func NewPacket(networkId string) ForwardPacket {
-	header := packet.NewHeader(option.MsgTypePacket, networkId)
+	header, _ := packet.NewHeader(option.MsgTypePacket, networkId)
 	return ForwardPacket{
 		header: header,
 	}
@@ -46,7 +46,7 @@ func (fp ForwardPacket) Decode(udpBytes []byte) (packet.Interface, error) {
 		return ForwardPacket{}, errors.New("decode header packet failed")
 	}
 	idx := 0
-	res.header = header.(packet.Header)
+	res.header = header.(*packet.Header)
 	idx += int(unsafe.Sizeof(packet.Header{}))
 	var srcMac = make([]byte, 6)
 	idx = packet.DecodeBytes(&srcMac, udpBytes, idx)

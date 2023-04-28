@@ -26,7 +26,7 @@ func Handle() handler.HandlerFunc {
 		buff := frame.Buff[:]
 
 		cpInterface, err := packet.NewPacketWithoutType().Decode(buff)
-		header := cpInterface.(packet.Header)
+		header := cpInterface.(*packet.Header)
 		if err != nil {
 			logger.Errorf("decode err: %v", err)
 		}
@@ -83,7 +83,7 @@ func Handle() handler.HandlerFunc {
 			idx := unsafe.Sizeof(forwardPacket)
 			//networkId := header.NetworkId
 			frame.Packet = buff[idx:]
-			frame.NetworkId = header.NetworkId
+			frame.NetworkId = string(header.NetworkId[:])
 
 			break
 		}

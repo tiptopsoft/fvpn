@@ -17,13 +17,13 @@ type EdgeInfo struct {
 
 // EdgePacketAck ack for size of EdgeInfo
 type EdgePacketAck struct {
-	header    packet.Header
+	header    *packet.Header
 	Size      uint8
 	NodeInfos []EdgeInfo
 }
 
 func NewPacket() EdgePacketAck {
-	cmPacket := packet.NewHeader(option.MsgTypeQueryPeer, "")
+	cmPacket, _ := packet.NewHeader(option.MsgTypeQueryPeer, "")
 	return EdgePacketAck{
 		header: cmPacket,
 	}
@@ -52,7 +52,7 @@ func (ack EdgePacketAck) Decode(udpBytes []byte) (packet.Interface, error) {
 	idx := 0
 	cp, err := packet.NewPacketWithoutType().Decode(udpBytes)
 	idx += int(unsafe.Sizeof(packet.Header{}))
-	ack.header = cp.(packet.Header)
+	ack.header = cp.(*packet.Header)
 
 	idx = packet.DecodeUint8(&ack.Size, udpBytes, idx)
 

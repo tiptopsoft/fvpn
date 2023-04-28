@@ -1,12 +1,25 @@
 package util
 
 import (
+	"encoding/binary"
 	"errors"
-	"fmt"
+	"github.com/topcloudz/fvpn/pkg/log"
 	"golang.org/x/sys/unix"
 	"net"
 	"net/netip"
 )
+
+var (
+	logger = log.Log()
+)
+
+type FrameHeader struct {
+	DestinationAddr net.HardwareAddr
+	SourceAddr      net.HardwareAddr
+	SourceIP        net.IP
+	DestinationIP   net.IP
+	EtherType       uint16
+}
 
 func GetAddress(address string, port int) (unix.SockaddrInet4, error) {
 	ad, err := netip.ParseAddr(address)
@@ -17,9 +30,37 @@ func GetAddress(address string, port int) (unix.SockaddrInet4, error) {
 }
 
 // GetMacAddr return dest mac, dest ip, if data provide is null, error return
-func GetMacAddr(buff []byte) (string, net.IP, error) {
+func GetMacAddr(buff []byte) (*FrameHeader, error) {
 	if len(buff) == 0 {
-		return "", nil, errors.New("no data exists")
+		return nil, errors.New("no data exists")
 	}
-	return fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", buff[6], buff[7], buff[8], buff[9], buff[10], buff[11]), net.IPv4(buff[30], buff[31], buff[32], buff[33]), nil
+	header := parseHeader(buff)
+
+	//是ARP
+	if header.EtherType == 0x0806 {
+		logger.Debugf("this is an arp frame")
+		header.SourceIP = net.IPv4(buff[34], buff[35], buff[36], buff[37])
+		header.DestinationIP = net.IPv4(buff[38], buff[39], buff[40], buff[41])
+	}
+
+	//IP
+	if header.EtherType == 0x0800 {
+		logger.Debugf("this is an destIP frame")
+		header.SourceIP = net.IPv4(buff[26], buff[27], buff[28], buff[29])
+		header.DestinationIP = net.IPv4(buff[30], buff[31], buff[32], buff[33])
+	}
+
+	logger.Debugf("recevice header is: %v", header)
+	return header, nil
+}
+
+func parseHeader(buf []byte) *FrameHeader {
+	header := new(FrameHeader)
+	var hd net.HardwareAddr
+	hd = buf[0:6]
+	header.DestinationAddr = hd
+	hd = buf[6:12]
+	header.SourceAddr = hd
+	header.EtherType = binary.BigEndian.Uint16(buf[12:14])
+	return header
 }

@@ -11,19 +11,19 @@ import (
 
 // RegPacket server a client to server
 type RegPacket struct {
-	header packet.Header
+	header *packet.Header
 	SrcMac net.HardwareAddr
 }
 
 func NewPacket(networkId string) RegPacket {
-	cmPacket := packet.NewHeader(option.MsgTypeRegisterSuper, networkId)
+	cmPacket, _ := packet.NewHeader(option.MsgTypeRegisterSuper, networkId)
 	return RegPacket{
 		header: cmPacket,
 	}
 }
 
 func NewUnregisterPacket(networkId string) RegPacket {
-	cmPacket := packet.NewHeader(option.MsgTypeUnregisterSuper, networkId)
+	cmPacket, _ := packet.NewHeader(option.MsgTypeUnregisterSuper, networkId)
 	return RegPacket{
 		header: cmPacket,
 	}

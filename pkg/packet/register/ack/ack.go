@@ -8,14 +8,14 @@ import (
 )
 
 type RegPacketAck struct {
-	header packet.Header    //8 byte
+	header *packet.Header   //8 byte
 	RegMac net.HardwareAddr //6 byte
 	AutoIP net.IP           //4byte
 	Mask   net.IP
 }
 
 func NewPacket() RegPacketAck {
-	cmPacket := packet.NewHeader(option.MsgTypeRegisterAck, "")
+	cmPacket, _ := packet.NewHeader(option.MsgTypeRegisterAck, "")
 	return RegPacketAck{
 		header: cmPacket,
 	}
@@ -43,7 +43,7 @@ func (r RegPacketAck) Decode(udpBytes []byte) (packet.Interface, error) {
 		return RegPacketAck{}, err
 	}
 	var idx = 0
-	res.header = p.(packet.Header)
+	res.header = p.(*packet.Header)
 	idx += int(size)
 	mac := make([]byte, packet.MAC_SIZE)
 	idx = packet.DecodeBytes(&mac, udpBytes, idx)
