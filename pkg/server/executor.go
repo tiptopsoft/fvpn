@@ -41,7 +41,7 @@ func (r *RegServer) WriteToUdp() {
 			r.socket.WriteToUdp(pkt.Packet[:], pkt.RemoteAddr)
 		} else {
 			//if util.IsBroadCast(fp.DstMac.String()) {
-			header, err := util.GetMacAddr(pkt.Packet[13:]) //whe is 13, because we add our header in, header length is 12
+			header, err := util.GetMacAddr(pkt.Packet[12:]) //whe is 12, because we add our header in, header length is 12
 			if err != nil {
 				logger.Debugf("dest ip :%s not on line", header.DestinationIP.String())
 			}

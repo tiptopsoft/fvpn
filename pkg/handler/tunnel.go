@@ -71,7 +71,7 @@ func (t *Tun) WriteToUdp() {
 	for {
 		pkt := <-t.Outbound
 		//这里先尝试P2p, 没有P2P使用relay server
-		header, err := util.GetMacAddr(pkt.Packet[:]) // why 26? because header is 12 and tap header is 14
+		header, err := util.GetMacAddr(pkt.Packet[12:]) //why 13? because header length is 12.
 		logger.Infof("packet will be write to : mac: %s, ip: %s, content: %v", header.DestinationAddr, header.DestinationIP.String(), pkt.Packet)
 		if err != nil {
 			continue
