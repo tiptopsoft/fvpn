@@ -39,7 +39,7 @@ func Handle() handler.HandlerFunc {
 			if err != nil {
 				//return err
 			}
-			logger.Infof("got server server ack: (%v)", regAck.AutoIP)
+			logger.Infof("register success, got server server ack: (%v)", regAck.AutoIP)
 			break
 		case option.MsgTypeQueryPeer:
 			peerPacketAckIface, err := peerack.NewPacket().Decode(buff)

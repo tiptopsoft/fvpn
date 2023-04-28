@@ -20,7 +20,8 @@ func (n *Node) RunJoinNetwork(netId string) error {
 	logger.Infof("start to join %s", netId)
 	//user nativehttp to get NetworkId config
 	type body struct {
-		SrcMac string `json:"srcMac"`
+		SrcMac    string `json:"srcMac"`
+		NetworkId string `json:"networkId"`
 	}
 
 	mac, err := addr.GetHostMac()

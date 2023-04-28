@@ -31,7 +31,6 @@ func (n *Node) Start() error {
 		if err := n.conn(); err != nil {
 			logger.Errorf("failed to connect to server: %v", err)
 		}
-
 	})
 	tun := n.GetTun() //这里启动的是relaySocket，中继服务器
 	go tun.ReadFromUdp()

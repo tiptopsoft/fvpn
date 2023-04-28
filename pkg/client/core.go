@@ -5,6 +5,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/addr"
 	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/option"
+	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/peer"
 	"github.com/topcloudz/fvpn/pkg/packet/register"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
@@ -57,20 +58,21 @@ func (n *Node) queryNodeInfos() error {
 	return nil
 }
 
-// register register a edgestar to center.
+// register register a node to center.
 func (n *Node) register(tun *tuntap.Tuntap) error {
 	var err error
-	rp := register.NewPacket(tun.NetworkId)
-	rp.SrcMac, _ = addr.GetMacAddrByDev(tun.Name)
-	logger.Infof("register src mac: %v to server", rp.SrcMac.String())
-	data, err := rp.Encode()
+	header, err := packet.NewHeader(option.MsgTypeRegisterSuper, tun.NetworkId)
+	if err != nil {
+		return err
+	}
+	data, err := header.Encode()
 	logger.Infof("sending server data: %v", data)
 	if err != nil {
 		return err
 	}
 	switch n.Protocol {
 	case option.UDP:
-		logger.Infof("n start to register to server: %v", rp)
+		logger.Infof("node start to register to server: %v", data)
 		if _, err := n.relaySocket.Write(data); err != nil {
 			return err
 		}

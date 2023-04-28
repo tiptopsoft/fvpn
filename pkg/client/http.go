@@ -54,6 +54,12 @@ func (n *Node) runHttpServer() error {
 			//启动一个goroutine, 处理这个network
 			tun := n.GetTun()
 			tun.NetworkId = req.NetworkId
+			// register this networkId to server
+			tap, err := tuntap.GetTuntap(tun.NetworkId)
+			err = n.register(tap)
+			if err != nil {
+				return
+			}
 			go tun.ReadFromTun(context.Background(), req.NetworkId)
 			go tun.WriteToUdp()
 
