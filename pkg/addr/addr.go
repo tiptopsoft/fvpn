@@ -84,7 +84,7 @@ func string2Long(ip string) uint32 {
 	return long
 }
 
-// 数字到IP
+// GenerateIP 数字到IP
 func GenerateIP(ipInt uint32) string {
 	// need to do two bit shifting and “0xff” masking
 	b0 := (ipInt >> 24) & 0xff
@@ -94,12 +94,24 @@ func GenerateIP(ipInt uint32) string {
 	return fmt.Sprintf("%d.%d.%d.%d", b0, b1, b2, b3)
 }
 
-func GetMacAddrByDev(name string) (net.HardwareAddr, error) {
+// GetMacAddrAndIPByDev get tun mac, ip for register
+func GetMacAddrAndIPByDev(name string) (net.HardwareAddr, net.IP, error) {
 	fa, err := net.InterfaceByName(name[:14])
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return fa.HardwareAddr, nil
+
+	addrs, err := fa.Addrs()
+	for _, address := range addrs {
+		// 检查ip地址判断是否回环地址
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return fa.HardwareAddr, ipnet.IP, nil
+			}
+		}
+	}
+
+	return fa.HardwareAddr, nil, nil
 }
 
 func GetHostMac() (net.HardwareAddr, error) {

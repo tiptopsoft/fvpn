@@ -13,6 +13,7 @@ type Tuntap struct {
 	NetworkId string
 	Mode      Mode
 	MacAddr   net.HardwareAddr
+	IP        net.IP
 }
 
 type Mode int

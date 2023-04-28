@@ -94,12 +94,13 @@ func GetTuntap(networkId string) (*Tuntap, error) {
 		return nil, errors.New("get tun failed")
 	}
 
-	mac, _ := addr.GetMacAddrByDev(name)
+	mac, ip, _ := addr.GetMacAddrAndIPByDev(name)
 	return &Tuntap{
 		Name:      name, // size is 16
 		MacAddr:   mac,
 		file:      os.NewFile(uintptr(fd), name),
 		Fd:        fd,
 		NetworkId: networkId,
+		IP:        ip,
 	}, nil
 }

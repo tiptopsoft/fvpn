@@ -51,11 +51,7 @@ func (cp *Header) Encode() ([]byte, error) {
 	idx = EncodeUint8(b, cp.Version, idx)
 	idx = EncodeUint8(b, cp.TTL, idx)
 	idx = EncodeUint16(b, cp.Flags, idx)
-	//buff, err := hex.DecodeString(cp.NetworkId)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//EncodeBytes(b, buff, idx)
+	idx = EncodeBytes(b, cp.NetworkId[:], idx)
 	return b, nil
 }
 
@@ -64,6 +60,8 @@ func (cp *Header) Decode(udpByte []byte) (Interface, error) {
 	idx = DecodeUint8(&cp.Version, udpByte, idx)
 	idx = DecodeUint8(&cp.TTL, udpByte, idx)
 	idx = DecodeUint16(&cp.Flags, udpByte, idx)
-	//idx = DecodeNetworkId(cp.NetworkId, udpByte, idx)
+	b := make([]byte, 8)
+	idx = DecodeBytes(&b, udpByte, idx)
+	copy(cp.NetworkId[:], b)
 	return cp, nil
 }
