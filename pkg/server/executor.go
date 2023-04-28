@@ -18,6 +18,13 @@ func (r *RegServer) ReadFromUdp() {
 		n, addr, err := r.socket.ReadFromUdp(frame.Buff[:])
 		frame.Packet = frame.Buff[:n]
 		logger.Debugf("Read from udp %d byte", n)
+		header, err := util.GetFrameHeader(frame.Packet[12:])
+		packetHeader := util.GetPacketHeader(frame.Packet[:12])
+		if err != nil {
+			logger.Errorf("get invalid header..:%v", err)
+		}
+		ctx = context.WithValue(ctx, "header", header)
+		ctx = context.WithValue(ctx, "networkId", string(packetHeader.NetworkId[:]))
 		ctx = context.WithValue(ctx, "size", n)
 		ctx = context.WithValue(ctx, "srcAddr", addr)
 		if err != nil || n < 0 {
@@ -41,7 +48,7 @@ func (r *RegServer) WriteToUdp() {
 			r.socket.WriteToUdp(pkt.Packet[:], pkt.RemoteAddr)
 		} else {
 			//if util.IsBroadCast(fp.DstMac.String()) {
-			header, err := util.GetMacAddr(pkt.Packet[12:]) //whe is 12, because we add our header in, header length is 12
+			header, err := util.GetFrameHeader(pkt.Packet[12:]) //whe is 12, because we add our header in, header length is 12
 			if err != nil {
 				logger.Debugf("dest ip :%s not on line", header.DestinationIP.String())
 			}

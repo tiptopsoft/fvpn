@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"github.com/topcloudz/fvpn/pkg/log"
+	"github.com/topcloudz/fvpn/pkg/packet"
 	"golang.org/x/sys/unix"
 	"net"
 	"net/netip"
@@ -29,8 +30,8 @@ func GetAddress(address string, port int) (unix.SockaddrInet4, error) {
 	}, err
 }
 
-// GetMacAddr return dest mac, dest ip, if data provide is null, error return
-func GetMacAddr(buff []byte) (*FrameHeader, error) {
+// GetFrameHeader return dest mac, dest ip, if data provide is null, error return
+func GetFrameHeader(buff []byte) (*FrameHeader, error) {
 	if len(buff) == 0 {
 		return nil, errors.New("no data exists")
 	}
@@ -52,6 +53,12 @@ func GetMacAddr(buff []byte) (*FrameHeader, error) {
 
 	logger.Debugf("recevice header is: %v", header)
 	return header, nil
+}
+
+func GetPacketHeader(buff []byte) *packet.Header {
+	p := packet.NewPacketWithoutType()
+	p.Decode(buff[:12])
+	return p
 }
 
 func parseHeader(buf []byte) *FrameHeader {

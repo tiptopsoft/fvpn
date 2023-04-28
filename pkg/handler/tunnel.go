@@ -52,7 +52,7 @@ func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
 		frame.Packet = frame.Buff[:n]
 		frame.Size = n
 		logger.Debugf("origin packet size: %d, data: %v", n, frame.Packet)
-		header, err := util.GetMacAddr(frame.Packet)
+		header, err := util.GetFrameHeader(frame.Packet)
 		if err != nil {
 			logger.Debugf("no packet...")
 			continue
@@ -71,7 +71,7 @@ func (t *Tun) WriteToUdp() {
 	for {
 		pkt := <-t.Outbound
 		//这里先尝试P2p, 没有P2P使用relay server
-		header, err := util.GetMacAddr(pkt.Packet[12:]) //why 13? because header length is 12.
+		header, err := util.GetFrameHeader(pkt.Packet[12:]) //why 13? because header length is 12.
 		logger.Infof("packet will be write to : mac: %s, ip: %s, content: %v", header.DestinationAddr, header.DestinationIP.String(), pkt.Packet)
 		if err != nil {
 			continue
