@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"github.com/topcloudz/fvpn/pkg/log"
-	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"golang.org/x/sys/unix"
 	"net"
 	"net/netip"
@@ -55,10 +55,12 @@ func GetFrameHeader(buff []byte) (*FrameHeader, error) {
 	return header, nil
 }
 
-func GetPacketHeader(buff []byte) *packet.Header {
-	p := packet.NewPacketWithoutType()
-	p.Decode(buff[:12])
-	return p
+func GetPacketHeader(buff []byte) (header.Header, error) {
+	h, err := header.Decode(buff[:12])
+	if err != nil {
+		return header.Header{}, err
+	}
+	return h, nil
 }
 
 func parseHeader(buf []byte) *FrameHeader {

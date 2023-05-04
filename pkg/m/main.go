@@ -1,24 +1,28 @@
 package main
 
 import (
-	"encoding/hex"
 	"fmt"
-	option2 "github.com/topcloudz/fvpn/pkg/option"
-	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet/register"
+	"net"
 )
 
 func main() {
-	b, _ := packet.NewHeader(option2.MsgTypeRegister, "c04d6b84fd4fc978")
-	buff, _ := b.Encode()
-	fmt.Println(buff)
+	mac, err := net.ParseMAC("00:00:00:00:fe:80:00:00:00:00:00:00:02:00:5e:10:00:00:00:01")
+	if err != nil {
+		panic(err)
+	}
 
-	//h, _ := b.Decode(buff)
-	//r := h.(*packet.Header)
-	//fmt.Printf("")
+	ip := net.IP{192, 168, 0, 1}
 
-	bs, _ := hex.DecodeString("c04d6b84fd4fc978")
+	reg := register.NewPacket("c04d6b84fd4fc978", mac, ip)
+	bs, err := register.Encode(reg)
+	if err != nil {
+		panic(err)
+	}
+
 	fmt.Println(bs)
+	fmt.Println(len(bs))
 
-	fmt.Println(hex.EncodeToString(bs))
-
+	r, _ := register.Decode(bs)
+	fmt.Println(r)
 }

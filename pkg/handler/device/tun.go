@@ -6,6 +6,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet/header"
 )
 
 var (
@@ -37,8 +38,8 @@ func Handle() handler.HandlerFunc {
 		//	logger.Errorf("encode forward failed, err: %v", err)
 		//}
 
-		header, _ := packet.NewHeader(option.MsgTypePacket, networkId)
-		headerBuff, err := header.Encode()
+		h, _ := header.NewHeader(option.MsgTypePacket, networkId)
+		headerBuff, err := header.Encode(h)
 		if err != nil {
 			return err
 		}

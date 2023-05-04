@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet/header"
 )
 
 type StarAuth struct {
@@ -14,7 +15,7 @@ type StarAuth struct {
 }
 
 type AuthHandler struct {
-	packet packet.Header
+	packet header.Header
 }
 
 func Middleware() func(handler handler.Handler) handler.Handler {

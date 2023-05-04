@@ -1,8 +1,9 @@
-package packet
+package header
 
 import (
 	"encoding/hex"
 	"errors"
+	"github.com/topcloudz/fvpn/pkg/packet"
 	"unsafe"
 )
 
@@ -31,12 +32,12 @@ func NewPacketWithoutType() *Header {
 	}
 }
 
-func NewHeader(msgType uint16, networkId string) (*Header, error) {
+func NewHeader(msgType uint16, networkId string) (Header, error) {
 	bs, err := hex.DecodeString(networkId)
 	if err != nil {
-		return nil, errors.New("invalid networkId")
+		return Header{}, errors.New("invalid networkId")
 	}
-	h := &Header{
+	h := Header{
 		Version: Version,
 		TTL:     DefaultTTL,
 		Flags:   msgType,
@@ -45,23 +46,23 @@ func NewHeader(msgType uint16, networkId string) (*Header, error) {
 	return h, nil
 }
 
-func (cp *Header) Encode() ([]byte, error) {
+func Encode(h Header) ([]byte, error) {
 	idx := 0
 	b := make([]byte, unsafe.Sizeof(Header{}))
-	idx = EncodeUint8(b, cp.Version, idx)
-	idx = EncodeUint8(b, cp.TTL, idx)
-	idx = EncodeUint16(b, cp.Flags, idx)
-	idx = EncodeBytes(b, cp.NetworkId[:], idx)
+	idx = packet.EncodeUint8(b, h.Version, idx)
+	idx = packet.EncodeUint8(b, h.TTL, idx)
+	idx = packet.EncodeUint16(b, h.Flags, idx)
+	idx = packet.EncodeBytes(b, h.NetworkId[:], idx)
 	return b, nil
 }
 
-func (cp *Header) Decode(udpByte []byte) (Interface, error) {
+func Decode(udpByte []byte) (h Header, err error) {
 	idx := 0
-	idx = DecodeUint8(&cp.Version, udpByte, idx)
-	idx = DecodeUint8(&cp.TTL, udpByte, idx)
-	idx = DecodeUint16(&cp.Flags, udpByte, idx)
+	idx = packet.DecodeUint8(&h.Version, udpByte, idx)
+	idx = packet.DecodeUint8(&h.TTL, udpByte, idx)
+	idx = packet.DecodeUint16(&h.Flags, udpByte, idx)
 	b := make([]byte, 8)
-	idx = DecodeBytes(&b, udpByte, idx)
-	copy(cp.NetworkId[:], b)
-	return cp, nil
+	idx = packet.DecodeBytes(&b, udpByte, idx)
+	copy(h.NetworkId[:], b)
+	return
 }

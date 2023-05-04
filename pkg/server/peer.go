@@ -25,5 +25,5 @@ func peerAckBuild(infos []ack.EdgeInfo, size uint8) ([]byte, error) {
 	peerPacket.Size = size
 	peerPacket.NodeInfos = infos
 
-	return peerPacket.Encode()
+	return ack.Encode(peerPacket)
 }

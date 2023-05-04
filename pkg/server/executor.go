@@ -6,10 +6,10 @@ import (
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"github.com/topcloudz/fvpn/pkg/packet/register"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"golang.org/x/sys/unix"
-	"net"
 )
 
 func (r *RegServer) ReadFromUdp() {
@@ -19,9 +19,12 @@ func (r *RegServer) ReadFromUdp() {
 		frame := packet.NewFrame()
 		n, addr, err := r.socket.ReadFromUdp(frame.Buff[:])
 		frame.Packet = frame.Buff[:n]
-		logger.Debugf("Read from udp %d byte", n)
+		logger.Debugf("Read from udp %d byte, data: %v", n, frame.Packet)
 
-		packetHeader := util.GetPacketHeader(frame.Packet[:12])
+		packetHeader, err := util.GetPacketHeader(frame.Packet[:12])
+		if err != nil {
+			logger.Errorf("get header falied. %v", err)
+		}
 		if packetHeader.Flags == option.MsgTypePacket {
 			header, err := util.GetFrameHeader(frame.Packet[12:])
 			if err != nil {
@@ -55,7 +58,10 @@ func (r *RegServer) WriteToUdp() {
 			r.socket.WriteToUdp(pkt.Packet[:], pkt.RemoteAddr)
 		} else {
 			//if util.IsBroadCast(fp.DstMac.String()) {
-			packetHeader := util.GetPacketHeader(pkt.Packet[:12])
+			packetHeader, err := util.GetPacketHeader(pkt.Packet[:12])
+			if err != nil {
+				logger.Errorf("get header failed. %v")
+			}
 			if packetHeader.Flags == option.MsgTypePacket { //转发的流量
 				header, err := util.GetFrameHeader(pkt.Packet[12:]) //whe is 12, because we add our header in, header length is 12
 				if err != nil {
@@ -84,23 +90,21 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 		size := ctx.Value("size").(int)
 		data := frame.Packet[:]
 
-		p := ctx.Value("pkt").(*packet.Header)
+		p := ctx.Value("pkt").(*header.Header)
 		switch p.Flags {
 
 		case option.MsgTypeRegisterSuper:
-			p := register.NewPacket(networkId, net.HardwareAddr{}, net.IP{})
-			reg, err := p.Decode(frame.Packet)
-			regPkt := reg.(register.RegPacket)
+			regPkt, err := register.Decode(frame.Packet)
 			if err != nil {
 				logger.Errorf("register failed, err:%v", err)
 				return err
 			}
 			err = r.registerAck(srcAddr, regPkt.SrcMac, regPkt.SrcIP, networkId)
-			header, err := packet.NewHeader(option.MsgTypeRegisterAck, networkId)
+			h, err := header.NewHeader(option.MsgTypeRegisterAck, networkId)
 			if err != nil {
 				logger.Errorf("build resp failed. err: %v", err)
 			}
-			f, _ := header.Encode()
+			f, _ := header.Encode(h)
 			frame.Packet = f
 			break
 		case option.MsgTypeQueryPeer:

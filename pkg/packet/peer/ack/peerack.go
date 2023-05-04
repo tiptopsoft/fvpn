@@ -3,6 +3,7 @@ package ack
 import (
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"net"
 	"unsafe"
 )
@@ -17,21 +18,21 @@ type EdgeInfo struct {
 
 // EdgePacketAck ack for size of EdgeInfo
 type EdgePacketAck struct {
-	header    *packet.Header
+	header    header.Header
 	Size      uint8
 	NodeInfos []EdgeInfo
 }
 
 func NewPacket() EdgePacketAck {
-	cmPacket, _ := packet.NewHeader(option.MsgTypeQueryPeer, "")
+	cmPacket, _ := header.NewHeader(option.MsgTypeQueryPeer, "")
 	return EdgePacketAck{
 		header: cmPacket,
 	}
 }
 
-func (ack EdgePacketAck) Encode() ([]byte, error) {
+func Encode(ack EdgePacketAck) ([]byte, error) {
 	b := make([]byte, 2048)
-	cp, err := ack.header.Encode()
+	cp, err := header.Encode(ack.header)
 	if err != nil {
 		return nil, err
 	}
@@ -48,11 +49,12 @@ func (ack EdgePacketAck) Encode() ([]byte, error) {
 	return b, nil
 }
 
-func (ack EdgePacketAck) Decode(udpBytes []byte) (packet.Interface, error) {
+func Decode(udpBytes []byte) (EdgePacketAck, error) {
+	ack := NewPacket()
 	idx := 0
-	cp, err := packet.NewPacketWithoutType().Decode(udpBytes)
-	idx += int(unsafe.Sizeof(packet.Header{}))
-	ack.header = cp.(*packet.Header)
+	h, err := header.Decode(udpBytes)
+	idx += int(unsafe.Sizeof(header.Header{}))
+	ack.header = h
 
 	idx = packet.DecodeUint8(&ack.Size, udpBytes, idx)
 

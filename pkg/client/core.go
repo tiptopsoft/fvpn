@@ -37,7 +37,7 @@ func (n *Node) queryNodeInfos() error {
 	n.tuns.Range(func(key, value any) bool {
 		networkId := key
 		cp := peer.NewPacket(networkId.(string))
-		data, err := cp.Encode()
+		data, err := peer.Encode(cp)
 		if err != nil {
 			logger.Errorf("error occurd when query peers, networkId: %s, err: %v", networkId, err)
 			return false
@@ -76,7 +76,7 @@ func (n *Node) register(tun *tuntap.Tuntap) error {
 		return err
 	}
 
-	data, err := regPkt.Encode()
+	data, err := register.Encode(regPkt)
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func (n *Node) unregister(tun *tuntap.Tuntap) error {
 	var err error
 	rp := register.NewUnregisterPacket(tun.NetworkId)
 	copy(rp.SrcMac[:], tun.MacAddr)
-	data, err := rp.Encode()
+	data, err := register.Encode(rp)
 	fmt.Println("sending unregister data: ", data)
 	if err != nil {
 		return err

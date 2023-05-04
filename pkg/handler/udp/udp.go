@@ -8,6 +8,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/forward"
+	"github.com/topcloudz/fvpn/pkg/packet/header"
 	peerack "github.com/topcloudz/fvpn/pkg/packet/peer/ack"
 	"github.com/topcloudz/fvpn/pkg/packet/register/ack"
 	"github.com/topcloudz/fvpn/pkg/socket"
@@ -25,16 +26,14 @@ func Handle() handler.HandlerFunc {
 	return func(ctx context.Context, frame *packet.Frame) error {
 		buff := frame.Buff[:]
 
-		cpInterface, err := packet.NewPacketWithoutType().Decode(buff)
-		header := cpInterface.(*packet.Header)
+		header, err := header.Decode(buff)
 		if err != nil {
 			logger.Errorf("decode err: %v", err)
 		}
 
 		switch header.Flags {
 		case option.MsgTypeRegisterAck:
-			regAckInterface, err := ack.NewPacket().Decode(buff)
-			regAck := regAckInterface.(ack.RegPacketAck)
+			regAck, err := ack.Decode(buff)
 
 			if err != nil {
 				//return err
@@ -42,8 +41,7 @@ func Handle() handler.HandlerFunc {
 			logger.Infof("register success, got server server ack: (%v)", regAck.AutoIP)
 			break
 		case option.MsgTypeQueryPeer:
-			peerPacketAckIface, err := peerack.NewPacket().Decode(buff)
-			peerPacketAck := peerPacketAckIface.(peerack.EdgePacketAck)
+			peerPacketAck, err := peerack.Decode(buff)
 			if err != nil {
 				//return err
 			}
@@ -72,8 +70,7 @@ func Handle() handler.HandlerFunc {
 			}
 			break
 		case option.MsgTypePacket:
-			forwardPacketInterface, err := forward.NewPacket("").Decode(buff[:])
-			forwardPacket := forwardPacketInterface.(forward.ForwardPacket)
+			forwardPacket, err := forward.Decode(buff[:])
 			if err != nil {
 				//return err
 			}
