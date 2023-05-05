@@ -3,6 +3,7 @@ package ack
 import (
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"net"
 	"unsafe"
 )
@@ -10,28 +11,28 @@ import (
 // EdgeInfo info need to connect to
 type EdgeInfo struct {
 	Mac  net.HardwareAddr
-	Host net.IP
+	IP   net.IP
 	Port uint16
 	P2P  uint8 //1: 是2：否
 }
 
 // EdgePacketAck ack for size of EdgeInfo
 type EdgePacketAck struct {
-	header    packet.Header
+	header    header.Header
 	Size      uint8
-	PeerInfos []EdgeInfo
+	NodeInfos []EdgeInfo
 }
 
 func NewPacket() EdgePacketAck {
-	cmPacket := packet.NewHeader(option.MsgTypeQueryPeer, "")
+	cmPacket, _ := header.NewHeader(option.MsgTypeQueryPeer, "")
 	return EdgePacketAck{
 		header: cmPacket,
 	}
 }
 
-func (ack EdgePacketAck) Encode() ([]byte, error) {
+func Encode(ack EdgePacketAck) ([]byte, error) {
 	b := make([]byte, 2048)
-	cp, err := ack.header.Encode()
+	cp, err := header.Encode(ack.header)
 	if err != nil {
 		return nil, err
 	}
@@ -39,20 +40,21 @@ func (ack EdgePacketAck) Encode() ([]byte, error) {
 	idx := 0
 	idx = packet.EncodeBytes(b, cp, idx)
 	idx = packet.EncodeUint8(b, ack.Size, idx)
-	for _, v := range ack.PeerInfos {
+	for _, v := range ack.NodeInfos {
 		idx = packet.EncodeBytes(b, v.Mac, idx)
-		idx = packet.EncodeBytes(b, v.Host, idx)
+		idx = packet.EncodeBytes(b, v.IP, idx)
 		idx = packet.EncodeUint16(b, v.Port, idx)
 	}
 
 	return b, nil
 }
 
-func (ack EdgePacketAck) Decode(udpBytes []byte) (packet.Interface, error) {
+func Decode(udpBytes []byte) (EdgePacketAck, error) {
+	ack := NewPacket()
 	idx := 0
-	cp, err := packet.NewPacketWithoutType().Decode(udpBytes)
-	idx += int(unsafe.Sizeof(packet.Header{}))
-	ack.header = cp.(packet.Header)
+	h, err := header.Decode(udpBytes)
+	idx += int(unsafe.Sizeof(header.Header{}))
+	ack.header = h
 
 	idx = packet.DecodeUint8(&ack.Size, udpBytes, idx)
 
@@ -64,12 +66,12 @@ func (ack EdgePacketAck) Decode(udpBytes []byte) (packet.Interface, error) {
 		peer.Mac = mac
 		var ip = make([]byte, 16)
 		idx = packet.DecodeBytes(&ip, udpBytes, idx)
-		peer.Host = ip
+		peer.IP = ip
 		idx = packet.DecodeUint16(&peer.Port, udpBytes, idx)
 		info = append(info, peer)
 	}
 
-	ack.PeerInfos = info
+	ack.NodeInfos = info
 
 	if err != nil {
 		return ack, err

@@ -2,18 +2,18 @@ package ack
 
 import (
 	"fmt"
+	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"net"
 	"testing"
 	"unsafe"
 
 	"github.com/magiconair/properties/assert"
 	"github.com/topcloudz/fvpn/pkg/option"
-	"github.com/topcloudz/fvpn/pkg/packet"
 )
 
 func TestNewPacket(t *testing.T) {
 
-	size := unsafe.Sizeof(packet.Header{})
+	size := unsafe.Sizeof(header.Header{})
 	fmt.Println(size)
 
 	RecMac := "01:01:03:02:03:01"
@@ -32,7 +32,7 @@ func TestNewPacket(t *testing.T) {
 	fmt.Println(ipsize)
 	p.AutoIP = vip
 	p.Mask = net.ParseIP(Mask)
-	p.header = packet.NewHeader(option.MsgTypeRegisterAck)
+	p.header = header.NewHeader(option.MsgTypeRegisterAck)
 
 	buff, err := p.Encode()
 	fmt.Println(buff)

@@ -28,6 +28,8 @@ func (n *Node) runHttpServer() error {
 			type body struct {
 				Status    int    `json:"status"`
 				NetworkId string `json:"NetworkId"`
+				Ip        string `json:"ip"`
+				Mask      string `json:"mask"`
 			}
 
 			req := new(body)
@@ -40,11 +42,11 @@ func (n *Node) runHttpServer() error {
 			}
 
 			logger.Infof("request network is: %s", req.NetworkId)
-			//TODO 把networkId加进来
-			if err := n.addTuns(req.NetworkId); err != nil {
-				w.WriteHeader(500)
-			}
-			req.Status = 200
+			////TODO 把networkId加进来
+			//if err := n.addTuns(req.NetworkId); err != nil {
+			//	w.WriteHeader(500)
+			//}
+			//req.Status = 200
 
 			if err := json.NewEncoder(w).Encode(req); err != nil {
 				w.WriteHeader(500)
@@ -52,10 +54,22 @@ func (n *Node) runHttpServer() error {
 			}
 
 			//启动一个goroutine, 处理这个network
-
-			tun := n.GetTun()
-			go tun.ReadFromTun(context.Background(), req.NetworkId)
-			go tun.WriteToUdp()
+			//tun := n.GetTun()
+			//tun.NetworkId = req.NetworkId
+			// register this networkId to server
+			logger.Infof("get result ip: %s, mask: %s", req.Ip, req.Mask)
+			tap, err := tuntap.New(tuntap.TAP, req.Ip, req.Mask, req.NetworkId)
+			if err != nil {
+				w.WriteHeader(500)
+				return
+			}
+			n.tun.CacheDevice(req.NetworkId, tap)
+			err = n.register(tap)
+			if err != nil {
+				return
+			}
+			go n.tun.ReadFromTun(context.Background(), req.NetworkId)
+			go n.tun.WriteToUdp()
 
 			w.WriteHeader(200)
 			logger.Infof("join network %s success", req.NetworkId)
@@ -92,7 +106,6 @@ func (n *Node) runHttpServer() error {
 				w.WriteHeader(500)
 				return
 			}
-
 		}
 		w.WriteHeader(200)
 	})
@@ -100,15 +113,15 @@ func (n *Node) runHttpServer() error {
 	return s.Start(fmt.Sprintf(":%d", DefaultPort))
 }
 
-func (n *Node) addTuns(networkId string) error {
-	tun, err := tuntap.GetTuntap(networkId)
-	if err != nil {
-		return err
-	}
-
-	n.tuns.Store(networkId, tun)
-	return nil
-}
+//func (n *Node) addTuns(networkId string) error {
+//	tun, err := tuntap.GetTuntap(networkId)
+//	if err != nil {
+//		return err
+//	}
+//
+//	n.tuns.Store(networkId, tun)
+//	return nil
+//}
 
 // GetNetworkIds get network ids when node starting, so can monitor the traffic on the device.
 func (n *Node) GetNetworkIds() ([]string, error) {

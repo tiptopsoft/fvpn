@@ -1,11 +1,26 @@
 package util
 
 import (
-	"fmt"
+	"encoding/binary"
+	"errors"
+	"github.com/topcloudz/fvpn/pkg/log"
+	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"golang.org/x/sys/unix"
 	"net"
 	"net/netip"
 )
+
+var (
+	logger = log.Log()
+)
+
+type FrameHeader struct {
+	DestinationAddr net.HardwareAddr
+	SourceAddr      net.HardwareAddr
+	SourceIP        net.IP
+	DestinationIP   net.IP
+	EtherType       uint16
+}
 
 func GetAddress(address string, port int) (unix.SockaddrInet4, error) {
 	ad, err := netip.ParseAddr(address)
@@ -15,11 +30,46 @@ func GetAddress(address string, port int) (unix.SockaddrInet4, error) {
 	}, err
 }
 
-func GetMacAddr(buf []byte) string {
-	return fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5])
+// GetFrameHeader return dest mac, dest ip, if data provide is null, error return
+func GetFrameHeader(buff []byte) (*FrameHeader, error) {
+	if len(buff) == 0 {
+		return nil, errors.New("no data exists")
+	}
+	header := parseHeader(buff)
+
+	//是ARP
+	if header.EtherType == 0x0806 {
+		logger.Debugf("this is an arp frame")
+		header.SourceIP = net.IPv4(buff[34], buff[35], buff[36], buff[37])
+		header.DestinationIP = net.IPv4(buff[38], buff[39], buff[40], buff[41])
+	}
+
+	//IP
+	if header.EtherType == 0x0800 {
+		logger.Debugf("this is an destIP frame")
+		header.SourceIP = net.IPv4(buff[26], buff[27], buff[28], buff[29])
+		header.DestinationIP = net.IPv4(buff[30], buff[31], buff[32], buff[33])
+	}
+
+	logger.Debugf("recevice header is: %v", header)
+	return header, nil
 }
 
-// 从二层数据帧中获取，dmac 6 + srcMac b + 4 + 16 = 32:36
-func GetDstIP(buff []byte) net.IP {
-	return net.IPv4(buff[32], buff[33], buff[34], buff[35])
+func GetPacketHeader(buff []byte) (header.Header, error) {
+	h, err := header.Decode(buff[:12])
+	if err != nil {
+		return header.Header{}, err
+	}
+	return h, nil
+}
+
+func parseHeader(buf []byte) *FrameHeader {
+	header := new(FrameHeader)
+	var hd net.HardwareAddr
+	hd = buf[0:6]
+	header.DestinationAddr = hd
+	hd = buf[6:12]
+	header.SourceAddr = hd
+	header.EtherType = binary.BigEndian.Uint16(buf[12:14])
+	return header
 }

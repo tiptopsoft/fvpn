@@ -4,13 +4,14 @@ import (
 	"errors"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"net"
 	"unsafe"
 )
 
 // ForwardPacket is through packet used in server
 type ForwardPacket struct {
-	header packet.Header
+	header header.Header
 	body
 }
 
@@ -20,15 +21,15 @@ type body struct {
 }
 
 func NewPacket(networkId string) ForwardPacket {
-	header := packet.NewHeader(option.MsgTypePacket, networkId)
+	header, _ := header.NewHeader(option.MsgTypePacket, networkId)
 	return ForwardPacket{
 		header: header,
 	}
 }
 
-func (fp ForwardPacket) Encode() ([]byte, error) {
+func Encode(fp ForwardPacket) ([]byte, error) {
 	b := make([]byte, unsafe.Sizeof(ForwardPacket{}))
-	headerBuff, err := fp.header.Encode()
+	headerBuff, err := header.Encode(fp.header)
 	if err != nil {
 		return nil, errors.New("encode common packet failed")
 	}
@@ -39,15 +40,15 @@ func (fp ForwardPacket) Encode() ([]byte, error) {
 	return b, nil
 }
 
-func (fp ForwardPacket) Decode(udpBytes []byte) (packet.Interface, error) {
+func Decode(udpBytes []byte) (ForwardPacket, error) {
 	res := NewPacket("")
-	header, err := packet.NewPacketWithoutType().Decode(udpBytes)
+	h, err := header.Decode(udpBytes)
 	if err != nil {
 		return ForwardPacket{}, errors.New("decode header packet failed")
 	}
 	idx := 0
-	res.header = header.(packet.Header)
-	idx += int(unsafe.Sizeof(packet.Header{}))
+	res.header = h
+	idx += int(unsafe.Sizeof(header.Header{}))
 	var srcMac = make([]byte, 6)
 	idx = packet.DecodeBytes(&srcMac, udpBytes, idx)
 	res.SrcMac = srcMac

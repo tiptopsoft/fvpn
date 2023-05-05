@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/topcloudz/fvpn/pkg/addr"
 	httputil "github.com/topcloudz/fvpn/pkg/nativehttp"
-	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"io"
 	"net/http"
 )
@@ -19,16 +19,25 @@ func (n *Node) RunJoinNetwork(netId string) error {
 	logger.Infof("start to join %s", netId)
 	//user nativehttp to get NetworkId config
 	type body struct {
-		UserId    string `json:"userId"`
+		SrcMac    string `json:"srcMac"`
 		NetworkId string `json:"networkId"`
+		Ip        string `json:"ip"`
+		Mask      string `json:"mask"`
 	}
 
-	request := body{UserId: "1"}
+	mac, err := addr.GetHostMac()
+	if err != nil {
+		return errors.New("can not found default host mac")
+	}
+
+	request := body{
+		SrcMac: mac.String(),
+	}
 	buff, err := json.Marshal(request)
 	if err != nil {
 		return errors.New("invalid body")
 	}
-	destUrl := fmt.Sprintf("%s/api/v1/users/user/%s/network/%s/join", userUrl, request.UserId, netId)
+	destUrl := fmt.Sprintf("%s/api/v1/users/user/%s/network/%s/join", userUrl, "1", netId)
 	resp, err := http.Post(destUrl, "application/json", bytes.NewReader(buff))
 	respBuff, err := io.ReadAll(resp.Body)
 	var networkResp struct {
@@ -52,17 +61,19 @@ func (n *Node) RunJoinNetwork(netId string) error {
 		return err
 	}
 
-	logger.Infof("get result ip: %s, mask: %s", networkResp.Ip, networkResp.Mask)
-	err = tuntap.New(tuntap.TAP, networkResp.Ip, networkResp.Mask, networkResp.NetworkId)
-	if err != nil {
-		return err
-	}
+	//logger.Infof("get result ip: %s, mask: %s", networkResp.Ip, networkResp.Mask)
+	//err = tuntap.New(tuntap.TAP, networkResp.Ip, networkResp.Mask, networkResp.NetworkId)
+	//if err != nil {
+	//	return err
+	//}
 
 	//request to fvpn to tell that network has been created.
 	fvpnUrl := fmt.Sprintf("%s", "http://localhost:6663/api/v1/join")
 
 	req := body{
 		NetworkId: netId,
+		Ip:        networkResp.Ip,
+		Mask:      networkResp.Mask,
 	}
 	buff1, _ := json.Marshal(req)
 	resultBuff, err := httputil.Post(fvpnUrl, bytes.NewReader(buff1))

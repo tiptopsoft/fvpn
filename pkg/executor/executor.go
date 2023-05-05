@@ -1,9 +1,10 @@
 package executor
 
 import (
-	"github.com/topcloudz/fvpn/pkg/socket"
+	"context"
+	"github.com/topcloudz/fvpn/pkg/packet"
 )
 
 type Executor interface {
-	Execute(socket socket.Interface) error
+	Execute(ctx context.Context, frame *packet.Frame) error
 }

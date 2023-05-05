@@ -2,14 +2,17 @@ package packet
 
 import (
 	"github.com/topcloudz/fvpn/pkg/option"
+	"golang.org/x/sys/unix"
 	"sync"
 )
 
 type Frame struct {
 	sync.Mutex
-	Buff      []byte //max length 2000
-	Packet    []byte
-	NetworkId string
+	Buff       []byte //max length 2000
+	Packet     []byte
+	Size       int
+	NetworkId  string
+	RemoteAddr unix.Sockaddr
 }
 
 func NewFrame() *Frame {

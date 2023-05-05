@@ -3,47 +3,48 @@ package ack
 import (
 	"github.com/topcloudz/fvpn/pkg/option"
 	packet "github.com/topcloudz/fvpn/pkg/packet"
+	header "github.com/topcloudz/fvpn/pkg/packet/header"
 	"net"
 	"unsafe"
 )
 
 type RegPacketAck struct {
-	header packet.Header    //8 byte
+	header header.Header    //8 byte
 	RegMac net.HardwareAddr //6 byte
 	AutoIP net.IP           //4byte
 	Mask   net.IP
 }
 
 func NewPacket() RegPacketAck {
-	cmPacket := packet.NewHeader(option.MsgTypeRegisterAck, "")
+	cmPacket, _ := header.NewHeader(option.MsgTypeRegisterAck, "")
 	return RegPacketAck{
 		header: cmPacket,
 	}
 }
 
-func (r RegPacketAck) Encode() ([]byte, error) {
+func Encode(ack RegPacketAck) ([]byte, error) {
 	b := make([]byte, unsafe.Sizeof(RegPacketAck{}))
-	cp, err := r.header.Encode()
+	headerBuff, err := header.Encode(ack.header)
 	if err != nil {
 		return nil, err
 	}
 	var idx = 0
-	idx = packet.EncodeBytes(b, cp, idx)
-	idx = packet.EncodeBytes(b, r.RegMac, idx)
-	idx = packet.EncodeBytes(b, r.AutoIP, idx)
-	idx = packet.EncodeBytes(b, r.Mask, idx)
+	idx = packet.EncodeBytes(b, headerBuff, idx)
+	idx = packet.EncodeBytes(b, ack.RegMac, idx)
+	idx = packet.EncodeBytes(b, ack.AutoIP, idx)
+	idx = packet.EncodeBytes(b, ack.Mask, idx)
 	return b, nil
 }
 
-func (r RegPacketAck) Decode(udpBytes []byte) (packet.Interface, error) {
-	size := unsafe.Sizeof(packet.Header{})
+func Decode(udpBytes []byte) (RegPacketAck, error) {
+	size := unsafe.Sizeof(header.Header{})
 	res := RegPacketAck{}
-	p, err := packet.NewPacketWithoutType().Decode(udpBytes[:size])
+	h, err := header.Decode(udpBytes[:size])
 	if err != nil {
 		return RegPacketAck{}, err
 	}
 	var idx = 0
-	res.header = p.(packet.Header)
+	res.header = h
 	idx += int(size)
 	mac := make([]byte, packet.MAC_SIZE)
 	idx = packet.DecodeBytes(&mac, udpBytes, idx)

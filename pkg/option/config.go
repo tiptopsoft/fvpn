@@ -55,10 +55,6 @@ type Config struct {
 type ClientConfig struct {
 	Registry string   `mapstructure:"server"`
 	Listen   string   `mapstructure:"listen"`
-	TapName  string   `mapstructure:"tap"`
-	TapIP    string   `mapstructure:"ip"`
-	TapMask  string   `mapstructure:"mask"`
-	MacAddr  string   `mapstructure:"mac"`
 	Protocol Protocol `mapstructure:"type"`
 }
 

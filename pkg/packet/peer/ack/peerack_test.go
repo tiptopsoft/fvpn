@@ -17,7 +17,7 @@ func TestDecode(t *testing.T) {
 	//}
 	//info := EdgeInfo{
 	//	Mac:  srcMac,
-	//	Host: net.IPv4(127, 0, 0, 1),
+	//	IP: net.IPv4(127, 0, 0, 1),
 	//	Port: 35582,
 	//}
 	//
@@ -25,7 +25,7 @@ func TestDecode(t *testing.T) {
 	//
 	//peerPacket := NewPacket()
 	//peerPacket.Size = 1
-	//peerPacket.PeerInfos = result
+	//peerPacket.NodeInfos = result
 	//
 	//fmt.Println("origin: ", peerPacket)
 	//data, _ := Encode(peerPacket)
