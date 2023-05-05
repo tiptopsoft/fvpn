@@ -1,12 +1,12 @@
 package tuntap
 
 import (
-	"errors"
 	"fmt"
 	"github.com/topcloudz/fvpn/pkg/addr"
 	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"golang.org/x/sys/unix"
+	"net"
 	"os"
 	"syscall"
 	"unsafe"
@@ -16,14 +16,14 @@ var (
 	logger = log.Log()
 )
 
-func New(mode Mode, ip, mask, networkId string) error {
+func New(mode Mode, ip, mask, networkId string) (*Tuntap, error) {
 	name := fmt.Sprintf("%s%s", NamePrefix, networkId[:10])
 	var f = "/dev/net/tun"
 
 	fd, err := unix.Open(f, os.O_RDWR, 0)
 	if err != nil {
 		panic(err)
-		return err
+		return nil, err
 	}
 
 	logger.Infof("tun name: %s, networkId: %s", name, networkId)
@@ -43,7 +43,7 @@ func New(mode Mode, ip, mask, networkId string) error {
 	}
 
 	if errno != 0 {
-		return fmt.Errorf("tuntap ioctl failed, errno %v", errno)
+		return nil, fmt.Errorf("tuntap ioctl failed, errno %v", errno)
 	}
 
 	_, _, errno = unix.Syscall(unix.SYS_IOCTL, uintptr(fd), uintptr(TUNSETPERSIST), 1)
@@ -62,10 +62,18 @@ func New(mode Mode, ip, mask, networkId string) error {
 
 	//设置IP
 	if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", name, ip, mask, 1420)); err != nil {
-		return err
+		return nil, err
 	}
 
-	return err
+	mac, _, _ := addr.GetMacAddrAndIPByDev(name)
+	return &Tuntap{
+		Name:      name, // size is 16
+		MacAddr:   mac,
+		file:      os.NewFile(uintptr(fd), name),
+		Fd:        fd,
+		NetworkId: networkId,
+		IP:        net.ParseIP(ip),
+	}, nil
 }
 
 func Delete(networkId string) error {
@@ -73,34 +81,36 @@ func Delete(networkId string) error {
 	return nil
 }
 
-func GetTuntap(networkId string) (*Tuntap, error) {
-	name := fmt.Sprintf("%s%s", NamePrefix, networkId[:10])
-	var f = "/dev/net/tun"
-
-	fd, err := unix.Open(f, os.O_RDWR, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	var ifr Ifreq
-	copy(ifr.Name[:], name)
-
-	var errno syscall.Errno
-
-	ifr.Flags = IFF_TAP | IFF_NO_PI
-	_, _, errno = unix.Syscall(syscall.SYS_IOCTL, uintptr(fd), uintptr(TUNSETIFF), uintptr(unsafe.Pointer(&ifr)))
-
-	if errno < 0 {
-		return nil, errors.New("get tun failed")
-	}
-
-	mac, ip, _ := addr.GetMacAddrAndIPByDev(name)
-	return &Tuntap{
-		Name:      name, // size is 16
-		MacAddr:   mac,
-		file:      os.NewFile(uintptr(fd), name),
-		Fd:        fd,
-		NetworkId: networkId,
-		IP:        ip,
-	}, nil
-}
+// GetTuntap can be used only one time when created.
+//func GetTuntap(networkId string) (*Tuntap, error) {
+//	name := fmt.Sprintf("%s%s", NamePrefix, networkId[:10])
+//	var f = "/dev/net/tun"
+//
+//	fd, err := unix.Open(f, os.O_RDWR, 0)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	var ifr Ifreq
+//	copy(ifr.Name[:], name)
+//
+//	var errno syscall.Errno
+//
+//	ifr.Flags = IFF_TAP | IFF_NO_PI
+//	_, _, errno = unix.Syscall(syscall.SYS_IOCTL, uintptr(fd), uintptr(TUNSETIFF), uintptr(unsafe.Pointer(&ifr)))
+//	fmt.Println("errno: ", errno)
+//
+//	if errno < 0 {
+//		return nil, errors.New("get tun failed")
+//	}
+//
+//	mac, ip, _ := addr.GetMacAddrAndIPByDev(name)
+//	return &Tuntap{
+//		Name:      name, // size is 16
+//		MacAddr:   mac,
+//		file:      os.NewFile(uintptr(fd), name),
+//		Fd:        fd,
+//		NetworkId: networkId,
+//		IP:        ip,
+//	}, nil
+//}

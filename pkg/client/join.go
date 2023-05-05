@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/topcloudz/fvpn/pkg/addr"
 	httputil "github.com/topcloudz/fvpn/pkg/nativehttp"
-	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"io"
 	"net/http"
 )
@@ -22,6 +21,8 @@ func (n *Node) RunJoinNetwork(netId string) error {
 	type body struct {
 		SrcMac    string `json:"srcMac"`
 		NetworkId string `json:"networkId"`
+		Ip        string `json:"ip"`
+		Mask      string `json:"mask"`
 	}
 
 	mac, err := addr.GetHostMac()
@@ -60,17 +61,19 @@ func (n *Node) RunJoinNetwork(netId string) error {
 		return err
 	}
 
-	logger.Infof("get result ip: %s, mask: %s", networkResp.Ip, networkResp.Mask)
-	err = tuntap.New(tuntap.TAP, networkResp.Ip, networkResp.Mask, networkResp.NetworkId)
-	if err != nil {
-		return err
-	}
+	//logger.Infof("get result ip: %s, mask: %s", networkResp.Ip, networkResp.Mask)
+	//err = tuntap.New(tuntap.TAP, networkResp.Ip, networkResp.Mask, networkResp.NetworkId)
+	//if err != nil {
+	//	return err
+	//}
 
 	//request to fvpn to tell that network has been created.
 	fvpnUrl := fmt.Sprintf("%s", "http://localhost:6663/api/v1/join")
 
 	req := body{
 		NetworkId: netId,
+		Ip:        networkResp.Ip,
+		Mask:      networkResp.Mask,
 	}
 	buff1, _ := json.Marshal(req)
 	resultBuff, err := httputil.Post(fvpnUrl, bytes.NewReader(buff1))

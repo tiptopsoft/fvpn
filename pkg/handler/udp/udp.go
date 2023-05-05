@@ -2,19 +2,18 @@ package udp
 
 import (
 	"context"
+	"encoding/hex"
 	"github.com/topcloudz/fvpn/pkg/cache"
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
-	"github.com/topcloudz/fvpn/pkg/packet/forward"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
 	peerack "github.com/topcloudz/fvpn/pkg/packet/peer/ack"
 	"github.com/topcloudz/fvpn/pkg/packet/register/ack"
 	"github.com/topcloudz/fvpn/pkg/socket"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"github.com/topcloudz/fvpn/pkg/util"
-	"unsafe"
 )
 
 var (
@@ -70,17 +69,17 @@ func Handle() handler.HandlerFunc {
 			}
 			break
 		case option.MsgTypePacket:
-			forwardPacket, err := forward.Decode(buff[:])
-			if err != nil {
-				//return err
-			}
-			logger.Infof("got through packet: %v, srcMac: %v", forwardPacket, forwardPacket.SrcMac)
-
-			//写入到tap
-			idx := unsafe.Sizeof(forwardPacket)
-			//networkId := header.NetworkId
-			frame.Packet = buff[idx:]
-			frame.NetworkId = string(header.NetworkId[:])
+			//forwardPacket, err := forward.Decode(buff[:])
+			//if err != nil {
+			//	//return err
+			//}
+			//logger.Infof("got through packet: %v, srcMac: %v", forwardPacket, forwardPacket.SrcMac)
+			//
+			////写入到tap
+			//idx := unsafe.Sizeof(forwardPacket)
+			//frame.Packet = buff[idx:]
+			frame.Packet = buff[:]
+			frame.NetworkId = hex.EncodeToString(header.NetworkId[:])
 
 			break
 		}

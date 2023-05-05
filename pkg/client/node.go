@@ -20,7 +20,7 @@ var (
 type Node struct {
 	*option.Config
 	Protocol    option.Protocol
-	tuns        sync.Map //key: netId, value: Tuntap
+	tun         *handler.Tun //key: netId, value: Tuntap
 	relaySocket socket.Interface
 }
 
@@ -43,6 +43,7 @@ func (n *Node) GetTun() *handler.Tun {
 	tunHandler := middleware.WithMiddlewares(device.Handle(), m...)
 	udpHandler := middleware.WithMiddlewares(udp.Handle(), m...)
 	tun := handler.NewTun(tunHandler, udpHandler, n.relaySocket)
+	n.tun = tun
 	return tun
 }
 

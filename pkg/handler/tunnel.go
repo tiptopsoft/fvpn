@@ -14,7 +14,7 @@ import (
 type Tun struct {
 	socket     socket.Interface // relay or p2p
 	p2pSocket  sync.Map         //p2psocket
-	device     *tuntap.Tuntap
+	device     map[string]*tuntap.Tuntap
 	Inbound    chan *packet.Frame //used from udp
 	Outbound   chan *packet.Frame //used for tun
 	cache      *cache.Cache
@@ -27,6 +27,7 @@ func NewTun(tunHandler, udpHandler Handler, socket socket.Interface) *Tun {
 	tun := &Tun{
 		Inbound:    make(chan *packet.Frame, 15000),
 		Outbound:   make(chan *packet.Frame, 15000),
+		device:     make(map[string]*tuntap.Tuntap),
 		cache:      cache.New(),
 		tunHandler: tunHandler,
 		udpHandler: udpHandler,
@@ -37,13 +38,19 @@ func NewTun(tunHandler, udpHandler Handler, socket socket.Interface) *Tun {
 	return tun
 }
 
+func (t *Tun) CacheDevice(networkId string, device *tuntap.Tuntap) {
+	if t.device[networkId] == nil {
+		t.device[networkId] = device
+	}
+}
+
 func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
 	time.Sleep(1 * time.Second)
 	logger.Infof("start a tun loop for networkId: %s", networkId)
 	ctx = context.WithValue(ctx, "networkId", networkId)
-	tun, err := tuntap.GetTuntap(networkId)
+	tun := t.device[networkId]
 	ctx = context.WithValue(ctx, "tun", tun)
-	if err != nil {
+	if tun == nil {
 		logger.Fatalf("invalid network: %s", networkId)
 	}
 	for {
@@ -119,6 +126,7 @@ func (t *Tun) ReadFromUdp() {
 		frame := packet.NewFrame()
 
 		n, err := t.socket.Read(frame.Buff[:])
+		logger.Debugf("receive data from remote, size: %d, data: %v", n, frame.Buff[:])
 		if n < 0 || err != nil {
 			continue
 		}
@@ -136,10 +144,14 @@ func (t *Tun) ReadFromUdp() {
 func (t *Tun) WriteToDevice() {
 	for {
 		pkt := <-t.Inbound
-		device, err := tuntap.GetTuntap(pkt.NetworkId)
-		if err != nil {
+		device := t.device[pkt.NetworkId]
+		if device == nil {
 			logger.Errorf("invalid network: %s", pkt.NetworkId)
 		}
-		device.Write(pkt.Packet[:])
+		logger.Debugf("write to device data :%v", pkt.Packet[12:])
+		_, err := device.Write(pkt.Packet[12:]) // start 12, because header length 12
+		if err != nil {
+			logger.Errorf("write to device err: %v", err)
+		}
 	}
 }

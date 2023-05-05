@@ -32,11 +32,13 @@ func (r *RegServer) ReadFromUdp() {
 			}
 			ctx = context.WithValue(ctx, "header", header)
 		}
+		networkId := hex.EncodeToString(packetHeader.NetworkId[:])
 		ctx = context.WithValue(ctx, "pkt", packetHeader)
 		ctx = context.WithValue(ctx, "flag", packetHeader.Flags)
-		ctx = context.WithValue(ctx, "networkId", hex.EncodeToString(packetHeader.NetworkId[:]))
+		ctx = context.WithValue(ctx, "networkId", networkId)
 		ctx = context.WithValue(ctx, "size", n)
 		ctx = context.WithValue(ctx, "srcAddr", addr)
+		frame.NetworkId = networkId
 		if err != nil || n < 0 {
 			logger.Warnf("no data exists")
 			continue
@@ -46,7 +48,7 @@ func (r *RegServer) ReadFromUdp() {
 			logger.Errorf(err.Error())
 		}
 		r.Outbound <- frame
-		logger.Infof("succes handler frame")
+		logger.Infof("success handler frame")
 	}
 }
 
@@ -60,17 +62,17 @@ func (r *RegServer) WriteToUdp() {
 			//if util.IsBroadCast(fp.DstMac.String()) {
 			packetHeader, err := util.GetPacketHeader(pkt.Packet[:12])
 			if err != nil {
-				logger.Errorf("get header failed. %v")
+				logger.Errorf("get header failed")
 			}
 			if packetHeader.Flags == option.MsgTypePacket { //转发的流量
 				header, err := util.GetFrameHeader(pkt.Packet[12:]) //whe is 12, because we add our header in, header length is 12
 				if err != nil {
-					logger.Debugf("dest ip :%s not on line", header.DestinationIP.String())
+					logger.Debugf("get header failed, dest ip: %s", header.DestinationIP.String())
 				}
 
-				nodeInfo, err := r.cache.GetNodeInfo(pkt.NetworkId, header.DestinationAddr.String())
+				nodeInfo, err := r.cache.GetNodeInfo(pkt.NetworkId, header.DestinationIP.String())
 				if nodeInfo == nil || err != nil {
-					logger.Debugf("not found destitation")
+					logger.Debugf("could not found destitation")
 				} else {
 					r.socket.WriteToUdp(pkt.Packet[:], nodeInfo.Addr)
 				}
@@ -90,7 +92,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 		size := ctx.Value("size").(int)
 		data := frame.Packet[:]
 
-		p := ctx.Value("pkt").(*header.Header)
+		p := ctx.Value("pkt").(header.Header)
 		switch p.Flags {
 
 		case option.MsgTypeRegisterSuper:

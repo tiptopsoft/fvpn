@@ -24,14 +24,6 @@ type Header struct {
 	NetworkId [8]byte //8
 }
 
-func NewPacketWithoutType() *Header {
-	return &Header{
-		Version: Version,
-		TTL:     DefaultTTL,
-		Flags:   0,
-	}
-}
-
 func NewHeader(msgType uint16, networkId string) (Header, error) {
 	bs, err := hex.DecodeString(networkId)
 	if err != nil {

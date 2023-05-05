@@ -58,10 +58,10 @@ func Decode(buff []byte) (RegPacket, error) {
 	idx := 0
 	idx += int(unsafe.Sizeof(header.Header{}))
 	var mac = make([]byte, 6)
-	packet.DecodeBytes(&mac, buff, idx)
-	copy(res.SrcMac[:], mac)
+	idx = packet.DecodeBytes(&mac, buff, idx)
+	res.SrcMac = mac
 	var ip = make([]byte, 16)
-	packet.DecodeBytes(&ip, buff, idx)
-	copy(res.SrcIP[:], ip)
+	idx = packet.DecodeBytes(&ip, buff, idx)
+	res.SrcIP = ip
 	return res, nil
 }

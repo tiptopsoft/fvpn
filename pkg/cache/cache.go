@@ -2,18 +2,24 @@ package cache
 
 import (
 	"errors"
+	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/socket"
 	"golang.org/x/sys/unix"
 	"net"
 	"sync"
 )
 
+var (
+	logger = log.Log()
+)
+
 type Cache struct {
-	local *sync.Map
+	local map[string]*NodeInfo
 }
 
 func New() *Cache {
-	return &Cache{local: &sync.Map{}}
+	m := make(map[string]*NodeInfo)
+	return &Cache{local: m}
 }
 
 // NodeInfo 节点注册到registry时，应保存device ip, NATHost, NATPort
@@ -30,9 +36,15 @@ type NodeInfo struct {
 var LocalCache sync.Map
 
 func (c *Cache) SetCache(networkId, ip string, node *NodeInfo) {
-	var m *sync.Map
-	m.Store(ip, node)
-	LocalCache.Store(networkId, node)
+	m, b := LocalCache.Load(networkId)
+	if !b {
+		c.local[ip] = node
+		LocalCache.Store(networkId, c)
+	} else {
+		s := m.(*Cache)
+		s.local[ip] = node
+	}
+	logger.Debugf("cache %s, ip: %s", networkId, ip)
 }
 
 func (c *Cache) GetNodeInfo(networkId, ip string) (*NodeInfo, error) {
@@ -40,19 +52,17 @@ func (c *Cache) GetNodeInfo(networkId, ip string) (*NodeInfo, error) {
 	if !b {
 		return nil, errors.New("not networkId " + networkId + " cached")
 	}
-	s := m.(*sync.Map)
-	node, b := s.Load(ip)
-	if !b {
+	s := m.(*Cache)
+	node := s.local[ip]
+	if node == nil {
 		return nil, errors.New("get NodeInfo from " + networkId + " LocalCache failed")
 	}
-	return node.(*NodeInfo), nil
+	return node, nil
 }
 
 func (c *Cache) GetNodes() (nodes []*NodeInfo) {
-	c.local.Range(func(key, value any) bool {
-		nodes = append(nodes, value.(*NodeInfo))
-		return true
-	})
-
+	for _, value := range c.local {
+		nodes = append(nodes, value)
+	}
 	return
 }

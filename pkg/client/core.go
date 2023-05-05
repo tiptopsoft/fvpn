@@ -6,7 +6,6 @@ import (
 	"github.com/topcloudz/fvpn/pkg/addr"
 	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/option"
-	"github.com/topcloudz/fvpn/pkg/packet/peer"
 	"github.com/topcloudz/fvpn/pkg/packet/register"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"github.com/topcloudz/fvpn/pkg/util"
@@ -34,26 +33,26 @@ func (n *Node) conn() error {
 }
 
 func (n *Node) queryNodeInfos() error {
-	n.tuns.Range(func(key, value any) bool {
-		networkId := key
-		cp := peer.NewPacket(networkId.(string))
-		data, err := peer.Encode(cp)
-		if err != nil {
-			logger.Errorf("error occurd when query peers, networkId: %s, err: %v", networkId, err)
-			return false
-		}
-
-		switch n.Protocol {
-		case option.UDP:
-			logger.Infof("start to query n peer info, data: (%v)", data)
-			if _, err := n.relaySocket.Write(data); err != nil {
-				logger.Errorf("error occurd when query peers, networkId: %s, err: %v", networkId, err)
-				return false
-			}
-			break
-		}
-		return true
-	})
+	//n.tuns.Range(func(key, value any) bool {
+	//	networkId := key
+	//	cp := peer.NewPacket(networkId.(string))
+	//	data, err := peer.Encode(cp)
+	//	if err != nil {
+	//		logger.Errorf("error occurd when query peers, networkId: %s, err: %v", networkId, err)
+	//		return false
+	//	}
+	//
+	//	switch n.Protocol {
+	//	case option.UDP:
+	//		logger.Infof("start to query n peer info, data: (%v)", data)
+	//		if _, err := n.relaySocket.Write(data); err != nil {
+	//			logger.Errorf("error occurd when query peers, networkId: %s, err: %v", networkId, err)
+	//			return false
+	//		}
+	//		break
+	//	}
+	//	return true
+	//})
 
 	return nil
 }
