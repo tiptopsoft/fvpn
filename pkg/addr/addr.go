@@ -120,6 +120,9 @@ func GetHostMac() (net.HardwareAddr, error) {
 	case "linux":
 		face, err := net.InterfaceByName("eth0")
 		return face.HardwareAddr, err
+	case "darwin":
+		face, err := net.InterfaceByName("en0")
+		return face.HardwareAddr, err
 	}
 
 	return nil, nil

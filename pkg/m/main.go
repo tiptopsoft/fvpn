@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"sync"
+	"github.com/topcloudz/fvpn/pkg/http"
 )
 
 func main() {
@@ -39,10 +39,26 @@ func main() {
 	res, _ := register.Decode(buff)
 	fmt.Println(res.SrcMac)*/
 
-	var m sync.Map
-	m.Store("foo", "bar")
-	m.Range(func(key, value any) bool {
-		fmt.Println(key, value)
-		return true
-	})
+	//var m sync.Map
+	//m.Store("foo", "bar")
+	//m.Range(func(key, value any) bool {
+	//	fmt.Println(key, value)
+	//	return true
+	//})
+
+	networkId := "c04d6b84fd4fc978"
+	//mac, _ := addr.GetHostMac()
+	client := http.New("https://www.efvpn.com")
+	req := http.JoinRequest{
+		SrcMac:    "",
+		NetworkId: "c04d6b84fd4fc978",
+		Ip:        "",
+		Mask:      "",
+	}
+	resp, err := client.JoinNetwork("1", networkId, req)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println(resp)
 }

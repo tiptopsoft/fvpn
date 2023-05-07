@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"fmt"
 	"github.com/dghubble/sling"
 	"github.com/topcloudz/fvpn/pkg/cache"
@@ -36,9 +37,9 @@ type JoinResponse struct {
 
 func (c *Client) JoinNetwork(userId, networkId string, req JoinRequest) (*JoinResponse, error) {
 	resp := new(Response)
-	_, err := c.sling.New().Post(fmt.Sprintf("/api/v1/users/user/%s/network/%s/join", userId, networkId)).BodyJSON(req).ReceiveSuccess(resp)
-	if err != nil {
-		return nil, err
+	c.sling.New().Post(fmt.Sprintf("/api/v1/users/user/%s/network/%s/join", userId, networkId)).BodyJSON(req).Receive(resp, resp)
+	if resp.Code != 200 {
+		return nil, errors.New(resp.Message)
 	}
 	return resp.Result.(*JoinResponse), nil
 }
