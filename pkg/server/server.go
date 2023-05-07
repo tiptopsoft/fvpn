@@ -4,7 +4,6 @@ import (
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/middleware"
 	"github.com/topcloudz/fvpn/pkg/middleware/infra"
-	"github.com/topcloudz/fvpn/pkg/nativehttp"
 	"net"
 	"sync"
 
@@ -43,7 +42,7 @@ func (r *RegServer) Start(address string) error {
 	go r.WriteToUdp()
 
 	go func() {
-		hs := nativehttp.New(r.cache)
+		hs := New(r.cache)
 		hs.Start()
 	}()
 

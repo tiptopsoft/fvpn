@@ -1,14 +1,9 @@
-package nativehttp
+package server
 
 import (
 	"encoding/json"
 	"github.com/topcloudz/fvpn/pkg/cache"
-	"github.com/topcloudz/fvpn/pkg/log"
 	"net/http"
-)
-
-var (
-	logger = log.Log()
 )
 
 type HttpServer struct {
@@ -27,6 +22,6 @@ func (hs HttpServer) Start() error {
 		}
 	})
 
-	logger.Infof("nativehttp listen at: %s", ":4001")
+	logger.Infof("http listen at: %s", ":4001")
 	return http.ListenAndServe(":4001", nil)
 }

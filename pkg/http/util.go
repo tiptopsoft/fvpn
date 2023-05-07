@@ -1,4 +1,4 @@
-package nativehttp
+package http
 
 import (
 	"io"

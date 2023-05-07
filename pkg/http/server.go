@@ -1,4 +1,4 @@
-package nativehttp
+package http
 
 import (
 	"net/http"

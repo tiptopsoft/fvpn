@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	nativehttp "github.com/topcloudz/fvpn/pkg/nativehttp"
+	nativehttp "github.com/topcloudz/fvpn/pkg/http"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"io"
 	"net/http"

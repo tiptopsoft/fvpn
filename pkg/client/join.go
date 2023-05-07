@@ -1,88 +1,41 @@
 package client
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/topcloudz/fvpn/pkg/addr"
-	httputil "github.com/topcloudz/fvpn/pkg/nativehttp"
-	"io"
-	"net/http"
+	"github.com/topcloudz/fvpn/pkg/http"
 )
 
 const (
-	userUrl = "https://www.efvpn.com"
+	userUrl  = "https://www.efvpn.com"
+	localUrl = "http://localhost:6663"
 )
 
 func (n *Node) RunJoinNetwork(netId string) error {
 	logger.Infof("start to join %s", netId)
-	//user nativehttp to get NetworkId config
-	type body struct {
-		SrcMac    string `json:"srcMac"`
-		NetworkId string `json:"networkId"`
-		Ip        string `json:"ip"`
-		Mask      string `json:"mask"`
-	}
-
+	req := new(http.JoinRequest)
 	mac, err := addr.GetHostMac()
 	if err != nil {
 		return errors.New("can not found default host mac")
 	}
+	req.SrcMac = mac.String()
 
-	request := body{
-		SrcMac: mac.String(),
-	}
-	buff, err := json.Marshal(request)
+	regClient := http.New(userUrl)
+	resp, err := regClient.JoinNetwork("1", netId, *req)
 	if err != nil {
-		return errors.New("invalid body")
+		return err
 	}
-	destUrl := fmt.Sprintf("%s/api/v1/users/user/%s/network/%s/join", userUrl, "1", netId)
-	resp, err := http.Post(destUrl, "application/json", bytes.NewReader(buff))
-	respBuff, err := io.ReadAll(resp.Body)
-	var networkResp struct {
-		NetworkId string
-		Ip        string
-		Mask      string
-	}
+	localClient := http.New(localUrl)
+	req.NetworkId = resp.NetworkId
+	req.Ip = resp.IP
+	req.Mask = resp.Mask
+	err = localClient.JoinLocalFvpn(*req)
 
-	fmt.Println(string(respBuff))
-
-	var httpResponse httputil.HttpResponse
-	err = json.Unmarshal(respBuff, &httpResponse)
 	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(httpResponse)
-
-	bs, err := json.Marshal(httpResponse.Result)
-	if err = json.Unmarshal(bs, &networkResp); err != nil {
 		return err
 	}
 
-	//logger.Infof("get result ip: %s, mask: %s", networkResp.Ip, networkResp.Mask)
-	//err = tuntap.New(tuntap.TAP, networkResp.Ip, networkResp.Mask, networkResp.NetworkId)
-	//if err != nil {
-	//	return err
-	//}
-
-	//request to fvpn to tell that network has been created.
-	fvpnUrl := fmt.Sprintf("%s", "http://localhost:6663/api/v1/join")
-
-	req := body{
-		NetworkId: netId,
-		Ip:        networkResp.Ip,
-		Mask:      networkResp.Mask,
-	}
-	buff1, _ := json.Marshal(req)
-	resultBuff, err := httputil.Post(fvpnUrl, bytes.NewReader(buff1))
-
-	if err != nil || resultBuff == nil {
-		return err
-	}
-
-	logger.Infof("join network %s success, resp: %s", networkResp.NetworkId, string(resultBuff))
+	logger.Infof("join network %s success", resp.NetworkId)
 
 	return nil
 }
