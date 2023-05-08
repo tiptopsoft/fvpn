@@ -54,3 +54,30 @@ func (c *Client) JoinLocalFvpn(req JoinRequest) error {
 	_, err := c.sling.New().Post("/api/v1/join").BodyJSON(req).ReceiveSuccess(resp)
 	return err
 }
+
+type LoginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type LoginResponse struct {
+	Token string `json:"token"`
+}
+
+func (c *Client) Login(req LoginRequest) (*LoginResponse, error) {
+	resp := new(Response)
+	c.sling.New().Post("api/v1/login").BodyJSON(req).Receive(resp, resp)
+	if resp.Code != 200 {
+		return nil, errors.New(resp.Message)
+	}
+	return resp.Result.(*LoginResponse), nil
+}
+
+func (c *Client) Logout(req LoginRequest) (*LoginResponse, error) {
+	resp := new(Response)
+	c.sling.New().Post("api/v1/login").BodyJSON(req).Receive(resp, resp)
+	if resp.Code != 200 {
+		return nil, errors.New(resp.Message)
+	}
+	return resp.Result.(*LoginResponse), nil
+}
