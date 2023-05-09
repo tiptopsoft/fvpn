@@ -46,7 +46,7 @@ func GetFrameHeader(buff []byte) (*FrameHeader, error) {
 
 	//IP
 	if header.EtherType == 0x0800 {
-		logger.Debugf("this is an destIP frame")
+		logger.Debugf("this is an IP frame")
 		header.SourceIP = net.IPv4(buff[26], buff[27], buff[28], buff[29])
 		header.DestinationIP = net.IPv4(buff[30], buff[31], buff[32], buff[33])
 	}
