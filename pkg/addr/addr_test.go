@@ -29,3 +29,23 @@ func TestTransfer(t *testing.T) {
 	fmt.Println(buff)
 
 }
+
+func TestGetMacAddrAndIPByDev(t *testing.T) {
+	fa, err := net.InterfaceByName("en0")
+
+	addrs, err := fa.Addrs()
+	for _, address := range addrs {
+		// 检查ip地址判断是否回环地址
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				fmt.Println(fa.HardwareAddr, ipnet.IP, nil)
+			}
+		}
+	}
+
+	fmt.Println(fa.HardwareAddr.String(), nil, err)
+}
+
+func TestTuntap(t *testing.T) {
+
+}

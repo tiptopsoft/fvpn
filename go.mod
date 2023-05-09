@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/dghubble/sling v1.4.1
 	github.com/magiconair/properties v1.8.6
+	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
 	github.com/spf13/cobra v1.6.0
 	github.com/spf13/viper v1.13.0
 	go.uber.org/atomic v1.7.0

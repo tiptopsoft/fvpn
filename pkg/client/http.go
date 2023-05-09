@@ -42,21 +42,12 @@ func (n *Node) runHttpServer() error {
 			}
 
 			logger.Infof("request network is: %s", req.NetworkId)
-			////TODO 把networkId加进来
-			//if err := n.addTuns(req.NetworkId); err != nil {
-			//	w.WriteHeader(500)
-			//}
-			//req.Status = 200
 
 			if err := json.NewEncoder(w).Encode(req); err != nil {
 				w.WriteHeader(500)
 				return
 			}
 
-			//启动一个goroutine, 处理这个network
-			//tun := n.GetTun()
-			//tun.NetworkId = req.NetworkId
-			// register this networkId to server
 			logger.Infof("get result ip: %s, mask: %s", req.Ip, req.Mask)
 			tap, err := tuntap.New(tuntap.TAP, req.Ip, req.Mask, req.NetworkId)
 			if err != nil {

@@ -13,6 +13,6 @@ type Network struct {
 }
 
 func (n Network) NetworkId() string {
-	fmt.Sprintf("%s%s", string(n.Address))
+	fmt.Sprintf("%s%s", "", string(n.Address))
 	return ""
 }

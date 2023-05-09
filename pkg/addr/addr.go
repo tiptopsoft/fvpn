@@ -96,7 +96,20 @@ func GenerateIP(ipInt uint32) string {
 
 // GetMacAddrAndIPByDev get tun mac, ip for register
 func GetMacAddrAndIPByDev(name string) (net.HardwareAddr, net.IP, error) {
-	fa, err := net.InterfaceByName(name[:14])
+	var fa *net.Interface
+	var err error
+	systemType := runtime.GOOS
+	switch systemType {
+	case "linux":
+		fa, err = net.InterfaceByName(name[:14])
+		break
+	case "darwin":
+		fa, err = net.InterfaceByName(name)
+		break
+	case "windows":
+		break
+	}
+
 	if err != nil {
 		return nil, nil, err
 	}
