@@ -44,26 +44,27 @@ func New(mode Mode, ip, mask, networkId string) (*Tuntap, error) {
 
 		case TUN:
 			ifr.ifruFlags = IFF_TUN | IFF_NO_PI
-			_, _, errno = unix.Syscall(syscall.SYS_IOCTL, uintptr(socketFD), uintptr(TUNSETIFF), uintptr(unsafe.Pointer(ifr)))
+			_, _, errno = unix.Syscall(unix.SYS_IOCTL, uintptr(socketFD), uintptr(TUNSETIFF), uintptr(unsafe.Pointer(ifr)))
 
 		case TAP:
 			ifr.ifruFlags = IFF_TAP | IFF_NO_PI
-			_, _, errno = unix.Syscall(syscall.SYS_IOCTL, uintptr(socketFD), uintptr(unix.SIOCGIFFLAGS), uintptr(unsafe.Pointer(ifr)))
+			_, _, errno = unix.Syscall(unix.SYS_IOCTL, uintptr(socketFD), uintptr(unix.SIOCGIFFLAGS), uintptr(unsafe.Pointer(ifr)))
 		}
 
 		if errno != 0 {
 			return nil, fmt.Errorf("tuntap ioctl failed, errno %v", errno)
 		}
 
-		ifr.ifruFlags |= syscall.IFF_RUNNING | syscall.IFF_UP
-		if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(socketFD), uintptr(syscall.SIOCSIFFLAGS), uintptr(unsafe.Pointer(ifr))); errno != 0 {
+		ifr.ifruFlags |= unix.IFF_RUNNING | unix.IFF_UP
+		if _, _, errno := unix.Syscall(unix.SYS_IOCTL, uintptr(socketFD), uintptr(syscall.SIOCSIFFLAGS), uintptr(unsafe.Pointer(ifr))); errno != 0 {
 			err = errno
 			return nil, fmt.Errorf("error in syscall.Syscall(syscall.SYS_IOCTL, ...): %v", err)
 		}
 
-		//_, _, errno = unix.Syscall(unix.SYS_IOCTL, uintptr(fd), uintptr(TUNSETPERSIST), 1)
+		//_, _, errno = unix.Syscall(unix.SYS_IOCTL, uintptr(socketFD), uintptr(TUNSETPERSIST), 1)
 		//if errno != 0 {
 		//	err = fmt.Errorf("tuntap ioctl TUNSETPERSIST failed, errno %v", errno)
+		//	return nil, err
 		//}
 
 		//set euid egid

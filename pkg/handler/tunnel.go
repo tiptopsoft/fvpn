@@ -120,7 +120,7 @@ func (t *Tun) SaveSocket(mac string, s socket.Interface) {
 }
 
 func (t *Tun) ReadFromUdp() {
-	logger.Infof("start a udp loop socket is: %s", t.socket)
+	logger.Infof("start a udp loop socket is: %v", t.socket)
 	for {
 		ctx := context.Background()
 		frame := packet.NewFrame()

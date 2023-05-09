@@ -18,11 +18,7 @@ var (
 	defaultYaml        = []byte(
 		`client:
   listen: :3000
-  server: :4000
-  tap: tap0
-  ip: 192.168.0.1
-  mask: 255.255.255.0
-  mac: 01:02:0f:0E:04:01
+  server: 127.0.0.1
   type: udp
 
 #-------------------分割线

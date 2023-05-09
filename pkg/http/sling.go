@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/dghubble/sling"
@@ -30,9 +31,9 @@ type JoinRequest struct {
 }
 
 type JoinResponse struct {
-	IP        string
-	Mask      string
-	NetworkId string
+	IP        string `json:"ip"`
+	Mask      string `json:"mask"`
+	NetworkId string `json:"networkId"`
 }
 
 func (c *Client) JoinNetwork(userId, networkId string, req JoinRequest) (*JoinResponse, error) {
@@ -41,7 +42,18 @@ func (c *Client) JoinNetwork(userId, networkId string, req JoinRequest) (*JoinRe
 	if resp.Code != 200 {
 		return nil, errors.New(resp.Message)
 	}
-	return resp.Result.(*JoinResponse), nil
+
+	buff, err := json.Marshal(resp.Result)
+	if err != nil {
+		return nil, err
+	}
+
+	var response JoinResponse
+	err = json.Unmarshal(buff, &response)
+	if err != nil {
+		return nil, err
+	}
+	return &response, nil
 }
 
 func (c *Client) LeaveNetwork() error {
