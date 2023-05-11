@@ -17,10 +17,6 @@ when you use fvpn, you should create an app.yml
 client:
   listen: :3000
   server: 127.0.0.1
-  tap: tap0
-  ip: 192.168.1.1
-  mask: 255.255.255.0
-  mac: 01:02:0f:0E:04:01
   type: udp
 
 #-------------------分害线
