@@ -40,7 +40,7 @@ fvpn join xxx
 ```
 
 ## IP 
-after you join a network, you can visit you console, in which you can see your device status and device info. also can see your devices register in this network. as a device can 
+after you join a network, you can visit your console, in which you can see your device status and device info. also can see your devices register in this network. as a device can 
 join multiple network.
 
 ## Compile
