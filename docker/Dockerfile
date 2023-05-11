@@ -1,4 +1,4 @@
 FROM alpine:3.15
-COPY star /usr/local/bin/star
+COPY fvpn /usr/local/bin/fvpn
 
-ENTRYPOINT ["star"]
+ENTRYPOINT ["fvpn", "serve"]

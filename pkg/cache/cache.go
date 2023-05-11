@@ -60,6 +60,19 @@ func (c *Cache) GetNodeInfo(networkId, ip string) (*NodeInfo, error) {
 	return node, nil
 }
 
+// ListNodesByNetworkId list all node in this networkId
+func (c *Cache) ListNodesByNetworkId(networkId string) (nodes []*NodeInfo, err error) {
+	m, b := LocalCache.Load(networkId)
+	if !b {
+		return nil, errors.New("not networkId " + networkId + " cached")
+	}
+	s := m.(*Cache)
+	for _, node := range s.local {
+		nodes = append(nodes, node)
+	}
+	return nodes, nil
+}
+
 func (c *Cache) GetNodes() (nodes []*NodeInfo) {
 	for _, value := range c.local {
 		nodes = append(nodes, value)

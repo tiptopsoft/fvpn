@@ -33,8 +33,9 @@ func loginCmd() *cobra.Command {
 		},
 	}
 	fs := cmd.Flags()
-	fs.StringVarP(&opts.Username, "u", "", "", "username for fvpn")
-	fs.StringVarP(&opts.Password, "p", "", "", "username for fvpn")
+	fs.StringVarP(&opts.Username, "username", "u", "", "username for fvpn")
+	fs.StringVarP(&opts.Password, "password", "p", "", "username for fvpn")
+
 	return cmd
 }
 

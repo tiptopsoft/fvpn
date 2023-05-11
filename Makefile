@@ -24,4 +24,7 @@ build-m1:
 	GOPROXY=https://goproxy.cn,direct go build -o bin/fvpn main.go
 
 image: build
-	cd ${shell pwd}/bin/ && docker buildx build  -t fvpn:${tags} -f ${shell pwd}/docker/Dockerfile .
+	cd ${shell pwd}/bin/ && docker buildx build  -t registry.cn-hangzhou.aliyuncs.com/fvpn/fvpn:${tags} -f ${shell pwd}/docker/Dockerfile .
+
+image-push: image
+	docker push registry.cn-hangzhou.aliyuncs.com/fvpn/fvpn:${tags}

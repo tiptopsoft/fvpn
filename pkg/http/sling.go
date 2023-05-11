@@ -87,7 +87,7 @@ func (c *Client) Login(req LoginRequest) (*LoginResponse, error) {
 
 func (c *Client) Logout(req LoginRequest) (*LoginResponse, error) {
 	resp := new(Response)
-	c.sling.New().Post("api/v1/login").BodyJSON(req).Receive(resp, resp)
+	c.sling.New().Post("api/v1/logout").BodyJSON(req).Receive(resp, resp)
 	if resp.Code != 200 {
 		return nil, errors.New(resp.Message)
 	}
