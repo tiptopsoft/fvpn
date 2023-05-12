@@ -20,6 +20,8 @@ services:
     restart: always
     container_name: fvpn
     command:
+      - sh
+      - -c
       - fvpn serve
     ports:
       - "4000:4000"
@@ -28,8 +30,11 @@ services:
     restart: always
     container_name: fvpn-client
     command:
-      - fvpn node
-      - fvpn join xxxx
+      - sh
+      - -c
+      - |
+        - fvpn node
+        - fvpn join xxxx
 
   fvpn-nginx:
     image: nginx
