@@ -78,11 +78,22 @@ type LoginResponse struct {
 
 func (c *Client) Login(req LoginRequest) (*LoginResponse, error) {
 	resp := new(Response)
-	c.sling.New().Post("api/v1/login").BodyJSON(req).Receive(resp, resp)
+	c.sling.New().Post("api/v1/users/registry/login").BodyJSON(req).Receive(resp, resp)
 	if resp.Code != 200 {
 		return nil, errors.New(resp.Message)
 	}
-	return resp.Result.(*LoginResponse), nil
+
+	var tokenResp LoginResponse
+	buff, err := json.Marshal(resp.Result)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(buff, &tokenResp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tokenResp, nil
 }
 
 func (c *Client) Logout(req LoginRequest) (*LoginResponse, error) {

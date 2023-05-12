@@ -1,10 +1,11 @@
 package client
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/topcloudz/fvpn/pkg/http"
+	"github.com/topcloudz/fvpn/pkg/option"
+	"github.com/topcloudz/fvpn/pkg/util"
 	"os"
 	"path/filepath"
 )
@@ -22,29 +23,24 @@ func (n *Node) Login(username, password string) error {
 	//登陆成功
 	logger.Infof("login success. token:%s", resp.Token)
 	//write to local
-	path := filepath.Join("~/.fvpn/config.json")
-	file, err := os.Open(path)
+	homeDir, err := os.UserHomeDir()
+	path := filepath.Join(homeDir, ".fvpn/config.json")
+	_, err = os.Stat(path)
+	var file *os.File
+	if os.IsNotExist(err) {
+		parentDir := filepath.Dir(path)
+		if err := os.MkdirAll(parentDir, 0755); err != nil {
+			return err
+		}
+		file, err = os.Create(path)
+	} else {
+		file, err = os.Open(path)
+	}
 	defer file.Close()
 	encoder := json.NewEncoder(file)
-	type body struct {
-		Auth string `json:"auth"`
-	}
 
-	b := body{
-		Auth: fmt.Sprintf("%s:%s", username, stringToBase64(password)),
+	b := option.Login{
+		Auth: fmt.Sprintf("%s:%s", username, util.StringToBase64(password)),
 	}
 	return encoder.Encode(b)
-}
-
-func stringToBase64(str string) string {
-	return base64.StdEncoding.EncodeToString([]byte(str))
-}
-
-func base64Decode(str string) (string, error) {
-	buff, err := base64.StdEncoding.DecodeString(str)
-	if err != nil {
-		return "", err
-	}
-
-	return string(buff), nil
 }
