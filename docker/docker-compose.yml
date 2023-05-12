@@ -1,0 +1,44 @@
+version: "2.3"
+services:
+  mysql:
+    image: mysql
+    container_name: fvpn-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=1qaz@WSX
+  redis:
+    image: redis
+    container_name: fvpn-redis
+  fvpn-users:
+    image: registry.cn-hangzhou.aliyuncs.com/fvpn/fvpn-users:v0.1
+    restart: always
+    container_name: fvpn-user
+    volumes:
+      - ./app.yaml:/root/.star/app.yaml
+
+  fvpn:
+    image: registry.cn-hangzhou.aliyuncs.com/fvpn/fvpn:v0.1
+    restart: always
+    container_name: fvpn
+    command:
+      - fvpn serve
+    ports:
+      - "4000:4000"
+  fpvn-client:
+    image: registry.cn-hangzhou.aliyuncs.com/fvpn/fvpn:v0.1
+    restart: always
+    container_name: fvpn-client
+    command:
+      - fvpn node
+      - fvpn join xxxx
+
+  fvpn-nginx:
+    image: nginx
+    ports:
+      - "443:443"
+    restart: always
+    volumes:
+      - ./nginx/conf/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./nginx/html:/usr/share/nginx/html
+      - ./nginx/log:/var/log/nginx
