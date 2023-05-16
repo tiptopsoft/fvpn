@@ -2,6 +2,6 @@ package http
 
 type Response struct {
 	Code    int         `json:"code"`
-	Result  interface{} `json:"result"`
-	Message string      `json:"message"`
+	Result  interface{} `json:"data"`
+	Message string      `json:"msg"`
 }

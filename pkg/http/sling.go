@@ -3,7 +3,6 @@ package http
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/dghubble/sling"
 	"github.com/topcloudz/fvpn/pkg/cache"
 	"net/http"
@@ -26,19 +25,20 @@ func New(base string) *Client {
 type JoinRequest struct {
 	SrcMac    string `json:"srcMac"`
 	NetworkId string `json:"networkId"`
+	UserId    string `json:"userId"`
 	Ip        string `json:"ip"`
 	Mask      string `json:"mask"`
 }
 
 type JoinResponse struct {
-	IP        string `json:"ip"`
+	IP        string `json:"deviceIp"`
 	Mask      string `json:"mask"`
 	NetworkId string `json:"networkId"`
 }
 
-func (c *Client) JoinNetwork(userId, networkId string, req JoinRequest) (*JoinResponse, error) {
+func (c *Client) JoinNetwork(req JoinRequest) (*JoinResponse, error) {
 	resp := new(Response)
-	c.sling.New().Post(fmt.Sprintf("/api/v1/users/user/%s/network/%s/join", userId, networkId)).BodyJSON(req).Receive(resp, resp)
+	c.sling.New().Post("/api/v1/network/join").BodyJSON(req).Receive(resp, resp)
 	if resp.Code != 200 {
 		return nil, errors.New(resp.Message)
 	}

@@ -177,7 +177,7 @@ func (t *Tun) addQueryRemoteNodes(networkId string) error {
 }
 
 // QueryRemoteNodes when packet from regserver, this method will be called
-func (t *Tun) QueryRemoteNodes(networkId string) {
+func (t *Tun) QueryRemoteNodes() {
 	for {
 		pkt := <-t.QueryBound
 		t.socket.Write(pkt.Packet)

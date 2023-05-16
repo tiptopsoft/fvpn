@@ -19,9 +19,11 @@ func (n *Node) RunJoinNetwork(netId string) error {
 		return errors.New("can not found default host mac")
 	}
 	req.SrcMac = mac.String()
+	req.NetworkId = netId
+	req.UserId = "1"
 
 	regClient := http.New(userUrl)
-	resp, err := regClient.JoinNetwork("1", netId, *req)
+	resp, err := regClient.JoinNetwork(*req)
 	if err != nil {
 		return err
 	}
