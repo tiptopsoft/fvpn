@@ -55,6 +55,7 @@ func Handle() handler.HandlerFunc {
 				err = sock.Connect(&address)
 				if err != nil {
 					//return err
+					logger.Errorf("%v", err)
 				}
 				nodeInfo := &cache.NodeInfo{
 					Socket:  sock,
@@ -69,18 +70,8 @@ func Handle() handler.HandlerFunc {
 			}
 			break
 		case option.MsgTypePacket:
-			//forwardPacket, err := forward.Decode(buff[:])
-			//if err != nil {
-			//	//return err
-			//}
-			//logger.Infof("got through packet: %v, srcMac: %v", forwardPacket, forwardPacket.SrcMac)
-			//
-			////写入到tap
-			//idx := unsafe.Sizeof(forwardPacket)
-			//frame.Packet = buff[idx:]
 			frame.Packet = buff[:]
 			frame.NetworkId = hex.EncodeToString(header.NetworkId[:])
-
 			break
 		}
 

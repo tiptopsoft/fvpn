@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/topcloudz/fvpn/pkg/cache"
 	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet/peer"
 	"github.com/topcloudz/fvpn/pkg/socket"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"github.com/topcloudz/fvpn/pkg/util"
@@ -12,11 +13,12 @@ import (
 )
 
 type Tun struct {
-	socket     socket.Interface // relay or p2p
+	socket     socket.Interface // underlay
 	p2pSocket  sync.Map         //p2psocket
 	device     map[string]*tuntap.Tuntap
 	Inbound    chan *packet.Frame //used from udp
 	Outbound   chan *packet.Frame //used for tun
+	QueryBound chan *packet.Frame
 	cache      *cache.Cache
 	tunHandler Handler
 	udpHandler Handler
@@ -25,16 +27,15 @@ type Tun struct {
 
 func NewTun(tunHandler, udpHandler Handler, socket socket.Interface) *Tun {
 	tun := &Tun{
-		Inbound:    make(chan *packet.Frame, 15000),
-		Outbound:   make(chan *packet.Frame, 15000),
+		Inbound:    make(chan *packet.Frame, 10000),
+		Outbound:   make(chan *packet.Frame, 10000),
+		QueryBound: make(chan *packet.Frame, 10000),
 		device:     make(map[string]*tuntap.Tuntap),
 		cache:      cache.New(),
 		tunHandler: tunHandler,
 		udpHandler: udpHandler,
 	}
-
 	tun.socket = socket
-
 	return tun
 }
 
@@ -78,7 +79,7 @@ func (t *Tun) WriteToUdp() {
 	for {
 		pkt := <-t.Outbound
 		//这里先尝试P2p, 没有P2P使用relay server
-		header, err := util.GetFrameHeader(pkt.Packet[12:]) //why 13? because header length is 12.
+		header, err := util.GetFrameHeader(pkt.Packet[12:]) //why 12? because header length is 12.
 		logger.Infof("packet will be write to : mac: %s, ip: %s, content: %v", header.DestinationAddr, header.DestinationIP.String(), pkt.Packet)
 		if err != nil {
 			continue
@@ -86,6 +87,10 @@ func (t *Tun) WriteToUdp() {
 
 		p2pSocket := t.GetSocket(header.DestinationAddr.String())
 		if p2pSocket == nil {
+			err := t.addQueryRemoteNodes(pkt.NetworkId)
+			if err != nil {
+				logger.Errorf("add query queue failed. err: %v", err)
+			}
 			t.socket.Write(pkt.Packet)
 			nodeInfo, err := t.cache.GetNodeInfo(t.NetworkId, header.DestinationIP.String())
 			if err != nil {
@@ -154,4 +159,28 @@ func (t *Tun) WriteToDevice() {
 			logger.Errorf("write to device err: %v", err)
 		}
 	}
+}
+
+// 添加一个networkID，查询该networkId下节点，更新cache
+func (t *Tun) addQueryRemoteNodes(networkId string) error {
+	pkt := peer.NewPacket(networkId)
+	buff, err := peer.Encode(pkt)
+	if err != nil {
+		return err
+	}
+	frame := packet.NewFrame()
+	frame.NetworkId = networkId
+	frame.Packet = buff
+	frame.Buff = buff
+	t.QueryBound <- frame
+	return nil
+}
+
+// QueryRemoteNodes when packet from regserver, this method will be called
+func (t *Tun) QueryRemoteNodes(networkId string) {
+	for {
+		pkt := <-t.QueryBound
+		t.socket.Write(pkt.Packet)
+	}
+
 }
