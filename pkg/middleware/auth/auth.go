@@ -2,17 +2,12 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/http"
-	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"github.com/topcloudz/fvpn/pkg/util"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 type StarAuth struct {
@@ -30,29 +25,7 @@ type AuthHandler struct {
 func Middleware() func(handler handler.Handler) handler.Handler {
 	return func(next handler.Handler) handler.Handler {
 		return handler.HandlerFunc(func(ctx context.Context, frame *packet.Frame) error {
-			//check login
-			homedir, err := os.UserHomeDir()
-			if err != nil {
-				return errors.New("user not logon")
-			}
-
-			path := filepath.Join(homedir, "./fvpn/config.json")
-			file, err := os.Open(path)
-			if err != nil {
-				return err
-			}
-
-			decoder := json.NewDecoder(file)
-
-			var resp option.Login
-			err = decoder.Decode(&resp)
-			if err != nil {
-				return err
-			}
-
-			values := strings.Split(resp.Auth, ":")
-			username := values[0]
-			password, err := util.Base64Decode(values[1])
+			username, password, err := util.GetUserInfo()
 			if err != nil {
 				return err
 			}
@@ -67,7 +40,7 @@ func Middleware() func(handler handler.Handler) handler.Handler {
 			}
 
 			if loginResp.Token == "" {
-				return errors.New("token is nil, please relogin")
+				return errors.New("token is nil, please login again")
 			}
 
 			return next.Handle(ctx, frame)

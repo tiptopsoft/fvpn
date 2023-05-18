@@ -2,12 +2,17 @@ package util
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"github.com/topcloudz/fvpn/pkg/log"
+	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"golang.org/x/sys/unix"
 	"net"
 	"net/netip"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 var (
@@ -72,4 +77,33 @@ func parseHeader(buf []byte) *FrameHeader {
 	header.SourceAddr = hd
 	header.EtherType = binary.BigEndian.Uint16(buf[12:14])
 	return header
+}
+
+func GetUserInfo() (string, string, error) {
+	homedir, err := os.UserHomeDir()
+	if err != nil {
+		return "", "", err
+	}
+	path := filepath.Join(homedir, "./fvpn/config.json")
+	file, err := os.Open(path)
+	if err != nil {
+		return "", "", err
+	}
+
+	decoder := json.NewDecoder(file)
+
+	var resp option.Login
+	err = decoder.Decode(&resp)
+	if err != nil {
+		return "", "", err
+	}
+
+	values := strings.Split(resp.Auth, ":")
+	username := values[0]
+	password, err := Base64Decode(values[1])
+	if err != nil {
+		return "", "", err
+	}
+
+	return username, password, nil
 }

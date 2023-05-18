@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/dghubble/sling"
 	"github.com/topcloudz/fvpn/pkg/cache"
+	"github.com/topcloudz/fvpn/pkg/util"
 	"net/http"
 )
 
@@ -38,7 +39,23 @@ type JoinResponse struct {
 
 func (c *Client) JoinNetwork(req JoinRequest) (*JoinResponse, error) {
 	resp := new(Response)
-	c.sling.New().Post("/api/v1/network/join").BodyJSON(req).Receive(resp, resp)
+	//First, read the config.json to get username and password to get token
+	username, password, err := util.GetUserInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	loginRequest := LoginRequest{
+		Username: username,
+		Password: password,
+	}
+
+	tokenResp, err := c.Tokens(loginRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	c.sling.New().Post("/api/v1/network/join").BodyJSON(req).Set("token", tokenResp.Token).Receive(resp, resp)
 	if resp.Code != 200 {
 		return nil, errors.New(resp.Message)
 	}
@@ -79,6 +96,26 @@ type LoginResponse struct {
 func (c *Client) Login(req LoginRequest) (*LoginResponse, error) {
 	resp := new(Response)
 	c.sling.New().Post("api/v1/users/registry/login").BodyJSON(req).Receive(resp, resp)
+	if resp.Code != 200 {
+		return nil, errors.New(resp.Message)
+	}
+
+	var tokenResp LoginResponse
+	buff, err := json.Marshal(resp.Result)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(buff, &tokenResp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tokenResp, nil
+}
+
+func (c *Client) Tokens(req LoginRequest) (*LoginResponse, error) {
+	resp := new(Response)
+	c.sling.New().Post("api/v1/tokens").BodyJSON(req).Receive(resp, resp)
 	if resp.Code != 200 {
 		return nil, errors.New(resp.Message)
 	}
