@@ -26,7 +26,6 @@ func New(base string) *Client {
 type JoinRequest struct {
 	SrcMac    string `json:"srcMac"`
 	NetworkId string `json:"networkId"`
-	UserId    string `json:"userId"`
 	Ip        string `json:"ip"`
 	Mask      string `json:"mask"`
 }
@@ -95,7 +94,7 @@ type LoginResponse struct {
 
 func (c *Client) Login(req LoginRequest) (*LoginResponse, error) {
 	resp := new(Response)
-	c.sling.New().Post("api/v1/users/registry/login").BodyJSON(req).Receive(resp, resp)
+	c.sling.New().Post("api/v1/users/login").BodyJSON(req).Receive(resp, resp)
 	if resp.Code != 200 {
 		return nil, errors.New(resp.Message)
 	}

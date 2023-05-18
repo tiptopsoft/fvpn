@@ -20,7 +20,6 @@ func (n *Node) RunJoinNetwork(netId string) error {
 	}
 	req.SrcMac = mac.String()
 	req.NetworkId = netId
-	req.UserId = "1"
 
 	regClient := http.New(userUrl)
 	resp, err := regClient.JoinNetwork(*req)

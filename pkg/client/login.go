@@ -34,7 +34,7 @@ func (n *Node) Login(username, password string) error {
 		}
 		file, err = os.Create(path)
 	} else {
-		file, err = os.Open(path)
+		file, err = os.OpenFile(path, os.O_RDWR, 0755)
 	}
 	defer file.Close()
 	encoder := json.NewEncoder(file)

@@ -84,7 +84,11 @@ func GetUserInfo() (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	path := filepath.Join(homedir, "./fvpn/config.json")
+	path := filepath.Join(homedir, ".fvpn/config.json")
+	_, err = os.Stat(path)
+	if os.IsNotExist(err) {
+		return "", "", errors.New("please have not logon")
+	}
 	file, err := os.Open(path)
 	if err != nil {
 		return "", "", err
