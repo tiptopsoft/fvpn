@@ -56,7 +56,7 @@ func (r *RegServer) start(address string) error {
 	r.socket = socket.NewSocket()
 	once.Do(func() {
 		r.cache = cache.New()
-		r.h = middleware.WithMiddlewares(r.serverUdpHandler(), infra.Middlewares(true, true)...)
+		r.h = middleware.WithMiddlewares(r.serverUdpHandler(), infra.Middlewares(false, false)...)
 	})
 
 	switch r.Protocol {
