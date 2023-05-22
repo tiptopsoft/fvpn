@@ -72,7 +72,7 @@ func Decode(udpBytes []byte) (EdgePacketAck, error) {
 		idx = packet.DecodeBytes(&ip, udpBytes, idx)
 		peer.IP = ip
 		idx = packet.DecodeUint16(&peer.Port, udpBytes, idx)
-		var natIp = make([]byte, 4)
+		var natIp = make([]byte, 16)
 		idx = packet.DecodeBytes(&natIp, udpBytes, idx)
 		peer.NatIp = natIp
 		idx = packet.DecodeUint16(&peer.NatPort, udpBytes, idx)
