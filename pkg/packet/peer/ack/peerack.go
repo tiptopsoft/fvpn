@@ -10,10 +10,12 @@ import (
 
 // EdgeInfo info need to connect to
 type EdgeInfo struct {
-	Mac  net.HardwareAddr
-	IP   net.IP
-	Port uint16
-	P2P  uint8 //1: 是2：否
+	Mac     net.HardwareAddr
+	IP      net.IP
+	Port    uint16
+	P2P     uint8 //1: 是2：否
+	NatIp   net.IP
+	NatPort uint16
 }
 
 // EdgePacketAck ack for size of EdgeInfo
@@ -44,6 +46,8 @@ func Encode(ack EdgePacketAck) ([]byte, error) {
 		idx = packet.EncodeBytes(b, v.Mac, idx)
 		idx = packet.EncodeBytes(b, v.IP, idx)
 		idx = packet.EncodeUint16(b, v.Port, idx)
+		idx = packet.EncodeBytes(b, v.NatIp, idx)
+		idx = packet.EncodeUint16(b, v.NatPort, idx)
 	}
 
 	return b, nil
@@ -68,6 +72,10 @@ func Decode(udpBytes []byte) (EdgePacketAck, error) {
 		idx = packet.DecodeBytes(&ip, udpBytes, idx)
 		peer.IP = ip
 		idx = packet.DecodeUint16(&peer.Port, udpBytes, idx)
+		var natIp = make([]byte, 4)
+		idx = packet.DecodeBytes(&natIp, udpBytes, idx)
+		peer.NatIp = natIp
+		idx = packet.DecodeUint16(&peer.NatPort, udpBytes, idx)
 		info = append(info, peer)
 	}
 
