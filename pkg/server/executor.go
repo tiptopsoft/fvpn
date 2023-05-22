@@ -56,34 +56,37 @@ func (r *RegServer) WriteToUdp() {
 	logger.Infof("start a udp write loop")
 	for {
 		pkt := <-r.Outbound
-		if pkt.RemoteAddr != nil {
-			r.socket.WriteToUdp(pkt.Packet[:], pkt.RemoteAddr)
-		} else {
-			//if util.IsBroadCast(fp.DstMac.String()) {
-			packetHeader, err := util.GetPacketHeader(pkt.Packet[:12])
-			if err != nil {
-				logger.Errorf("get header failed")
-			}
-			if packetHeader.Flags == option.MsgTypePacket { //转发的流量
-				header, err := util.GetFrameHeader(pkt.Packet[12:]) //whe is 12, because we add our header in, header length is 12
-				if err != nil {
-					logger.Debugf("get header failed, dest ip: %s", header.DestinationIP.String())
-				}
-
-				nodeInfo, err := r.cache.GetNodeInfo(pkt.NetworkId, header.DestinationIP.String())
-				if nodeInfo == nil || err != nil {
-					logger.Debugf("could not found destitation")
-				} else {
-					r.socket.WriteToUdp(pkt.Packet[:], nodeInfo.Addr)
-				}
-			} else {
-				//ignore
-			}
-
+		packetHeader, err := util.GetPacketHeader(pkt.Packet[:12])
+		if err != nil {
+			logger.Errorf("get header failed")
 		}
+
+		switch packetHeader.Flags {
+		case option.MsgTypePacket:
+			header, err := util.GetFrameHeader(pkt.Packet[12:]) //why is 12, because we add our header in, header length is 12
+			if err != nil {
+				logger.Debugf("get header failed, dest ip: %s", header.DestinationIP.String())
+			}
+
+			nodeInfo, err := r.cache.GetNodeInfo(pkt.NetworkId, header.DestinationIP.String())
+			if nodeInfo == nil || err != nil {
+				logger.Debugf("could not found destitation")
+			} else {
+				r.socket.WriteToUdp(pkt.Packet[:], nodeInfo.Addr)
+			}
+			break
+		case option.MsgTypeRegisterAck:
+			r.socket.WriteToUdp(pkt.Packet, pkt.RemoteAddr)
+			break
+		case option.MsgTypeQueryPeer:
+			r.socket.WriteToUdp(pkt.Packet, pkt.RemoteAddr)
+			break
+		}
+
 	}
 }
 
+// serverUdpHandler  core self handler
 func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 	return func(ctx context.Context, frame *packet.Frame) error {
 
@@ -108,6 +111,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			}
 			f, _ := header.Encode(h)
 			frame.Packet = f
+			frame.RemoteAddr = srcAddr
 			break
 		case option.MsgTypeQueryPeer:
 			peers, size, err := getPeerInfo(r.cache.GetNodes())
@@ -121,6 +125,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 				logger.Errorf("get peer ack from server failed. err: %v", err)
 			}
 			frame.Packet = f
+			frame.RemoteAddr = srcAddr
 			break
 		case option.MsgTypePacket:
 			logger.Infof("server got forward packet size:%d, data: %v", size, data)

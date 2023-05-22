@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"github.com/topcloudz/fvpn/pkg/cache"
+	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/peer"
 	"github.com/topcloudz/fvpn/pkg/socket"
@@ -80,13 +81,14 @@ func (t *Tun) WriteToUdp() {
 		pkt := <-t.Outbound
 		//这里先尝试P2p, 没有P2P使用relay server
 		header, err := util.GetFrameHeader(pkt.Packet[12:]) //why 12? because header length is 12.
-		logger.Infof("packet will be write to : mac: %s, ip: %s, content: %v", header.DestinationAddr, header.DestinationIP.String(), pkt.Packet)
+		logger.Debugf("packet will be write to : mac: %s, ip: %s, content: %v", header.DestinationAddr, header.DestinationIP.String(), pkt.Packet)
 		if err != nil {
 			continue
 		}
 
-		p2pSocket := t.GetSocket(header.DestinationAddr.String())
+		p2pSocket := t.GetSocket(pkt.NetworkId)
 		if p2pSocket == nil {
+			logger.Debugf("add query remote peers queue. networkId: %s, destIp: %s", pkt.NetworkId, header.DestinationIP)
 			err := t.addQueryRemoteNodes(pkt.NetworkId)
 			if err != nil {
 				logger.Errorf("add query queue failed. err: %v", err)
@@ -140,7 +142,10 @@ func (t *Tun) ReadFromUdp() {
 			logger.Errorf("Read from udp failed: %v", err)
 			continue
 		}
-		t.Inbound <- frame
+		//forward packet to device
+		if frame.FrameType == option.MsgTypePacket {
+			t.Inbound <- frame
+		}
 	}
 
 }
@@ -181,6 +186,7 @@ func (t *Tun) QueryRemoteNodes() {
 	for {
 		pkt := <-t.QueryBound
 		t.socket.Write(pkt.Packet)
+		logger.Debugf("wrote a pkt to query remote ndoes")
 	}
 
 }

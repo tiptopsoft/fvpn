@@ -30,16 +30,18 @@ func Handle() handler.HandlerFunc {
 			logger.Errorf("decode err: %v", err)
 		}
 
+		frame.NetworkId = hex.EncodeToString(header.NetworkId[:])
+
 		switch header.Flags {
 		case option.MsgTypeRegisterAck:
 			regAck, err := ack.Decode(buff)
-
 			if err != nil {
 				//return err
 			}
 			logger.Infof("register success, got server server ack: (%v)", regAck.AutoIP)
 			break
 		case option.MsgTypeQueryPeer:
+			logger.Debugf("start get query response")
 			peerPacketAck, err := peerack.Decode(buff)
 			if err != nil {
 				//return err
@@ -47,6 +49,7 @@ func Handle() handler.HandlerFunc {
 			infos := peerPacketAck.NodeInfos
 			logger.Infof("got server peers: (%v)", infos)
 			for _, info := range infos {
+				logger.Debugf("got remote node: mac: %v, ip: %s", info.Mac, info.IP)
 				address, err := util.GetAddress(info.IP.String(), int(info.Port))
 				if err != nil {
 					logger.Errorf("resolve addr failed, err: %v", err)
@@ -56,6 +59,7 @@ func Handle() handler.HandlerFunc {
 				if err != nil {
 					//return err
 					logger.Errorf("%v", err)
+					continue
 				}
 				nodeInfo := &cache.NodeInfo{
 					Socket:  sock,
@@ -71,7 +75,6 @@ func Handle() handler.HandlerFunc {
 			break
 		case option.MsgTypePacket:
 			frame.Packet = buff[:]
-			frame.NetworkId = hex.EncodeToString(header.NetworkId[:])
 			break
 		}
 

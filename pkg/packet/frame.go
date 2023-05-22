@@ -13,6 +13,7 @@ type Frame struct {
 	Size       int
 	NetworkId  string
 	RemoteAddr unix.Sockaddr
+	FrameType  uint16
 }
 
 func NewFrame() *Frame {

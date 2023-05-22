@@ -49,6 +49,7 @@ func Handle() handler.HandlerFunc {
 		idx = packet.EncodeBytes(newPacket, frame.Buff[:frame.Size], idx)
 
 		frame.Packet = newPacket[:idx]
+		frame.NetworkId = networkId
 
 		return nil
 
