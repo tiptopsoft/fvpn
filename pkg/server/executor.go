@@ -120,10 +120,11 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 				logger.Errorf("get peers from server failed. err: %v", err)
 			}
 
-			f, err := peerAckBuild(peers, size)
+			f, err := peerAckBuild(peers, size, networkId)
 			if err != nil {
 				logger.Errorf("get peer ack from server failed. err: %v", err)
 			}
+
 			frame.Packet = f
 			frame.RemoteAddr = srcAddr
 			break

@@ -31,8 +31,8 @@ func getPeerInfo(nodes []*cache.NodeInfo) ([]ack.EdgeInfo, uint8, error) {
 	return result, uint8(len(result)), nil
 }
 
-func peerAckBuild(infos []ack.EdgeInfo, size uint8) ([]byte, error) {
-	peerPacket := ack.NewPacket()
+func peerAckBuild(infos []ack.EdgeInfo, size uint8, networkId string) ([]byte, error) {
+	peerPacket := ack.NewPacket(networkId)
 	peerPacket.Size = size
 	peerPacket.NodeInfos = infos
 

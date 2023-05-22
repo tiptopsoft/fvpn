@@ -86,8 +86,10 @@ func (t *Tun) WriteToUdp() {
 			continue
 		}
 
-		p2pSocket := t.GetSocket(pkt.NetworkId)
-		if p2pSocket == nil {
+		//p2pSocket := t.GetSocket(pkt.NetworkId)
+		node, err := t.cache.GetNodeInfo(pkt.NetworkId, header.DestinationIP.String())
+		if err != nil {
+			// cache node为空
 			logger.Debugf("add query remote peers queue. networkId: %s, destIp: %s", pkt.NetworkId, header.DestinationIP)
 			err := t.addQueryRemoteNodes(pkt.NetworkId)
 			if err != nil {
@@ -106,10 +108,11 @@ func (t *Tun) WriteToUdp() {
 					newTun.WriteToDevice()
 				}()
 			}
-		} else {
-			p2pSocket.Write(pkt.Packet)
+		} else if !node.P2P {
+			t.socket.Write(pkt.Packet)
+		} else if node.P2P {
+			node.Socket.Write(pkt.Packet)
 		}
-
 	}
 }
 
@@ -137,6 +140,7 @@ func (t *Tun) ReadFromUdp() {
 		if n < 0 || err != nil {
 			continue
 		}
+		ctx = context.WithValue(ctx, "cache", t.cache)
 		err = t.udpHandler.Handle(ctx, frame)
 		if err != nil {
 			logger.Errorf("Read from udp failed: %v", err)

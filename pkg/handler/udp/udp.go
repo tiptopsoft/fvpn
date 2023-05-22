@@ -12,7 +12,6 @@ import (
 	peerack "github.com/topcloudz/fvpn/pkg/packet/peer/ack"
 	"github.com/topcloudz/fvpn/pkg/packet/register/ack"
 	"github.com/topcloudz/fvpn/pkg/socket"
-	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"github.com/topcloudz/fvpn/pkg/util"
 )
 
@@ -50,7 +49,7 @@ func Handle() handler.HandlerFunc {
 			logger.Infof("got server peers: (%v)", infos)
 			for _, info := range infos {
 				logger.Debugf("got remote node: mac: %v, ip: %s", info.Mac, info.IP)
-				address, err := util.GetAddress(info.IP.String(), int(info.Port))
+				address, err := util.GetAddress(info.NatIp.String(), int(info.NatPort))
 				if err != nil {
 					logger.Errorf("resolve addr failed, err: %v", err)
 				}
@@ -66,11 +65,11 @@ func Handle() handler.HandlerFunc {
 					MacAddr: info.Mac,
 					IP:      info.IP,
 					Port:    info.Port,
+					P2P:     true,
 				}
 				c := ctx.Value("cache").(*cache.Cache)
-				tun := ctx.Value("tun").(*tuntap.Tuntap)
 				//cache.Nodes[info.Mac.String()] = nodeInfo
-				c.SetCache(tun.NetworkId, info.IP.String(), nodeInfo)
+				c.SetCache(frame.NetworkId, info.IP.String(), nodeInfo)
 			}
 			break
 		case option.MsgTypePacket:

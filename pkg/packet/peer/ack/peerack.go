@@ -25,8 +25,8 @@ type EdgePacketAck struct {
 	NodeInfos []EdgeInfo
 }
 
-func NewPacket() EdgePacketAck {
-	cmPacket, _ := header.NewHeader(option.MsgTypeQueryPeer, "")
+func NewPacket(networkId string) EdgePacketAck {
+	cmPacket, _ := header.NewHeader(option.MsgTypeQueryPeer, networkId)
 	return EdgePacketAck{
 		header: cmPacket,
 	}
@@ -54,7 +54,7 @@ func Encode(ack EdgePacketAck) ([]byte, error) {
 }
 
 func Decode(udpBytes []byte) (EdgePacketAck, error) {
-	ack := NewPacket()
+	ack := NewPacket("")
 	idx := 0
 	h, err := header.Decode(udpBytes)
 	idx += int(unsafe.Sizeof(header.Header{}))
