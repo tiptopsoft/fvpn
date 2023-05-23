@@ -231,15 +231,18 @@ func (t *Tun) PunchHole() {
 		}
 
 		node.Status = true
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+		defer cancel()
+		taskCh := make(chan int)
 		go func() {
+
 			for {
 				frame := packet.NewFrame()
 				n, remoteAddr, err := p2pSocket.ReadFromUdp(frame.Buff[:])
 				if err != nil {
 					logger.Errorf("sock read failed: %v, remoteAddr: %v", err, remoteAddr)
 				}
-				//设置为P2P
-				node.P2P = true
+
 				frame.Packet = frame.Buff[:n]
 				h, err := util.GetPacketHeader(frame.Packet)
 				if err != nil {
@@ -251,8 +254,18 @@ func (t *Tun) PunchHole() {
 				//加入inbound
 				t.Inbound <- frame
 				logger.Debugf("p2p sock read %d byte, data: %v, remoteAddr: %v", n, frame.Packet[:n], remoteAddr)
+				taskCh <- 1
 			}
 		}()
+
+		select {
+		case <-taskCh:
+			//设置为P2P
+			node.P2P = true
+			break
+		case <-ctx.Done():
+			logger.Infof("p2p connect timeout")
+		}
 
 	}
 }
