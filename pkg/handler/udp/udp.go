@@ -9,10 +9,12 @@ import (
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
+	"github.com/topcloudz/fvpn/pkg/packet/notify"
 	peerack "github.com/topcloudz/fvpn/pkg/packet/peer/ack"
 	"github.com/topcloudz/fvpn/pkg/packet/register/ack"
 	"github.com/topcloudz/fvpn/pkg/socket"
 	"github.com/topcloudz/fvpn/pkg/util"
+	"golang.org/x/sys/unix"
 )
 
 var (
@@ -54,24 +56,10 @@ func Handle() handler.HandlerFunc {
 				address, err := util.GetAddress(info.NatIp.String(), int(info.NatPort))
 				if err != nil {
 					logger.Errorf("resolve addr failed, err: %v", err)
-				} //p2pSocket := t.GetSocket(pkt.NetworkId)
+				}
 				node, err := c.GetNodeInfo(frame.NetworkId, info.IP.String())
 				if node == nil || err != nil {
 					sock := socket.NewSocket(6061)
-					//err = sock.Connect(&address)
-					//if err != nil {
-					//	logger.Errorf("open hole failed. %v", err)
-					//	continue
-					//}
-
-					//open session, node-> remote addr
-					//logger.Debugf("send data nat device, natIP: %s, natPort: %d", info.NatIp, info.NatPort)
-					//err := sock.WriteToUdp([]byte("hello"), &address)
-					//err = sock.WriteToUdp([]byte("hello, i am ["+addr.GetLocalMacAddr().String()+"]"), &address)
-					//if err != nil {
-					//	logger.Errorf("%v", err)
-					//}
-					//logger.Debugf("open session to remote udp")
 					nodeInfo := &cache.NodeInfo{
 						Socket:  sock,
 						MacAddr: info.Mac,
@@ -83,25 +71,49 @@ func Handle() handler.HandlerFunc {
 
 					//cache.Nodes[info.Mac.String()] = nodeInfo
 					c.SetCache(frame.NetworkId, info.IP.String(), nodeInfo)
-
-					//go func() {
-					//	for {
-					//		buff := make([]byte, 2048)
-					//		n, remoteAddr, err := sock.ReadFromUdp(buff)
-					//		if err != nil {
-					//			logger.Errorf("sock read failed. %v, remoteAddr: %v", err, remoteAddr)
-					//		}
-					//
-					//		logger.Debugf("p2p sock read %d byte, data: %v, remoteAddr: %v", n, buff[:n], remoteAddr)
-					//	}
-					//
-					//}()
 				}
 			}
 			break
 		case option.MsgTypePacket:
 			frame.Packet = buff[:]
 			break
+		case option.MsgTypeNotify:
+			np, err := notify.Decode(buff)
+			if err != nil {
+				logger.Errorf("got invalid NotifyPacket: %v", err)
+			}
+
+			addr := &unix.SockaddrInet4{
+				Port: int(np.NatPort),
+			}
+
+			copy(addr.Addr[:], np.NatAddr.To4())
+			var info *cache.NodeInfo
+			info, err = c.GetNodeInfo(frame.NetworkId, np.Addr.String())
+			if err != nil {
+				logger.Errorf("got cache faile. %v", err)
+			}
+
+			if info != nil {
+				frame.Packet = buff[:]
+				frame.NodeInfo = info
+				return nil
+			} else {
+				info = &cache.NodeInfo{
+					Socket:    nil,
+					NetworkId: frame.NetworkId,
+					Addr:      addr,
+					MacAddr:   nil,
+					IP:        np.Addr,
+					Port:      np.Port,
+					P2P:       false,
+					Status:    false,
+				}
+			}
+
+			frame.Packet = buff[:]
+			frame.NodeInfo = info
+			c.SetCache(frame.NetworkId, info.IP.String(), info)
 		}
 
 		return nil

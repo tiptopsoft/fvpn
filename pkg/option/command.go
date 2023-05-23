@@ -19,6 +19,7 @@ const (
 	MsgTypeQueryPeer        uint16 = 11
 	MsgTypeMaxType          uint16 = 11
 	MsgTypeReRegisterSuper  uint16 = 12
+	MsgTypeNotify           uint16 = 13
 )
 
 func ExecCommand(name string, commands ...string) error {

@@ -34,7 +34,8 @@ func (n *Node) Start() error {
 	})
 	tun := n.GetTun() //这里启动的是relaySocket，中继服务器
 	go tun.ReadFromUdp()
-	go tun.QueryRemoteNodes()
+
+	//go tun.QueryRemoteNodes()
 	go tun.WriteToDevice()
 	//open hole for p2p
 	go tun.PunchHole()

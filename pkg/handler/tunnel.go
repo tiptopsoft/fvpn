@@ -3,13 +3,17 @@ package handler
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"github.com/topcloudz/fvpn/pkg/cache"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet/notify"
 	"github.com/topcloudz/fvpn/pkg/packet/peer"
 	"github.com/topcloudz/fvpn/pkg/socket"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"github.com/topcloudz/fvpn/pkg/util"
+	"golang.org/x/sys/unix"
+	"net"
 	"sync"
 	"time"
 )
@@ -26,6 +30,7 @@ type Tun struct {
 	tunHandler Handler
 	udpHandler Handler
 	NetworkId  string
+	p2pNode    sync.Map
 }
 
 func NewTun(tunHandler, udpHandler Handler, socket socket.Interface) *Tun {
@@ -74,8 +79,14 @@ func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
 		if err != nil {
 			logger.Errorf("tun handle packet failed: %v", err)
 		}
-		// 放入chan
+
+		value, ok := t.p2pNode.Load(frame.NodeInfo.IP.String())
+		if value == nil || !ok {
+			t.P2PBound <- frame.NodeInfo
+			t.p2pNode.Store(frame.NodeInfo.IP.String(), 1)
+		}
 		t.Outbound <- frame
+
 	}
 }
 
@@ -90,21 +101,30 @@ func (t *Tun) WriteToUdp() {
 		}
 
 		//p2pSocket := t.GetSocket(pkt.NetworkId)
-		node, err := t.cache.GetNodeInfo(pkt.NetworkId, header.DestinationIP.String())
-		if err != nil {
-			// cache node为空
-			logger.Debugf("add query remote peers queue. networkId: %s, destIp: %s", pkt.NetworkId, header.DestinationIP)
-			err = t.addQueryRemoteNodes(pkt.NetworkId)
-			if err != nil {
-				logger.Errorf("add query queue failed. err: %v", err)
-			}
+		node := pkt.NodeInfo
+		if node.P2P {
+			node.Socket.WriteToUdp(pkt.Packet, node.Addr)
 		} else {
-			t.P2PBound <- node
-			if node != nil && node.P2P {
-				node.Socket.WriteToUdp(pkt.Packet, node.Addr)
-			} else {
-				t.socket.Write(pkt.Packet)
+			//build a notifypacket
+			np := notify.NewPacket(pkt.NetworkId)
+			np.Addr = node.IP
+			np.Port = node.Port
+			addr := node.Addr.(*unix.SockaddrInet4)
+			natIP := net.ParseIP(fmt.Sprintf("%d.%d.%d.%d", addr.Addr[0], addr.Addr[1], addr.Addr[2], addr.Addr[3]))
+			np.NatAddr = natIP
+			np.NatPort = uint16(addr.Port)
+
+			buff, err := notify.Encode(np)
+			if err != nil {
+				logger.Errorf("build notify packet failed: %v", err)
 			}
+
+			//write to notify
+			t.socket.Write(buff[:])
+
+			//同时通过relay server发送数据
+			t.socket.Write(pkt.Packet[:])
+
 		}
 	}
 }
@@ -207,7 +227,7 @@ func (t *Tun) PunchHole() {
 		//open session, node-> remote addr
 		err = p2pSocket.WriteToUdp([]byte("hello"), address)
 		if err != nil {
-			logger.Errorf("open hole, %v", err)
+			logger.Errorf("open hole failed: %v", err)
 		}
 
 		node.Status = true
@@ -216,7 +236,7 @@ func (t *Tun) PunchHole() {
 				frame := packet.NewFrame()
 				n, remoteAddr, err := p2pSocket.ReadFromUdp(frame.Buff[:])
 				if err != nil {
-					logger.Errorf("sock read failed. %v, remoteAddr: %v", err, remoteAddr)
+					logger.Errorf("sock read failed: %v, remoteAddr: %v", err, remoteAddr)
 				}
 				//设置为P2P
 				node.P2P = true
