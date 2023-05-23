@@ -190,7 +190,7 @@ func (t *Tun) PunchHole() {
 	for {
 		node := <-t.P2PBound
 		address := node.Addr
-		p2pSocket := socket.NewSocket()
+		p2pSocket := socket.NewSocket(6061)
 		err := p2pSocket.Connect(address)
 		if err != nil {
 			logger.Errorf("init p2p failed. address: %v, err: %v", address, err)

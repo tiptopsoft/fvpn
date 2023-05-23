@@ -57,7 +57,7 @@ func Handle() handler.HandlerFunc {
 				} //p2pSocket := t.GetSocket(pkt.NetworkId)
 				node, err := c.GetNodeInfo(frame.NetworkId, info.IP.String())
 				if node == nil || err != nil {
-					sock := socket.NewSocket()
+					sock := socket.NewSocket(6061)
 					//err = sock.Connect(&address)
 					//if err != nil {
 					//	logger.Errorf("open hole failed. %v", err)

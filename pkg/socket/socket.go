@@ -30,7 +30,7 @@ func (socket Socket) Close() error {
 	return unix.Close(socket.Fd)
 }
 
-func NewSocket() Interface {
+func NewSocket(port int) Interface {
 	fd, _ := unix.Socket(unix.AF_INET, unix.SOCK_DGRAM, 0)
 	unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_REUSEADDR, 1)
 	unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_REUSEPORT, 1)
@@ -39,7 +39,7 @@ func NewSocket() Interface {
 	//	Addr: [4]byte{0, 0, 0, 0},
 	//})
 
-	addr := unix.SockaddrInet4{Port: 6061}
+	addr := unix.SockaddrInet4{Port: port}
 	copy(addr.Addr[:], net.IPv4zero.To4())
 	unix.Bind(fd, &addr)
 	return Socket{Fd: fd}

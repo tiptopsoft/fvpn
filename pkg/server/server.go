@@ -53,7 +53,7 @@ func (r *RegServer) Start(address string) error {
 
 // Peer register cache for net, and for user create client
 func (r *RegServer) start(address string) error {
-	r.socket = socket.NewSocket()
+	r.socket = socket.NewSocket(4000)
 	once.Do(func() {
 		r.cache = cache.New()
 		r.h = middleware.WithMiddlewares(r.serverUdpHandler(), infra.Middlewares(false, false)...)
