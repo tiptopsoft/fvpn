@@ -50,7 +50,7 @@ func Handle() handler.HandlerFunc {
 			logger.Infof("got server peers: (%v)", infos)
 
 			for _, info := range infos {
-				logger.Debugf("got remote node: mac: %v, ip: %s,  natIP: %s, natPort: %d", info.Mac, info.IP, info.NatIp, info.Port)
+				logger.Debugf("got remote node: mac: %v, ip: %s,  natIP: %s, natPort: %d", info.Mac, info.IP, info.NatIp, info.NatPort)
 				address, err := util.GetAddress(info.NatIp.String(), int(info.NatPort))
 				if err != nil {
 					logger.Errorf("resolve addr failed, err: %v", err)
@@ -58,32 +58,44 @@ func Handle() handler.HandlerFunc {
 				node, err := c.GetNodeInfo(frame.NetworkId, info.IP.String())
 				if node == nil || err != nil {
 					sock := socket.NewSocket()
-					err = sock.Connect(&address)
-
-					if err != nil {
-						logger.Errorf("open hole failed. %v", err)
-						continue
-					}
+					//err = sock.Connect(&address)
+					//if err != nil {
+					//	logger.Errorf("open hole failed. %v", err)
+					//	continue
+					//}
 
 					//open session, node-> remote addr
-					logger.Debugf("send data nat device, natIP: %s, natPort: %d", info.NatIp, info.NatPort)
+					//logger.Debugf("send data nat device, natIP: %s, natPort: %d", info.NatIp, info.NatPort)
 					//err := sock.WriteToUdp([]byte("hello"), &address)
-					sock.WriteToUdp([]byte("hello"), &address)
-					if err != nil {
-						logger.Errorf("%v", err)
-					}
-					logger.Debugf("open session to remote udp")
+					//err = sock.WriteToUdp([]byte("hello, i am ["+addr.GetLocalMacAddr().String()+"]"), &address)
+					//if err != nil {
+					//	logger.Errorf("%v", err)
+					//}
+					//logger.Debugf("open session to remote udp")
 					nodeInfo := &cache.NodeInfo{
 						Socket:  sock,
 						MacAddr: info.Mac,
 						IP:      info.IP,
 						Port:    info.Port,
-						P2P:     true,
+						P2P:     false,
 						Addr:    &address,
 					}
 
 					//cache.Nodes[info.Mac.String()] = nodeInfo
 					c.SetCache(frame.NetworkId, info.IP.String(), nodeInfo)
+
+					//go func() {
+					//	for {
+					//		buff := make([]byte, 2048)
+					//		n, remoteAddr, err := sock.ReadFromUdp(buff)
+					//		if err != nil {
+					//			logger.Errorf("sock read failed. %v, remoteAddr: %v", err, remoteAddr)
+					//		}
+					//
+					//		logger.Debugf("p2p sock read %d byte, data: %v, remoteAddr: %v", n, buff[:n], remoteAddr)
+					//	}
+					//
+					//}()
 				}
 			}
 			break

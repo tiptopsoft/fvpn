@@ -4,16 +4,19 @@ go 1.20
 
 require (
 	github.com/dghubble/sling v1.4.1
+	github.com/gamexg/gotool v0.0.0-20161209101727-87a979f7b949
+	github.com/gogf/greuse v1.1.0
 	github.com/magiconair/properties v1.8.6
-	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
 	github.com/spf13/cobra v1.6.0
 	github.com/spf13/viper v1.13.0
 	go.uber.org/atomic v1.7.0
 	go.uber.org/zap v1.17.0
 	golang.org/x/sys v0.0.0-20221010170243-090e33056c14
+	golang.org/x/text v0.3.7
 )
 
 require (
+	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
@@ -28,7 +31,6 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

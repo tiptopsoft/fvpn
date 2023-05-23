@@ -36,6 +36,8 @@ func (n *Node) Start() error {
 	go tun.ReadFromUdp()
 	go tun.QueryRemoteNodes()
 	go tun.WriteToDevice()
+	//open hole for p2p
+	go tun.PunchHole()
 
 	return n.runHttpServer()
 

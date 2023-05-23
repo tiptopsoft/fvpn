@@ -20,6 +20,7 @@ type Tun struct {
 	Inbound    chan *packet.Frame //used from udp
 	Outbound   chan *packet.Frame //used for tun
 	QueryBound chan *packet.Frame
+	P2PBound   chan *cache.NodeInfo
 	cache      *cache.Cache
 	tunHandler Handler
 	udpHandler Handler
@@ -96,6 +97,7 @@ func (t *Tun) WriteToUdp() {
 				logger.Errorf("add query queue failed. err: %v", err)
 			}
 		} else {
+			t.P2PBound <- node
 			if node != nil && node.P2P {
 				node.Socket.WriteToUdp(pkt.Packet, node.Addr)
 			} else {
@@ -182,4 +184,40 @@ func (t *Tun) QueryRemoteNodes() {
 		logger.Debugf("wrote a pkt to query remote ndoes")
 	}
 
+}
+
+func (t *Tun) PunchHole() {
+	for {
+		node := <-t.P2PBound
+		address := node.Addr
+		p2pSocket := socket.NewSocket()
+		err := p2pSocket.Connect(address)
+		if err != nil {
+			logger.Errorf("init p2p failed. address: %v, err: %v", address, err)
+			continue
+		}
+
+		//open session, node-> remote addr
+		err = p2pSocket.WriteToUdp([]byte("hello, hole punching... "), address)
+		if err != nil {
+			logger.Errorf("open hole, %v", err)
+		}
+
+		go func() {
+			for {
+				frame := packet.NewFrame()
+				n, remoteAddr, err := p2pSocket.ReadFromUdp(frame.Buff[:])
+				if err != nil {
+					logger.Errorf("sock read failed. %v, remoteAddr: %v", err, remoteAddr)
+				}
+				//设置为P2P
+				node.P2P = true
+				frame.Packet = frame.Buff[:n]
+				//加入inbound
+				t.Inbound <- frame
+				logger.Debugf("p2p sock read %d byte, data: %v, remoteAddr: %v", n, frame.Packet[:n], remoteAddr)
+			}
+		}()
+
+	}
 }

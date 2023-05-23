@@ -1,4 +1,4 @@
-package socket
+package main
 
 import (
 	"golang.org/x/sys/unix"
@@ -30,7 +30,7 @@ func (socket Socket) Close() error {
 	return unix.Close(socket.Fd)
 }
 
-func NewSocket() Interface {
+func NewSocket() Socket {
 	fd, _ := unix.Socket(unix.AF_INET, unix.SOCK_DGRAM, 0)
 	unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_REUSEADDR, 1)
 	unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_REUSEPORT, 1)
