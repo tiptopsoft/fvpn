@@ -24,14 +24,15 @@ func Handle() handler.HandlerFunc {
 	return func(ctx context.Context, frame *packet.Frame) error {
 		buff := frame.Buff[:]
 
-		header, err := header.Decode(buff)
+		headerBuff, err := header.Decode(buff)
 		if err != nil {
 			logger.Errorf("decode err: %v", err)
 		}
 
-		frame.NetworkId = hex.EncodeToString(header.NetworkId[:])
+		frame.NetworkId = hex.EncodeToString(headerBuff.NetworkId[:])
+		c := ctx.Value("cache").(*cache.Cache)
 
-		switch header.Flags {
+		switch headerBuff.Flags {
 		case option.MsgTypeRegisterAck:
 			regAck, err := ack.Decode(buff)
 			if err != nil {
@@ -47,29 +48,43 @@ func Handle() handler.HandlerFunc {
 			}
 			infos := peerPacketAck.NodeInfos
 			logger.Infof("got server peers: (%v)", infos)
+
 			for _, info := range infos {
-				logger.Debugf("got remote node: mac: %v, ip: %s", info.Mac, info.IP)
+				logger.Debugf("got remote node: mac: %v, ip: %s,  natIP: %s, natPort: %d", info.Mac, info.IP, info.NatIp, info.Port)
 				address, err := util.GetAddress(info.NatIp.String(), int(info.NatPort))
 				if err != nil {
 					logger.Errorf("resolve addr failed, err: %v", err)
+				} //p2pSocket := t.GetSocket(pkt.NetworkId)
+				node, err := c.GetNodeInfo(frame.NetworkId, info.IP.String())
+				if node == nil || err != nil {
+					sock := socket.NewSocket()
+					err = sock.Connect(&address)
+
+					if err != nil {
+						logger.Errorf("open hole failed. %v", err)
+						continue
+					}
+
+					//open session, node-> remote addr
+					logger.Debugf("send data nat device, natIP: %s, natPort: %d", info.NatIp, info.NatPort)
+					//err := sock.WriteToUdp([]byte("hello"), &address)
+					sock.WriteToUdp([]byte("hello"), &address)
+					if err != nil {
+						logger.Errorf("%v", err)
+					}
+					logger.Debugf("open session to remote udp")
+					nodeInfo := &cache.NodeInfo{
+						Socket:  sock,
+						MacAddr: info.Mac,
+						IP:      info.IP,
+						Port:    info.Port,
+						P2P:     true,
+						Addr:    &address,
+					}
+
+					//cache.Nodes[info.Mac.String()] = nodeInfo
+					c.SetCache(frame.NetworkId, info.IP.String(), nodeInfo)
 				}
-				sock := socket.NewSocket()
-				err = sock.Connect(&address)
-				if err != nil {
-					//return err
-					logger.Errorf("%v", err)
-					continue
-				}
-				nodeInfo := &cache.NodeInfo{
-					Socket:  sock,
-					MacAddr: info.Mac,
-					IP:      info.IP,
-					Port:    info.Port,
-					P2P:     true,
-				}
-				c := ctx.Value("cache").(*cache.Cache)
-				//cache.Nodes[info.Mac.String()] = nodeInfo
-				c.SetCache(frame.NetworkId, info.IP.String(), nodeInfo)
 			}
 			break
 		case option.MsgTypePacket:

@@ -2,9 +2,10 @@ package socket
 
 import (
 	"golang.org/x/sys/unix"
+	"net"
 )
 
-//Socket use to wrap fd
+// Socket use to wrap fd
 type Socket struct {
 	Fd int
 }
@@ -33,10 +34,19 @@ func NewSocket() Interface {
 	fd, _ := unix.Socket(unix.AF_INET, unix.SOCK_DGRAM, 0)
 	unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_REUSEADDR, 1)
 	unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_REUSEPORT, 1)
+	//unix.Bind(fd, &unix.SockaddrInet4{
+	//	Port: 4000,
+	//	Addr: [4]byte{0, 0, 0, 0},
+	//})
+
+	addr := unix.SockaddrInet4{Port: 4000}
+	copy(addr.Addr[:], net.IPv4zero.To4())
+	unix.Bind(fd, &addr)
 	return Socket{Fd: fd}
 }
 
 func (socket Socket) Connect(addr unix.Sockaddr) error {
+
 	return unix.Connect(socket.Fd, addr)
 }
 

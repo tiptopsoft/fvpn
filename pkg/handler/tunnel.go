@@ -91,27 +91,16 @@ func (t *Tun) WriteToUdp() {
 		if err != nil {
 			// cache node为空
 			logger.Debugf("add query remote peers queue. networkId: %s, destIp: %s", pkt.NetworkId, header.DestinationIP)
-			err := t.addQueryRemoteNodes(pkt.NetworkId)
+			err = t.addQueryRemoteNodes(pkt.NetworkId)
 			if err != nil {
 				logger.Errorf("add query queue failed. err: %v", err)
 			}
-			t.socket.Write(pkt.Packet)
-			nodeInfo, err := t.cache.GetNodeInfo(t.NetworkId, header.DestinationIP.String())
-			if err != nil {
-				logger.Debugf("got nodeInfo failed")
+		} else {
+			if node != nil && node.P2P {
+				node.Socket.WriteToUdp(pkt.Packet, node.Addr)
 			} else {
-				t.SaveSocket(header.DestinationAddr.String(), nodeInfo.Socket)
-				//启动一个udp goroutine用于处理P2P的轮询
-				go func() {
-					newTun := NewTun(t.tunHandler, t.udpHandler, nodeInfo.Socket)
-					newTun.ReadFromUdp()
-					newTun.WriteToDevice()
-				}()
+				t.socket.Write(pkt.Packet)
 			}
-		} else if !node.P2P {
-			t.socket.Write(pkt.Packet)
-		} else if node.P2P {
-			node.Socket.Write(pkt.Packet)
 		}
 	}
 }

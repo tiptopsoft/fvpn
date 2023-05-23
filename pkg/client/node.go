@@ -36,7 +36,9 @@ func (n *Node) Start() error {
 	go tun.ReadFromUdp()
 	go tun.QueryRemoteNodes()
 	go tun.WriteToDevice()
+
 	return n.runHttpServer()
+
 }
 
 func (n *Node) GetTun() *handler.Tun {
