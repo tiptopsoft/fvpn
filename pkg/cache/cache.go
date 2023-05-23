@@ -31,6 +31,7 @@ type NodeInfo struct {
 	IP        net.IP
 	Port      uint16
 	P2P       bool
+	Status    bool // true in queue
 }
 
 var LocalCache sync.Map

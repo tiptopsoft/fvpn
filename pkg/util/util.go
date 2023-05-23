@@ -61,6 +61,9 @@ func GetFrameHeader(buff []byte) (*FrameHeader, error) {
 }
 
 func GetPacketHeader(buff []byte) (header.Header, error) {
+	if len(buff) < 12 {
+		return header.Header{}, errors.New("not invalid packer")
+	}
 	h, err := header.Decode(buff[:12])
 	if err != nil {
 		return header.Header{}, err

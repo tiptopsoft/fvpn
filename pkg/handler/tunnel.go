@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"encoding/hex"
 	"github.com/topcloudz/fvpn/pkg/cache"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
@@ -32,6 +33,7 @@ func NewTun(tunHandler, udpHandler Handler, socket socket.Interface) *Tun {
 		Inbound:    make(chan *packet.Frame, 10000),
 		Outbound:   make(chan *packet.Frame, 10000),
 		QueryBound: make(chan *packet.Frame, 10000),
+		P2PBound:   make(chan *cache.NodeInfo, 10000),
 		device:     make(map[string]*tuntap.Tuntap),
 		cache:      cache.New(),
 		tunHandler: tunHandler,
@@ -189,8 +191,13 @@ func (t *Tun) QueryRemoteNodes() {
 func (t *Tun) PunchHole() {
 	for {
 		node := <-t.P2PBound
+		if node.Status {
+			logger.Debugf("node %v already in queue", node)
+			continue
+		}
 		address := node.Addr
-		p2pSocket := socket.NewSocket(6061)
+		//p2pSocket := socket.NewSocket(6061)
+		p2pSocket := node.Socket
 		err := p2pSocket.Connect(address)
 		if err != nil {
 			logger.Errorf("init p2p failed. address: %v, err: %v", address, err)
@@ -198,11 +205,12 @@ func (t *Tun) PunchHole() {
 		}
 
 		//open session, node-> remote addr
-		err = p2pSocket.WriteToUdp([]byte("hello, hole punching... "), address)
+		err = p2pSocket.WriteToUdp([]byte("hello"), address)
 		if err != nil {
 			logger.Errorf("open hole, %v", err)
 		}
 
+		node.Status = true
 		go func() {
 			for {
 				frame := packet.NewFrame()
@@ -213,6 +221,13 @@ func (t *Tun) PunchHole() {
 				//设置为P2P
 				node.P2P = true
 				frame.Packet = frame.Buff[:n]
+				h, err := util.GetPacketHeader(frame.Packet)
+				if err != nil {
+					logger.Warnf("this may be a hole msg: %v", string(frame.Packet))
+					continue
+				}
+
+				frame.NetworkId = hex.EncodeToString(h.NetworkId[:])
 				//加入inbound
 				t.Inbound <- frame
 				logger.Debugf("p2p sock read %d byte, data: %v, remoteAddr: %v", n, frame.Packet[:n], remoteAddr)
