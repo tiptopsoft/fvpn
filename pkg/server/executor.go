@@ -86,8 +86,9 @@ func (r *RegServer) WriteToUdp() {
 			break
 		case option.MsgTypeNotify:
 			//write to dest
-			np, err := notify.Decode(pkt.Packet[12:])
-			logger.Debugf("got notify packet, destAddr: %s, networkId: %s", np.DestAddr.String(), pkt.NetworkId)
+
+			np, err := notify.Decode(pkt.Packet[:])
+			logger.Debugf("got notify packet: %v, destAddr: %s, networkId: %s", pkt.Packet[:], np.DestAddr.String(), pkt.NetworkId)
 			if err != nil {
 				logger.Errorf("invalid notify packet: %v", err)
 			}
