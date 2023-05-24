@@ -11,6 +11,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/socket"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"github.com/topcloudz/fvpn/pkg/util"
+	"golang.org/x/sys/unix"
 	"sync"
 	"time"
 )
@@ -240,7 +241,8 @@ func (t *Tun) PunchHole() {
 		if err != nil {
 			logger.Errorf("open hole failed: %v", err)
 		}
-		logger.Infof(">>>>>>>>>>>>>>>>>>>>>punch message addr: %s", address)
+		addr := address.(*unix.SockaddrInet4)
+		logger.Infof(">>>>>>>>>>>>>>>>>>>>>punch message addr: %v ip: %v, port: %d", address, addr.Addr, addr.Port)
 		node.Status = true
 		//ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 		//defer cancel()

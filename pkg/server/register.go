@@ -18,6 +18,6 @@ func (r *RegServer) registerAck(peerAddr *unix.SockaddrInet4, srcMac net.Hardwar
 	}
 
 	r.cache.SetCache(networkId, srcIP.String(), ackNode)
-	logger.Debugf("node register success, networkId: %s, ip: %s, natIP: %s, natPort: %d", networkId, srcIP.String(), peerAddr.Addr, peerAddr.Port)
+	logger.Debugf("node register success, networkId: %s, ip: %v, natIP: %v, natPort: %d", networkId, srcIP.String(), peerAddr.Addr, peerAddr.Port)
 	return nil
 }
