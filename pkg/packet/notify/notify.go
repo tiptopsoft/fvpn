@@ -11,12 +11,13 @@ import (
 
 // NotifyPacket use to tell dest node to connect, punch hole
 type NotifyPacket struct {
-	header  header.Header
-	Addr    net.IP // inner ip
-	Port    uint16 // inner port
-	NatAddr net.IP // nat ip
-	NatPort uint16 //nat port
-	NatType uint8  //1 retrict 2 symmtrict nat
+	header   header.Header
+	Addr     net.IP // inner ip
+	Port     uint16 // inner port
+	NatAddr  net.IP // nat ip
+	NatPort  uint16 //nat port
+	NatType  uint8  //1 retrict 2 symmtrict nat
+	DestAddr net.IP //目标IP
 }
 
 func NewPacket(networkId string) NotifyPacket {
@@ -40,6 +41,7 @@ func Encode(np NotifyPacket) ([]byte, error) {
 	idx = packet.EncodeBytes(b, np.NatAddr, idx)
 	idx = packet.EncodeUint16(b, np.NatPort, idx)
 	idx = packet.EncodeUint8(b, np.NatType, idx)
+	idx = packet.EncodeBytes(b, np.DestAddr, idx)
 	return b, nil
 }
 
@@ -62,5 +64,9 @@ func Decode(buff []byte) (NotifyPacket, error) {
 	res.NatAddr = natIp
 	idx = packet.DecodeUint16(&res.NatPort, buff, idx)
 	idx = packet.DecodeUint8(&res.NatType, buff, idx)
+
+	var destIp = make([]byte, 16)
+	idx = packet.DecodeBytes(&destIp, buff, idx)
+	res.DestAddr = destIp
 	return res, nil
 }

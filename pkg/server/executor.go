@@ -84,6 +84,19 @@ func (r *RegServer) WriteToUdp() {
 		case option.MsgTypeQueryPeer:
 			r.socket.WriteToUdp(pkt.Packet, pkt.RemoteAddr)
 			break
+		case option.MsgTypeNotify:
+			//write to dest
+			np, err := notify.Decode(pkt.Packet)
+			if err != nil {
+				logger.Errorf("invalid notify packet: %v", err)
+			}
+
+			nodeInfo, err := r.cache.GetNodeInfo(pkt.NetworkId, np.DestAddr.String())
+			if nodeInfo == nil || err != nil {
+				logger.Errorf("node not on line, err: %v", err)
+			}
+
+			r.socket.WriteToUdp(pkt.Packet, nodeInfo.Addr)
 		}
 
 	}

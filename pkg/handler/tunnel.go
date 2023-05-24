@@ -107,10 +107,11 @@ func (t *Tun) WriteToUdp() {
 			node.Socket.WriteToUdp(pkt.Packet, node.Addr)
 		} else {
 			//build a notifypacket
-			logger.Debugf("send a notidy packet to: %v", node.IP.String())
+			logger.Debugf("send a notify packet to: %v", node.IP.String())
 			np := notify.NewPacket(pkt.NetworkId)
 			np.Addr = node.IP
 			np.Port = node.Port
+			np.DestAddr = header.DestinationIP
 
 			buff, err := notify.Encode(np)
 			if err != nil {
