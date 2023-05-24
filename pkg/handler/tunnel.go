@@ -103,6 +103,7 @@ func (t *Tun) WriteToUdp() {
 		//p2pSocket := t.GetSocket(pkt.NetworkId)
 		node := pkt.NodeInfo
 		if node.NatType == option.SymmetricNAT {
+			//use relay server
 			t.socket.Write(pkt.Packet[:])
 		} else {
 			if node.P2P {

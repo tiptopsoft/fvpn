@@ -34,6 +34,15 @@ jobs:
     - name: "Build and Push"
       run: make image-push tags=${{env.tags}}
 
+    - name: Copy via ssh
+      uses: garygrossgarten/github-action-scp@v0.5.3
+      with:
+        local: bin
+        remote: fvpn/bin
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        privateKey: ${{ secrets.PASSWORD }}
+
     - name: "Deploy on host"
       uses: appleboy/ssh-action@master
       with:
@@ -46,3 +55,8 @@ jobs:
           docker pull ${{ env.registry}}/fvpn/fvpn:${{ env.tags }}
           docker-compose up -d
           docker rmi $(docker images -f "dangling=true" -q)
+          
+          cd bin
+          sh start.sh
+    
+          
