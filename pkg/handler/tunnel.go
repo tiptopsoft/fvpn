@@ -100,12 +100,14 @@ func (t *Tun) WriteToUdp() {
 		node := pkt.NodeInfo
 		if node.NatType == option.SymmetricNAT {
 			//use relay server
+			logger.Debugf("use relay server to connect to: %v", node.IP.String())
 			t.socket.Write(pkt.Packet[:])
 		} else if node.P2P {
-
+			logger.Debugf("use p2p to connect to: %v", node.IP.String())
 			node.Socket.WriteToUdp(pkt.Packet, node.Addr)
 		} else {
 			//build a notifypacket
+			logger.Debugf("send a notidy packet to: %v", node.IP.String())
 			np := notify.NewPacket(pkt.NetworkId)
 			np.Addr = node.IP
 			np.Port = node.Port
