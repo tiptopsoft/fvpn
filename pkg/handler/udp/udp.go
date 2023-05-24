@@ -34,6 +34,7 @@ func Handle() handler.HandlerFunc {
 		frame.NetworkId = hex.EncodeToString(headerBuff.NetworkId[:])
 		c := ctx.Value("cache").(*cache.Cache)
 
+		frame.FrameType = headerBuff.Flags
 		switch headerBuff.Flags {
 		case option.MsgTypeRegisterAck:
 			regAck, err := ack.Decode(buff)
@@ -114,7 +115,6 @@ func Handle() handler.HandlerFunc {
 
 			frame.Packet = buff[:]
 			frame.NodeInfo = info
-			frame.FrameType = option.MsgTypeNotify
 			c.SetCache(frame.NetworkId, info.IP.String(), info)
 		}
 

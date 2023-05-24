@@ -147,6 +147,7 @@ func (t *Tun) ReadFromUdp() {
 		n, err := t.socket.Read(frame.Buff[:])
 		logger.Debugf("receive data from remote, size: %d, data: %v", n, frame.Buff[:])
 		if n < 0 || err != nil {
+			logger.Errorf("got data err: %v", err)
 			continue
 		}
 		ctx = context.WithValue(ctx, "cache", t.cache)
@@ -175,6 +176,7 @@ func (t *Tun) WriteToDevice() {
 		device := t.device[pkt.NetworkId]
 		if device == nil {
 			logger.Errorf("invalid network: %s", pkt.NetworkId)
+			continue
 		}
 		logger.Debugf("write to device data :%v", pkt.Packet[12:])
 		_, err := device.Write(pkt.Packet[12:]) // start 12, because header length 12
