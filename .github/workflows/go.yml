@@ -41,7 +41,7 @@ jobs:
         remote: fvpn/bin
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USERNAME }}
-        privateKey: ${{ secrets.PASSWORD }}
+        password: ${{ secrets.PASSWORD }}
 
     - name: "Deploy on host"
       uses: appleboy/ssh-action@master
