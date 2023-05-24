@@ -145,7 +145,7 @@ func (t *Tun) ReadFromUdp() {
 		frame := packet.NewFrame()
 
 		n, err := t.socket.Read(frame.Buff[:])
-		logger.Debugf("receive data from remote, size: %d, data: %v", n, frame.Buff[:])
+		logger.Debugf("receive data from remote, size: %d, data: %v", n, frame.Buff[:n])
 		if n < 0 || err != nil {
 			logger.Errorf("got data err: %v", err)
 			continue
