@@ -94,6 +94,7 @@ func (r *RegServer) WriteToUdp() {
 			nodeInfo, err := r.cache.GetNodeInfo(pkt.NetworkId, np.DestAddr.String())
 			if nodeInfo == nil || err != nil {
 				logger.Errorf("node not on line, err: %v", err)
+				break
 			}
 
 			r.socket.WriteToUdp(pkt.Packet, nodeInfo.Addr)
