@@ -65,7 +65,7 @@ func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
 		n, err := tun.Read(frame.Buff[:])
 		frame.Packet = frame.Buff[:n]
 		frame.Size = n
-		logger.Debugf("origin packet size: %d, data: %v", n, frame.Packet)
+		logger.Debugf("origin packet size: %d, data: %v", n, frame.Packet[:n])
 		header, err := util.GetFrameHeader(frame.Packet)
 		if err != nil {
 			logger.Debugf("no packet...")
