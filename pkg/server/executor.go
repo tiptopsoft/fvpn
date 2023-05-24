@@ -164,11 +164,13 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			np.NatPort = uint16(addr.Port)
 
 			newBuff, err := notify.Encode(np)
+			logger.Debugf("new notify buff: %v", newBuff[:])
 			if err != nil {
 				logger.Errorf("encode failed:%v", err)
 			}
 
 			copy(frame.Packet[:], newBuff)
+			logger.Debugf("frame packet: %v", frame.Packet[:])
 		}
 
 		return nil
