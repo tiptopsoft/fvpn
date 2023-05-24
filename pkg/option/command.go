@@ -20,6 +20,9 @@ const (
 	MsgTypeMaxType          uint16 = 11
 	MsgTypeReRegisterSuper  uint16 = 12
 	MsgTypeNotify           uint16 = 13
+
+	RestrictNat  uint8 = 1
+	SymmetricNAT uint8 = 2
 )
 
 func ExecCommand(name string, commands ...string) error {

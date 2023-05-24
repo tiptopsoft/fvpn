@@ -3,6 +3,7 @@ module github.com/topcloudz/fvpn
 go 1.20
 
 require (
+	github.com/ccding/go-stun v0.1.4
 	github.com/dghubble/sling v1.4.1
 	github.com/gamexg/gotool v0.0.0-20161209101727-87a979f7b949
 	github.com/gogf/greuse v1.1.0

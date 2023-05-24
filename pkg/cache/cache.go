@@ -32,6 +32,7 @@ type NodeInfo struct {
 	Port      uint16
 	P2P       bool
 	Status    bool // true in queue
+	NatType   uint8
 }
 
 var LocalCache sync.Map

@@ -102,29 +102,33 @@ func (t *Tun) WriteToUdp() {
 
 		//p2pSocket := t.GetSocket(pkt.NetworkId)
 		node := pkt.NodeInfo
-		if node.P2P {
-			node.Socket.WriteToUdp(pkt.Packet, node.Addr)
-		} else {
-			//build a notifypacket
-			np := notify.NewPacket(pkt.NetworkId)
-			np.Addr = node.IP
-			np.Port = node.Port
-			addr := node.Addr.(*unix.SockaddrInet4)
-			natIP := net.ParseIP(fmt.Sprintf("%d.%d.%d.%d", addr.Addr[0], addr.Addr[1], addr.Addr[2], addr.Addr[3]))
-			np.NatAddr = natIP
-			np.NatPort = uint16(addr.Port)
-
-			buff, err := notify.Encode(np)
-			if err != nil {
-				logger.Errorf("build notify packet failed: %v", err)
-			}
-
-			//write to notify
-			t.socket.Write(buff[:])
-
-			//同时通过relay server发送数据
+		if node.NatType == option.SymmetricNAT {
 			t.socket.Write(pkt.Packet[:])
+		} else {
+			if node.P2P {
+				node.Socket.WriteToUdp(pkt.Packet, node.Addr)
+			} else {
+				//build a notifypacket
+				np := notify.NewPacket(pkt.NetworkId)
+				np.Addr = node.IP
+				np.Port = node.Port
+				addr := node.Addr.(*unix.SockaddrInet4)
+				natIP := net.ParseIP(fmt.Sprintf("%d.%d.%d.%d", addr.Addr[0], addr.Addr[1], addr.Addr[2], addr.Addr[3]))
+				np.NatAddr = natIP
+				np.NatPort = uint16(addr.Port)
 
+				buff, err := notify.Encode(np)
+				if err != nil {
+					logger.Errorf("build notify packet failed: %v", err)
+				}
+
+				//write to notify
+				t.socket.Write(buff[:])
+
+				//同时通过relay server发送数据
+				t.socket.Write(pkt.Packet[:])
+
+			}
 		}
 	}
 }
@@ -211,6 +215,10 @@ func (t *Tun) QueryRemoteNodes() {
 func (t *Tun) PunchHole() {
 	for {
 		node := <-t.P2PBound
+		if node.NatType == option.SymmetricNAT {
+			logger.Debugf("node %v is symmetrict nat, use relay server", node)
+			continue
+		}
 		if node.Status {
 			logger.Debugf("node %v already in queue", node)
 			continue

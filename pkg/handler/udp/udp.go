@@ -108,6 +108,7 @@ func Handle() handler.HandlerFunc {
 					Port:      np.Port,
 					P2P:       false,
 					Status:    false,
+					NatType:   np.NatType,
 				}
 			}
 

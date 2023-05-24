@@ -16,6 +16,7 @@ type NotifyPacket struct {
 	Port    uint16 // inner port
 	NatAddr net.IP // nat ip
 	NatPort uint16 //nat port
+	NatType uint8  //1 retrict 2 symmtrict nat
 }
 
 func NewPacket(networkId string) NotifyPacket {
@@ -38,6 +39,7 @@ func Encode(np NotifyPacket) ([]byte, error) {
 	idx = packet.EncodeUint16(b, np.Port, idx)
 	idx = packet.EncodeBytes(b, np.NatAddr, idx)
 	idx = packet.EncodeUint16(b, np.NatPort, idx)
+	idx = packet.EncodeUint8(b, np.NatType, idx)
 	return b, nil
 }
 
@@ -59,5 +61,6 @@ func Decode(buff []byte) (NotifyPacket, error) {
 	idx = packet.DecodeBytes(&natIp, buff, idx)
 	res.NatAddr = natIp
 	idx = packet.DecodeUint16(&res.NatPort, buff, idx)
+	idx = packet.DecodeUint8(&res.NatType, buff, idx)
 	return res, nil
 }

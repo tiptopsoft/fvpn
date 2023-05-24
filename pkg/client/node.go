@@ -10,6 +10,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/middleware"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/socket"
+	_ "github.com/topcloudz/fvpn/pkg/util"
 )
 
 var (
