@@ -2,15 +2,13 @@ package util
 
 import (
 	"fmt"
-	"github.com/topcloudz/fvpn/pkg/option"
-	"github.com/topcloudz/fvpn/pkg/packet/notify"
-	"net"
+	"golang.org/x/sys/unix"
 	"testing"
 )
 
 func TestCheckNatType(t *testing.T) {
 
-	np := notify.NewPacket("96141f705c81ccc1")
+	/*np := notify.NewPacket("96141f705c81ccc1")
 	np.Addr = net.ParseIP("192.168.0.9")
 	np.Port = 6061
 	np.NatAddr = np.Addr
@@ -30,5 +28,11 @@ func TestCheckNatType(t *testing.T) {
 	//fmt.Println(len(buff))
 	//buff := []byte{1, 100, 0, 13, 150, 20, 31, 112, 92, 129, 204, 193, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 192, 168, 0, 6, 23, 173, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 192, 168, 0, 9}
 	np, err := notify.Decode(buff1)
-	fmt.Println(np, err)
+	fmt.Println(np, err)*/
+
+	add := &unix.SockaddrInet4{
+		Port: 4000,
+		Addr: [4]byte{10, 10, 10, 1},
+	}
+	fmt.Println(add.Addr, add.Port)
 }

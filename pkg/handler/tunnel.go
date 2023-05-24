@@ -222,13 +222,13 @@ func (t *Tun) PunchHole() {
 			logger.Debugf("node %v is symmetrict nat, use relay server", node)
 			continue
 		}
-		if node.Status || node.Addr == nil {
+		if node.Status {
 			logger.Debugf("node %v already in queue", node)
 			continue
 		}
 		address := node.Addr
 		//p2pSocket := socket.NewSocket(6061)
-		p2pSocket := node.Socket
+		p2pSocket := socket.NewSocket(6061)
 		err := p2pSocket.Connect(address)
 		if err != nil {
 			logger.Errorf("init p2p failed. address: %v, err: %v", address, err)
@@ -240,11 +240,11 @@ func (t *Tun) PunchHole() {
 		if err != nil {
 			logger.Errorf("open hole failed: %v", err)
 		}
-
+		logger.Infof(">>>>>>>>>>>>>>>>>>>>>punch message addr: %s", address)
 		node.Status = true
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-		defer cancel()
-		taskCh := make(chan int)
+		//ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+		//defer cancel()
+		//taskCh := make(chan int)
 		go func() {
 
 			for {
@@ -265,18 +265,19 @@ func (t *Tun) PunchHole() {
 				//加入inbound
 				t.Inbound <- frame
 				logger.Debugf("p2p sock read %d byte, data: %v, remoteAddr: %v", n, frame.Packet[:n], remoteAddr)
-				taskCh <- 1
+				//taskCh <- 1
 			}
 		}()
 
-		select {
-		case <-taskCh:
-			//设置为P2P
-			node.P2P = true
-			break
-		case <-ctx.Done():
-			logger.Infof("p2p connect timeout")
-		}
+		//select {
+		//case <-taskCh:
+		//	//设置为P2P
+		//	node.P2P = true
+		//	break
+		//case <-ctx.Done():
+		//	node.Status = false
+		//	logger.Infof("p2p connect timeout")
+		//}
 
 	}
 }

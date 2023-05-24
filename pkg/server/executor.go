@@ -123,7 +123,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 				logger.Errorf("register failed, err:%v", err)
 				return err
 			}
-			err = r.registerAck(srcAddr, regPkt.SrcMac, regPkt.SrcIP, networkId)
+			err = r.registerAck(srcAddr.(*unix.SockaddrInet4), regPkt.SrcMac, regPkt.SrcIP, networkId)
 			h, err := header.NewHeader(option.MsgTypeRegisterAck, networkId)
 			if err != nil {
 				logger.Errorf("build resp failed. err: %v", err)

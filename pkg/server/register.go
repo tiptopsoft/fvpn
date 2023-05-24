@@ -6,7 +6,7 @@ import (
 	"net"
 )
 
-func (r *RegServer) registerAck(peerAddr unix.Sockaddr, srcMac net.HardwareAddr, srcIP net.IP, networkId string) error {
+func (r *RegServer) registerAck(peerAddr *unix.SockaddrInet4, srcMac net.HardwareAddr, srcIP net.IP, networkId string) error {
 
 	ackNode := &cache.NodeInfo{
 		Socket:    r.socket,
@@ -18,6 +18,6 @@ func (r *RegServer) registerAck(peerAddr unix.Sockaddr, srcMac net.HardwareAddr,
 	}
 
 	r.cache.SetCache(networkId, srcIP.String(), ackNode)
-	logger.Debugf("node register success, networkId: %s, ip: %s", networkId, srcIP.String())
+	logger.Debugf("node register success, networkId: %s, ip: %s, natIP: %s, natPort: %d", networkId, srcIP.String(), peerAddr.Addr, peerAddr.Port)
 	return nil
 }
