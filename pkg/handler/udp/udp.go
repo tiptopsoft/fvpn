@@ -114,6 +114,7 @@ func Handle() handler.HandlerFunc {
 
 			frame.Packet = buff[:]
 			frame.NodeInfo = info
+			frame.FrameType = option.MsgTypeNotify
 			c.SetCache(frame.NetworkId, info.IP.String(), info)
 		}
 

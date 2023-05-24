@@ -77,16 +77,9 @@ func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
 			logger.Errorf("tun handle packet failed: %v", err)
 		}
 
-		info := frame.NodeInfo
-
-		info.IP = t.device[networkId].IP
-		info.Port = 6061
-
-		value, ok := t.p2pNode.Load(info.IP.String())
-		if value == nil || !ok {
-			t.P2PBound <- info
-			t.p2pNode.Store(info.IP.String(), 1)
-		}
+		//get node base info
+		frame.NodeInfo.IP = t.device[networkId].IP
+		frame.NodeInfo.Port = 6061
 
 		t.Outbound <- frame
 
@@ -108,28 +101,27 @@ func (t *Tun) WriteToUdp() {
 		if node.NatType == option.SymmetricNAT {
 			//use relay server
 			t.socket.Write(pkt.Packet[:])
+		} else if node.P2P {
+
+			node.Socket.WriteToUdp(pkt.Packet, node.Addr)
 		} else {
-			if node.P2P {
-				node.Socket.WriteToUdp(pkt.Packet, node.Addr)
-			} else {
-				//build a notifypacket
-				np := notify.NewPacket(pkt.NetworkId)
-				np.Addr = node.IP
-				np.Port = node.Port
+			//build a notifypacket
+			np := notify.NewPacket(pkt.NetworkId)
+			np.Addr = node.IP
+			np.Port = node.Port
 
-				buff, err := notify.Encode(np)
-				if err != nil {
-					logger.Errorf("build notify packet failed: %v", err)
-				}
-
-				//write to notify
-				t.socket.Write(buff[:])
-
-				//同时通过relay server发送数据
-				t.socket.Write(pkt.Packet[:])
-
+			buff, err := notify.Encode(np)
+			if err != nil {
+				logger.Errorf("build notify packet failed: %v", err)
 			}
+
+			//write to notify
+			t.socket.Write(buff[:])
+
+			//同时通过relay server发送数据
+			t.socket.Write(pkt.Packet[:])
 		}
+
 	}
 }
 
@@ -167,6 +159,11 @@ func (t *Tun) ReadFromUdp() {
 		if frame.FrameType == option.MsgTypePacket {
 			t.Inbound <- frame
 		}
+
+		if frame.FrameType == option.MsgTypeNotify {
+			t.P2PBound <- frame.NodeInfo
+		}
+
 	}
 
 }
@@ -219,7 +216,7 @@ func (t *Tun) PunchHole() {
 			logger.Debugf("node %v is symmetrict nat, use relay server", node)
 			continue
 		}
-		if node.Status {
+		if node.Status || node.Addr == nil {
 			logger.Debugf("node %v already in queue", node)
 			continue
 		}

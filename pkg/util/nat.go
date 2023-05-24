@@ -8,7 +8,7 @@ import (
 
 var NatType uint8
 
-func init() {
+func Init() {
 	NatType = checkNatType()
 }
 

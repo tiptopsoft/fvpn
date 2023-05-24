@@ -5,12 +5,12 @@ import (
 	"github.com/topcloudz/fvpn/pkg/handler/device"
 	"github.com/topcloudz/fvpn/pkg/handler/udp"
 	"github.com/topcloudz/fvpn/pkg/middleware/infra"
+	"github.com/topcloudz/fvpn/pkg/util"
 	"sync"
 
 	"github.com/topcloudz/fvpn/pkg/middleware"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/socket"
-	_ "github.com/topcloudz/fvpn/pkg/util"
 )
 
 var (
@@ -32,6 +32,7 @@ func (n *Node) Start() error {
 		if err := n.conn(); err != nil {
 			logger.Errorf("failed to connect to server: %v", err)
 		}
+		util.Init()
 	})
 	tun := n.GetTun() //这里启动的是relaySocket，中继服务器
 	go tun.ReadFromUdp()
