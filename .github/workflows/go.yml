@@ -45,15 +45,15 @@ jobs:
           cd fvpn/bin
           sh shutdown.sh
 
-    - name: Copy via ssh
-      uses: garygrossgarten/github-action-scp@v0.5.3
-      with:
-        local: bin
-        remote: fvpn/bin
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        password: ${{ secrets.PASSWORD }}
-        rmRemote: true
+#    - name: Copy via ssh
+#      uses: garygrossgarten/github-action-scp@v0.5.3
+#      with:
+#        local: bin
+#        remote: fvpn/bin
+#        host: ${{ secrets.HOST }}
+#        username: ${{ secrets.USERNAME }}
+#        password: ${{ secrets.PASSWORD }}
+#        rmRemote: true
 
     - name: "Deploy on host"
       uses: appleboy/ssh-action@master
