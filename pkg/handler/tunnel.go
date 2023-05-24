@@ -111,6 +111,7 @@ func (t *Tun) WriteToUdp() {
 			np.Addr = node.IP
 			np.Port = node.Port
 			np.DestAddr = header.DestinationIP
+			np.NatType = util.NatType
 
 			buff, err := notify.Encode(np)
 			logger.Debugf("send a notify packet to: %v, data: %v", header.DestinationIP.String(), buff)
