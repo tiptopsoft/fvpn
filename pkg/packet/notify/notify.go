@@ -56,7 +56,7 @@ func Decode(buff []byte) (NotifyPacket, error) {
 	res.header = h
 	idx += int(unsafe.Sizeof(header.Header{}))
 	var ip = make([]byte, 16)
-	packet.DecodeBytes(&ip, buff, idx)
+	idx = packet.DecodeBytes(&ip, buff, idx)
 	res.Addr = ip
 	idx = packet.DecodeUint16(&res.Port, buff, idx)
 	var natIp = make([]byte, 16)
