@@ -34,6 +34,17 @@ jobs:
     - name: "Build and Push"
       run: make image-push tags=${{env.tags}}
 
+    - name: "shutdown first"
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        port: ${{ secrets.PORT }}
+        username: ${{ secrets.USERNAME }}
+        password: ${{ secrets.PASSWORD }}
+        script: |
+          cd fvpn/bin
+          sh shutdown.sh
+
     - name: Copy via ssh
       uses: garygrossgarten/github-action-scp@v0.5.3
       with:
