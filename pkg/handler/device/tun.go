@@ -2,11 +2,13 @@ package device
 
 import (
 	"context"
+	"github.com/topcloudz/fvpn/pkg/cache"
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
+	"github.com/topcloudz/fvpn/pkg/util"
 )
 
 var (
@@ -51,6 +53,9 @@ func Handle() handler.HandlerFunc {
 		frame.Packet = newPacket[:idx]
 		frame.NetworkId = networkId
 		frame.FrameType = option.MsgTypePacket
+		frame.NodeInfo = &cache.NodeInfo{
+			NatType: util.NatType,
+		}
 
 		return nil
 

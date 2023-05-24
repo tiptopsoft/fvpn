@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"github.com/topcloudz/fvpn/pkg/cache"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
@@ -12,8 +11,6 @@ import (
 	"github.com/topcloudz/fvpn/pkg/socket"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"github.com/topcloudz/fvpn/pkg/util"
-	"golang.org/x/sys/unix"
-	"net"
 	"sync"
 	"time"
 )
@@ -80,11 +77,17 @@ func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
 			logger.Errorf("tun handle packet failed: %v", err)
 		}
 
-		value, ok := t.p2pNode.Load(frame.NodeInfo.IP.String())
+		info := frame.NodeInfo
+
+		info.IP = t.device[networkId].IP
+		info.Port = 6061
+
+		value, ok := t.p2pNode.Load(info.IP.String())
 		if value == nil || !ok {
-			t.P2PBound <- frame.NodeInfo
-			t.p2pNode.Store(frame.NodeInfo.IP.String(), 1)
+			t.P2PBound <- info
+			t.p2pNode.Store(info.IP.String(), 1)
 		}
+
 		t.Outbound <- frame
 
 	}
@@ -113,10 +116,6 @@ func (t *Tun) WriteToUdp() {
 				np := notify.NewPacket(pkt.NetworkId)
 				np.Addr = node.IP
 				np.Port = node.Port
-				addr := node.Addr.(*unix.SockaddrInet4)
-				natIP := net.ParseIP(fmt.Sprintf("%d.%d.%d.%d", addr.Addr[0], addr.Addr[1], addr.Addr[2], addr.Addr[3]))
-				np.NatAddr = natIP
-				np.NatPort = uint16(addr.Port)
 
 				buff, err := notify.Encode(np)
 				if err != nil {

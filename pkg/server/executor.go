@@ -3,13 +3,16 @@ package server
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
+	"github.com/topcloudz/fvpn/pkg/packet/notify"
 	"github.com/topcloudz/fvpn/pkg/packet/register"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"golang.org/x/sys/unix"
+	"net"
 )
 
 func (r *RegServer) ReadFromUdp() {
@@ -131,6 +134,25 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 		case option.MsgTypePacket:
 			logger.Infof("server got forward packet size:%d, data: %v", size, data)
 			break
+		case option.MsgTypeNotify:
+			logger.Infof("add packet:")
+			np, err := notify.Decode(frame.Packet[:])
+			if err != nil {
+				logger.Errorf("invalid notify packet: %v", err)
+			}
+
+			//add nat info to packet
+			addr := srcAddr.(*unix.SockaddrInet4)
+			natIP := net.ParseIP(fmt.Sprintf("%d.%d.%d.%d", addr.Addr[0], addr.Addr[1], addr.Addr[2], addr.Addr[3]))
+			np.NatAddr = natIP
+			np.NatPort = uint16(addr.Port)
+
+			newBuff, err := notify.Encode(np)
+			if err != nil {
+				logger.Errorf("encode failed:%v", err)
+			}
+
+			copy(frame.Packet[:], newBuff)
 		}
 
 		return nil
