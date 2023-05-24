@@ -27,7 +27,7 @@ func NewPacket(networkId string) NotifyPacket {
 	}
 }
 
-// Encode encode a NotifyPacket to bytes
+// Encode encode a NotifyPacket to bytes  sequence ip-> port->nattype->destAddr ->natip->natport
 func Encode(np NotifyPacket) ([]byte, error) {
 	b := make([]byte, unsafe.Sizeof(NotifyPacket{}))
 	headerBuff, err := header.Encode(np.header)
@@ -38,14 +38,15 @@ func Encode(np NotifyPacket) ([]byte, error) {
 	idx = packet.EncodeBytes(b, headerBuff, idx)
 	idx = packet.EncodeBytes(b, np.Addr, idx)
 	idx = packet.EncodeUint16(b, np.Port, idx)
-	idx = packet.EncodeBytes(b, np.NatAddr, idx)
-	idx = packet.EncodeUint16(b, np.NatPort, idx)
 	idx = packet.EncodeUint8(b, np.NatType, idx)
 	idx = packet.EncodeBytes(b, np.DestAddr, idx)
+	idx = packet.EncodeBytes(b, np.NatAddr, idx)
+	idx = packet.EncodeUint16(b, np.NatPort, idx)
+
 	return b, nil
 }
 
-// Decode decode buff to NotifyPacket
+// Decode decode buff to NotifyPacket   ip-> port->nattype->destAddr ->natip->natport
 func Decode(buff []byte) (NotifyPacket, error) {
 	res := NewPacket("")
 	h, err := header.Decode(buff)
@@ -55,18 +56,22 @@ func Decode(buff []byte) (NotifyPacket, error) {
 	idx := 0
 	res.header = h
 	idx += int(unsafe.Sizeof(header.Header{}))
+
 	var ip = make([]byte, 16)
 	idx = packet.DecodeBytes(&ip, buff, idx)
 	res.Addr = ip
+
 	idx = packet.DecodeUint16(&res.Port, buff, idx)
-	var natIp = make([]byte, 16)
-	idx = packet.DecodeBytes(&natIp, buff, idx)
-	res.NatAddr = natIp
-	idx = packet.DecodeUint16(&res.NatPort, buff, idx)
 	idx = packet.DecodeUint8(&res.NatType, buff, idx)
 
 	var destIp = make([]byte, 16)
 	idx = packet.DecodeBytes(&destIp, buff, idx)
 	res.DestAddr = destIp
+
+	var natIp = make([]byte, 16)
+	idx = packet.DecodeBytes(&natIp, buff, idx)
+	res.NatAddr = natIp
+	idx = packet.DecodeUint16(&res.NatPort, buff, idx)
+
 	return res, nil
 }
