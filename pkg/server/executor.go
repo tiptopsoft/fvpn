@@ -73,7 +73,7 @@ func (r *RegServer) WriteToUdp() {
 
 			nodeInfo, err := r.cache.GetNodeInfo(pkt.NetworkId, header.DestinationIP.String())
 			if nodeInfo == nil || err != nil {
-				logger.Debugf("could not found destitation")
+				logger.Debugf("could not found destitation, destIP: %s", header.DestinationIP.String())
 			} else {
 				r.socket.WriteToUdp(pkt.Packet[:], nodeInfo.Addr)
 			}
