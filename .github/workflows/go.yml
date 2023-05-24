@@ -58,6 +58,6 @@ jobs:
           docker rmi $(docker images -f "dangling=true" -q)
           
           cd bin
-          sh start.sh
+          sh tests.sh
     
           
