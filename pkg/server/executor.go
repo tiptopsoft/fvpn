@@ -151,7 +151,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			logger.Infof("server got forward packet size:%d, data: %v", size, data)
 			break
 		case option.MsgTypeNotify:
-			logger.Infof("add packet:")
+			logger.Infof("add packet: %v", frame.Packet[:])
 			np, err := notify.Decode(frame.Packet[:])
 			if err != nil {
 				logger.Errorf("invalid notify packet: %v", err)
