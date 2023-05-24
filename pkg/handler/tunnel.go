@@ -78,9 +78,20 @@ func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
 			logger.Errorf("tun handle packet failed: %v", err)
 		}
 
-		//get node base info
-		frame.NodeInfo.IP = t.device[networkId].IP
-		frame.NodeInfo.Port = 6061
+		ip := t.device[networkId].IP
+		v, ok := t.p2pNode.Load(ip.String())
+		if !ok {
+			//get node base info
+			info := &cache.NodeInfo{
+				NatType: util.NatType,
+			}
+			info.IP = ip
+			info.Port = 6061
+			t.p2pNode.Store(ip.String(), info)
+			frame.NodeInfo = info
+		} else {
+			frame.NodeInfo = v.(*cache.NodeInfo)
+		}
 
 		t.Outbound <- frame
 
@@ -244,14 +255,16 @@ func (t *Tun) PunchHole() {
 		addr := address.(*unix.SockaddrInet4)
 		logger.Infof(">>>>>>>>>>>>>>>>>>>>>punch message addr: %v ip: %v, port: %d", address, addr.Addr, addr.Port)
 		node.Status = true
-		//ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-		//defer cancel()
-		//taskCh := make(chan int)
+		node.P2P = true
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+		defer cancel()
+		taskCh := make(chan int)
 		go func() {
 
 			for {
 				frame := packet.NewFrame()
 				n, remoteAddr, err := p2pSocket.ReadFromUdp(frame.Buff[:])
+				logger.Debugf("read from p2p data: %v", frame.Buff[:n])
 				if err != nil {
 					logger.Errorf("sock read failed: %v, remoteAddr: %v", err, remoteAddr)
 				}
@@ -267,19 +280,19 @@ func (t *Tun) PunchHole() {
 				//加入inbound
 				t.Inbound <- frame
 				logger.Debugf("p2p sock read %d byte, data: %v, remoteAddr: %v", n, frame.Packet[:n], remoteAddr)
-				//taskCh <- 1
+				taskCh <- 1
 			}
 		}()
 
-		//select {
-		//case <-taskCh:
-		//	//设置为P2P
-		//	node.P2P = true
-		//	break
-		//case <-ctx.Done():
-		//	node.Status = false
-		//	logger.Infof("p2p connect timeout")
-		//}
+		select {
+		case <-taskCh:
+			//设置为P2P
+			logger.Infof("use p2p>>>>>>>>>>>>>>>>>>")
+			break
+		case <-ctx.Done():
+			node.Status = false
+			logger.Infof("p2p connect timeout")
+		}
 
 	}
 }
