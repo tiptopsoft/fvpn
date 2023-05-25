@@ -88,9 +88,9 @@ func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
 			info.IP = ip
 			info.Port = 6061
 			t.p2pNode.Store(ip.String(), info)
-			frame.NodeInfo = info
+			frame.Self = info
 		} else {
-			frame.NodeInfo = v.(*cache.NodeInfo)
+			frame.Self = v.(*cache.NodeInfo)
 		}
 
 		t.Outbound <- frame
@@ -108,20 +108,26 @@ func (t *Tun) WriteToUdp() {
 			continue
 		}
 
-		//p2pSocket := t.GetSocket(pkt.NetworkId)
-		node := pkt.NodeInfo
-		if node.NatType == option.SymmetricNAT {
+		//target
+		target, err := t.cache.GetNodeInfo(pkt.NetworkId, header.DestinationIP.String())
+		if err != nil {
+			if err := t.addQueryRemoteNodes(pkt.NetworkId); err != nil {
+				logger.Errorf("add query task failed: %v", err)
+			}
+			continue
+		}
+		if target.NatType == option.SymmetricNAT {
 			//use relay server
-			logger.Debugf("use relay server to connect to: %v", node.IP.String())
+			logger.Debugf("use relay server to connect to: %v", target.IP.String())
 			t.socket.Write(pkt.Packet[:])
-		} else if node.P2P {
-			logger.Debugf("use p2p to connect to: %v", node.IP.String())
-			node.Socket.WriteToUdp(pkt.Packet, node.Addr)
+		} else if target.P2P {
+			logger.Debugf("use p2p to connect to: %v", target.IP.String())
+			target.Socket.WriteToUdp(pkt.Packet, target.Addr)
 		} else {
 			//build a notifypacket
 			np := notify.NewPacket(pkt.NetworkId)
-			np.Addr = node.IP
-			np.Port = node.Port
+			np.Addr = target.IP
+			np.Port = target.Port
 			np.DestAddr = header.DestinationIP
 			np.NatType = util.NatType
 
@@ -178,7 +184,7 @@ func (t *Tun) ReadFromUdp() {
 		}
 
 		if frame.FrameType == option.MsgTypeNotify {
-			t.P2PBound <- frame.NodeInfo
+			t.P2PBound <- frame.Self
 		}
 
 	}
@@ -253,9 +259,10 @@ func (t *Tun) PunchHole() {
 			logger.Errorf("open hole failed: %v", err)
 		}
 		addr := address.(*unix.SockaddrInet4)
-		logger.Infof(">>>>>>>>>>>>>>>>>>>>>punch message addr: %v ip: %v, port: %d", address, addr.Addr, addr.Port)
+		logger.Infof(">>>>>>>>>>>>>>>>>>>>>punch message addr: %v natip: %v, natport: %d, ip: %v, port: %v", address, addr.Addr, addr.Port, node.IP, node.Port)
 		node.Status = true
 		node.P2P = true
+		t.cache.SetCache(node.NetworkId, node.IP.String(), node)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 		defer cancel()
 		taskCh := make(chan int)

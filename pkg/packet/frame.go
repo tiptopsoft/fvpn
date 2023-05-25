@@ -15,7 +15,8 @@ type Frame struct {
 	NetworkId  string
 	RemoteAddr unix.Sockaddr
 	FrameType  uint16
-	NodeInfo   *cache.NodeInfo
+	Self       *cache.NodeInfo
+	Target     *cache.NodeInfo
 }
 
 func NewFrame() *Frame {

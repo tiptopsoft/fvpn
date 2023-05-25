@@ -24,7 +24,7 @@ func New() *Cache {
 
 // NodeInfo 节点注册到registry时，应保存device ip, NATHost, NATPort
 type NodeInfo struct {
-	Socket    socket.Interface
+	Socket    socket.Interface //natip or innerip
 	NetworkId string
 	Addr      unix.Sockaddr //natip , natport
 	MacAddr   net.HardwareAddr
@@ -57,7 +57,7 @@ func (c *Cache) GetNodeInfo(networkId, ip string) (*NodeInfo, error) {
 	s := m.(*Cache)
 	node := s.local[ip]
 	if node == nil {
-		return nil, errors.New("get NodeInfo from " + networkId + " LocalCache failed")
+		return nil, errors.New("get Self from " + networkId + " LocalCache failed")
 	}
 	return node, nil
 }

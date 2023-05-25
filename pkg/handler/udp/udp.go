@@ -97,7 +97,7 @@ func Handle() handler.HandlerFunc {
 
 			if info != nil {
 				frame.Packet = buff[:]
-				frame.NodeInfo = info
+				frame.Self = info
 				return nil
 			} else {
 				info = &cache.NodeInfo{
@@ -114,7 +114,7 @@ func Handle() handler.HandlerFunc {
 			}
 
 			frame.Packet = buff[:]
-			frame.NodeInfo = info
+			frame.Self = info
 			c.SetCache(frame.NetworkId, info.IP.String(), info)
 		}
 
