@@ -127,6 +127,7 @@ func (t *Tun) WriteToUdp() {
 			np.NatIP = self.NatIP
 			np.NatPort = self.NatPort
 			buff, err := notify.Encode(np)
+			np.DestAddr = header.DestinationIP
 			if err != nil {
 				logger.Errorf("build notify packet failed: %v", err)
 			}
