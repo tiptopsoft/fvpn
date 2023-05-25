@@ -108,7 +108,7 @@ func (t *Tun) WriteToUdp() {
 		//target
 		target, err := t.cache.GetNodeInfo(pkt.NetworkId, header.DestinationIP.String())
 		if err != nil {
-			if err := t.addQueryRemoteNodes(pkt.NetworkId); err != nil {
+			if err := t.AddQueryRemoteNodes(pkt.NetworkId); err != nil {
 				logger.Errorf("add query task failed: %v", err)
 			}
 			continue
@@ -213,7 +213,7 @@ func (t *Tun) WriteToDevice() {
 }
 
 // 添加一个networkID，查询该networkId下节点，更新cache
-func (t *Tun) addQueryRemoteNodes(networkId string) error {
+func (t *Tun) AddQueryRemoteNodes(networkId string) error {
 	pkt := peer.NewPacket(networkId)
 	buff, err := peer.Encode(pkt)
 	if err != nil {
@@ -263,7 +263,7 @@ func (t *Tun) PunchHole() {
 		}
 
 		addr := address.(*unix.SockaddrInet4)
-		logger.Infof(">>>>>>>>>>>>>>>>>>>>>punch message addr: %v natip: %v, natport: %d, ip: %v, port: %v, socket: %v", address, addr.Addr, addr.Port, node.IP, node.Port, sock)
+		logger.Debugf(">>>>>>>>>>>>>>>>>>>>>punch message addr: %v natip: %v, natport: %d, ip: %v, port: %v, socket: %v", address, addr.Addr, addr.Port, node.IP, node.Port, sock)
 		node.Status = true
 		node.P2P = true
 		node.Socket = sock
@@ -308,9 +308,9 @@ func (t *Tun) p2pLoop(p2pInfo *P2PSocket) {
 		}
 
 		frame.NetworkId = hex.EncodeToString(h.NetworkId[:])
-		logger.Infof(">>>>>>>>>>>>>>>>p2p header, networkId: %s", frame.NetworkId)
+		logger.Debugf(">>>>>>>>>>>>>>>>p2p header, networkId: %s", frame.NetworkId)
 		t.cache.SetCache(frame.NetworkId, p2pInfo.NodeInfo.IP.String(), p2pInfo.NodeInfo)
-		logger.Infof(">>>>>>>>>>>>>>>>p2p node cached: %v, networkId: %s", p2pInfo.NodeInfo, frame.NetworkId)
+		logger.Debugf(">>>>>>>>>>>>>>>>p2p node cached: %v, networkId: %s", p2pInfo.NodeInfo, frame.NetworkId)
 		//加入inbound
 		if h.Flags != option.MsgTypePunchHole {
 			t.Inbound <- frame

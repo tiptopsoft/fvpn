@@ -9,6 +9,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"io"
 	"net/http"
+	"time"
 )
 
 func (n *Node) runHttpServer() error {
@@ -60,6 +61,15 @@ func (n *Node) runHttpServer() error {
 				return
 			}
 			go n.tun.ReadFromTun(context.Background(), req.NetworkId)
+			// timer
+			t := time.NewTimer(time.Second * 10)
+			go func() {
+				for {
+					<-t.C
+					n.tun.AddQueryRemoteNodes(req.NetworkId)
+					t.Reset(time.Second * 10)
+				}
+			}()
 			go n.tun.WriteToUdp()
 
 			w.WriteHeader(200)
