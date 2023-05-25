@@ -84,6 +84,7 @@ func (r *RegServer) WriteToUdp() {
 			r.socket.WriteToUdp(pkt.Packet, pkt.SrcAddr)
 			break
 		case option.MsgTypeQueryPeer:
+			logger.Debugf("query data to %v, data: %v", pkt.SrcAddr, pkt.Packet)
 			r.socket.WriteToUdp(pkt.Packet, pkt.SrcAddr)
 			break
 		case option.MsgTypeNotify:

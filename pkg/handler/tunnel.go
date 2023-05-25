@@ -139,6 +139,18 @@ func (t *Tun) WriteToUdp() {
 			logger.Debugf("send a notify packet to: %v, data: %v", header.DestinationIP.String(), buff)
 
 			t.socket.Write(buff[:])
+			//同时进行punch hole
+			node, err := t.cache.GetNodeInfo(pkt.NetworkId, header.DestinationIP.String())
+			if err != nil {
+				logger.Errorf("node has not been query back. %v", err)
+			}
+
+			if v, ok := t.p2pNode.Load(node.IP.String()); !ok || v == nil {
+				logger.Infof("add %s to p2pBound", node.IP.String())
+				t.P2PBound <- node
+				t.p2pNode.Store(node.IP.String(), node)
+			}
+
 			//同时通过relay server发送数据
 			t.socket.Write(pkt.Packet[:])
 		}
