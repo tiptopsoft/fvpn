@@ -66,25 +66,25 @@ func (r *RegServer) WriteToUdp() {
 
 		switch packetHeader.Flags {
 		case option.MsgTypePacket:
-			//header, err := util.GetFrameHeader(pkt.Packet[12:]) //why is 12, because we add our header in, header length is 12
-			//if err != nil {
-			//	logger.Debugf("get header failed, dest ip: %s", header.DestinationIP.String())
-			//}
+			frameHeader, err := util.GetFrameHeader(pkt.Packet[12:]) //why is 12, because we add our header in, header length is 12
+			if err != nil {
+				logger.Debugf("get header failed, dest ip: %s", frameHeader.DestinationIP.String())
+			}
 			//
-			//nodeInfo, err := r.cache.GetNodeInfo(pkt.NetworkId, header.DestinationIP.String())
-			//if nodeInfo == nil || err != nil {
-			//	logger.Debugf("could not found destitation, destIP: %s", header.DestinationIP.String())
-			//} else {
-			//	r.socket.WriteToUdp(pkt.Packet[:], pkt.RemoteAddr)
-			//}
-			logger.Debugf("got relay data: %v", pkt.Packet[:])
-			r.socket.WriteToUdp(pkt.Packet[:], pkt.RemoteAddr)
+			nodeInfo, err := r.cache.GetNodeInfo(pkt.NetworkId, frameHeader.DestinationIP.String())
+			if nodeInfo == nil || err != nil {
+				logger.Debugf("could not found destitation, destIP: %s", frameHeader.DestinationIP.String())
+			} else {
+				logger.Infof("packet will relay to: %v", nodeInfo)
+				r.socket.WriteToUdp(pkt.Packet[:], nodeInfo.Addr)
+			}
+
 			break
 		case option.MsgTypeRegisterAck:
-			r.socket.WriteToUdp(pkt.Packet, pkt.RemoteAddr)
+			r.socket.WriteToUdp(pkt.Packet, pkt.SrcAddr)
 			break
 		case option.MsgTypeQueryPeer:
-			r.socket.WriteToUdp(pkt.Packet, pkt.RemoteAddr)
+			r.socket.WriteToUdp(pkt.Packet, pkt.SrcAddr)
 			break
 		case option.MsgTypeNotify:
 			//write to dest
@@ -132,7 +132,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			}
 			f, _ := header.Encode(h)
 			frame.Packet = f
-			frame.RemoteAddr = srcAddr
+			frame.SrcAddr = srcAddr
 			break
 		case option.MsgTypeQueryPeer:
 			peers, size, err := getPeerInfo(r.cache.GetNodes())
@@ -147,7 +147,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			}
 
 			frame.Packet = f
-			frame.RemoteAddr = srcAddr
+			frame.SrcAddr = srcAddr
 			break
 		case option.MsgTypePacket:
 			logger.Infof("server got forward packet size:%d, data: %v", size, data)

@@ -9,14 +9,14 @@ import (
 
 type Frame struct {
 	sync.Mutex
-	Buff       []byte //max length 2000
-	Packet     []byte
-	Size       int
-	NetworkId  string
-	RemoteAddr unix.Sockaddr
-	FrameType  uint16
-	Self       *cache.NodeInfo
-	Target     *cache.NodeInfo
+	Buff      []byte //max length 2000
+	Packet    []byte
+	Size      int
+	NetworkId string
+	SrcAddr   unix.Sockaddr
+	FrameType uint16
+	Self      *cache.NodeInfo
+	Target    *cache.NodeInfo
 }
 
 func NewFrame() *Frame {
