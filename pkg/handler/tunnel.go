@@ -124,21 +124,24 @@ func (t *Tun) WriteToUdp() {
 			logger.Debugf("use p2p to connect to: %v", target.IP.String())
 			target.Socket.WriteToUdp(pkt.Packet, target.Addr)
 		} else {
-			//build a notifypacket
-			np := notify.NewPacket(pkt.NetworkId)
-			np.Addr = target.IP
-			np.Port = target.Port
-			np.DestAddr = header.DestinationIP
-			np.NatType = util.NatType
-
-			buff, err := notify.Encode(np)
-			logger.Debugf("send a notify packet to: %v, data: %v", header.DestinationIP.String(), buff)
-			if err != nil {
-				logger.Errorf("build notify packet failed: %v", err)
-			}
-
 			//write to notify
-			t.socket.Write(buff[:])
+			v, ok := t.p2pNode.Load(target.IP.String())
+			if !ok || v == nil {
+				//build a notifypacket
+				np := notify.NewPacket(pkt.NetworkId)
+				np.Addr = target.IP
+				np.Port = target.Port
+				np.DestAddr = header.DestinationIP
+				np.NatType = util.NatType
+
+				buff, err := notify.Encode(np)
+				logger.Debugf("send a notify packet to: %v, data: %v", header.DestinationIP.String(), buff)
+				if err != nil {
+					logger.Errorf("build notify packet failed: %v", err)
+				}
+
+				t.socket.Write(buff[:])
+			}
 
 			//同时通过relay server发送数据
 			t.socket.Write(pkt.Packet[:])
@@ -166,7 +169,7 @@ func (t *Tun) ReadFromUdp() {
 		ctx := context.Background()
 		frame := packet.NewFrame()
 
-		n, err := t.socket.Read(frame.Buff[:])
+		n, _, err := t.socket.ReadFromUdp(frame.Buff[:])
 		logger.Debugf("receive data from remote, size: %d, data: %v", n, frame.Buff[:n])
 		if n < 0 || err != nil {
 			logger.Errorf("got data err: %v", err)
@@ -245,16 +248,16 @@ func (t *Tun) PunchHole() {
 			continue
 		}
 		address := node.Addr
-		//p2pSocket := socket.NewSocket(6061)
-		p2pSocket := socket.NewSocket(6061)
-		err := p2pSocket.Connect(address)
+		sock := socket.NewSocket(6061)
+		logger.Infof("new socket: %v, origin socket: %v", sock, t.socket)
+		err := sock.Connect(address)
 		if err != nil {
 			logger.Errorf("init p2p failed. address: %v, err: %v", address, err)
 			continue
 		}
 
 		//open session, node-> remote addr
-		err = p2pSocket.WriteToUdp([]byte("hello"), address)
+		err = sock.WriteToUdp([]byte("hello"), address)
 		if err != nil {
 			logger.Errorf("open hole failed: %v", err)
 		}
@@ -263,14 +266,14 @@ func (t *Tun) PunchHole() {
 		node.Status = true
 		node.P2P = true
 		t.cache.SetCache(node.NetworkId, node.IP.String(), node)
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-		defer cancel()
-		taskCh := make(chan int)
+		//ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+		//defer cancel()
+		//taskCh := make(chan int)
 		go func() {
 
 			for {
 				frame := packet.NewFrame()
-				n, remoteAddr, err := p2pSocket.ReadFromUdp(frame.Buff[:])
+				n, remoteAddr, err := sock.ReadFromUdp(frame.Buff[:])
 				logger.Debugf("read from p2p data: %v", frame.Buff[:n])
 				if err != nil {
 					logger.Errorf("sock read failed: %v, remoteAddr: %v", err, remoteAddr)
@@ -279,7 +282,8 @@ func (t *Tun) PunchHole() {
 				frame.Packet = frame.Buff[:n]
 				h, err := util.GetPacketHeader(frame.Packet)
 				if err != nil {
-					logger.Warnf("this may be a hole msg: %v", string(frame.Packet))
+					//taskCh <- 1
+					logger.Debugf("sthis may be a hole msg: %v", string(frame.Packet))
 					continue
 				}
 
@@ -287,19 +291,19 @@ func (t *Tun) PunchHole() {
 				//加入inbound
 				t.Inbound <- frame
 				logger.Debugf("p2p sock read %d byte, data: %v, remoteAddr: %v", n, frame.Packet[:n], remoteAddr)
-				taskCh <- 1
+				//taskCh <- 1
 			}
 		}()
 
-		select {
-		case <-taskCh:
-			//设置为P2P
-			logger.Infof("use p2p>>>>>>>>>>>>>>>>>>")
-			break
-		case <-ctx.Done():
-			node.Status = false
-			logger.Infof("p2p connect timeout")
-		}
+		//select {
+		//case <-taskCh:
+		//	//设置为P2P
+		//	logger.Infof("use p2p>>>>>>>>>>>>>>>>>>")
+		//	break
+		//case <-ctx.Done():
+		//	node.Status = false
+		//	logger.Infof("p2p connect timeout")
+		//}
 
 	}
 }

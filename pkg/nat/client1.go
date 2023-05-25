@@ -44,6 +44,21 @@ func main() {
 	}
 	anotherPeer := parseAddr(string(data[:n]))
 	fmt.Printf("server:%v another:%v\n", remoteAddr, anotherPeer)
+	go func() {
+
+		for {
+
+			data := make([]byte, 1024)
+			n, _, err := sock.ReadFromUdp(data)
+			if err != nil {
+
+				log.Printf("error during read:%s\n", err)
+			} else {
+
+				log.Printf("原sock收到数据：%s\n", data[:n])
+			}
+		}
+	}()
 	bidirectionHole(&anotherPeer)
 }
 

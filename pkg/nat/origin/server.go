@@ -39,7 +39,14 @@ func main() {
 			listener.WriteToUDP([]byte(peers[0].String()), &peers[1])
 			time.Sleep(time.Second * 8)
 			log.Println("中转服务器退出，仍不影响peers间通信")
-			return
+			//return
+			go func() {
+				for {
+					time.Sleep(time.Second * 2)
+					listener.WriteToUDP([]byte(peers[1].String()), &peers[0])
+					listener.WriteToUDP([]byte(peers[0].String()), &peers[1])
+				}
+			}()
 		}
 	}
 }
