@@ -9,9 +9,9 @@ import (
 func TestCheckNatType(t *testing.T) {
 
 	/*np := notify.NewPacket("96141f705c81ccc1")
-	np.Addr = net.ParseIP("192.168.0.9")
+	np.SourceIP = net.ParseIP("192.168.0.9")
 	np.Port = 6061
-	np.NatAddr = np.Addr
+	np.NatIP = np.SourceIP
 	np.NatType = option.RestrictNat
 	np.NatPort = 34343
 	np.DestAddr = net.ParseIP("192.168.0.6")

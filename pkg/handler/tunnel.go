@@ -79,18 +79,12 @@ func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
 		}
 
 		ip := t.device[networkId].IP
-		v, ok := t.p2pNode.Load(ip.String())
-		if !ok {
-			//get node base info
-			info := &cache.NodeInfo{
-				NatType: util.NatType,
-			}
-			info.IP = ip
-			info.Port = 6061
-			t.p2pNode.Store(ip.String(), info)
-			frame.Self = info
+		//find self, send self to remote to tell remote to connect to self
+		nodeInfo, err := t.cache.GetNodeInfo(networkId, ip.String())
+		if err != nil {
+			logger.Errorf("self not register yet: %v", err)
 		} else {
-			frame.Self = v.(*cache.NodeInfo)
+			frame.Self = nodeInfo
 		}
 
 		t.Outbound <- frame
@@ -125,28 +119,23 @@ func (t *Tun) WriteToUdp() {
 			target.Socket.WriteToUdp(pkt.Packet, target.Addr)
 		} else {
 			//write to notify
-			v, ok := t.p2pNode.Load(target.IP.String())
-			if !ok || v == nil {
-				//build a notifypacket
-				np := notify.NewPacket(pkt.NetworkId)
-				np.Addr = target.IP
-				np.Port = target.Port
-				np.DestAddr = header.DestinationIP
-				np.NatType = util.NatType
-
-				buff, err := notify.Encode(np)
-				logger.Debugf("send a notify packet to: %v, data: %v", header.DestinationIP.String(), buff)
-				if err != nil {
-					logger.Errorf("build notify packet failed: %v", err)
-				}
-
-				t.socket.Write(buff[:])
+			np := notify.NewPacket(pkt.NetworkId)
+			self := pkt.Self
+			np.SourceIP = self.IP
+			np.Port = self.Port
+			np.NatType = util.NatType
+			np.NatIP = self.NatIP
+			np.NatPort = self.NatPort
+			buff, err := notify.Encode(np)
+			if err != nil {
+				logger.Errorf("build notify packet failed: %v", err)
 			}
+			logger.Debugf("send a notify packet to: %v, data: %v", header.DestinationIP.String(), buff)
 
+			t.socket.Write(buff[:])
 			//同时通过relay server发送数据
 			t.socket.Write(pkt.Packet[:])
 		}
-
 	}
 }
 
@@ -187,7 +176,13 @@ func (t *Tun) ReadFromUdp() {
 		}
 
 		if frame.FrameType == option.MsgTypeNotify {
-			t.P2PBound <- frame.Self
+			//will connect to target by udp
+			ip := frame.Target.IP
+			if v, ok := t.p2pNode.Load(ip.String()); !ok || v == nil {
+				logger.Infof("add %s to p2pBound", ip.String())
+				t.P2PBound <- frame.Target
+				t.p2pNode.Store(ip.String(), frame.Target)
+			}
 		}
 
 	}
@@ -243,10 +238,7 @@ func (t *Tun) PunchHole() {
 			logger.Debugf("node %v is symmetrict nat, use relay server", node)
 			continue
 		}
-		if node.Status {
-			logger.Debugf("node %v already in queue", node)
-			continue
-		}
+
 		address := node.Addr
 		sock := socket.NewSocket(6061)
 		logger.Infof("new socket: %v, origin socket: %v", sock, t.socket)
@@ -266,9 +258,9 @@ func (t *Tun) PunchHole() {
 		node.Status = true
 		node.P2P = true
 		t.cache.SetCache(node.NetworkId, node.IP.String(), node)
-		//ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-		//defer cancel()
-		//taskCh := make(chan int)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+		defer cancel()
+		taskCh := make(chan int)
 		go func() {
 
 			for {
@@ -295,15 +287,16 @@ func (t *Tun) PunchHole() {
 			}
 		}()
 
-		//select {
-		//case <-taskCh:
-		//	//设置为P2P
-		//	logger.Infof("use p2p>>>>>>>>>>>>>>>>>>")
-		//	break
-		//case <-ctx.Done():
-		//	node.Status = false
-		//	logger.Infof("p2p connect timeout")
-		//}
+		select {
+		case <-taskCh:
+			//设置为P2P
+			logger.Infof("use p2p>>>>>>>>>>>>>>>>>>")
+			break
+		case <-ctx.Done():
+			node.Status = false
+			t.p2pNode.Delete(node.IP.String())
+			logger.Infof("p2p connect timeout")
+		}
 
 	}
 }

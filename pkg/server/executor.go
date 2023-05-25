@@ -162,7 +162,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			//add nat info to packet
 			addr := srcAddr.(*unix.SockaddrInet4)
 			natIP := net.ParseIP(fmt.Sprintf("%d.%d.%d.%d", addr.Addr[0], addr.Addr[1], addr.Addr[2], addr.Addr[3]))
-			np.NatAddr = natIP
+			np.NatIP = natIP
 			np.NatPort = uint16(addr.Port)
 
 			newBuff, err := notify.Encode(np)

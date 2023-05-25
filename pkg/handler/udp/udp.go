@@ -88,34 +88,36 @@ func Handle() handler.HandlerFunc {
 				Port: int(np.NatPort),
 			}
 
-			copy(addr.Addr[:], np.NatAddr.To4())
-			var info *cache.NodeInfo
-			info, err = c.GetNodeInfo(frame.NetworkId, np.Addr.String())
-			if err != nil {
-				logger.Errorf("got cache faile. %v", err)
+			copy(addr.Addr[:], np.NatIP.To4())
+			//var info *cache.NodeInfo
+			//info, err = c.GetNodeInfo(frame.NetworkId, np.SourceIP.String())
+			//if err != nil {
+			//	logger.Errorf("got cache faile. %v", err)
+			//}
+			//
+			//if info != nil {
+			//	frame.Packet = buff[:]
+			//	frame.Target = info
+			//	return nil
+			//} else {
+			info := &cache.NodeInfo{
+				Socket:    nil,
+				NetworkId: frame.NetworkId,
+				Addr:      addr,
+				MacAddr:   nil,
+				IP:        np.SourceIP,
+				Port:      np.Port,
+				P2P:       false,
+				Status:    false,
+				NatType:   np.NatType,
+				NatIP:     np.NatIP,
+				NatPort:   np.NatPort,
 			}
-
-			if info != nil {
-				frame.Packet = buff[:]
-				frame.Self = info
-				return nil
-			} else {
-				info = &cache.NodeInfo{
-					Socket:    nil,
-					NetworkId: frame.NetworkId,
-					Addr:      addr,
-					MacAddr:   nil,
-					IP:        np.Addr,
-					Port:      np.Port,
-					P2P:       false,
-					Status:    false,
-					NatType:   np.NatType,
-				}
-			}
+			//}
 
 			frame.Packet = buff[:]
-			frame.Self = info
-			c.SetCache(frame.NetworkId, info.IP.String(), info)
+			frame.Target = info
+			//c.SetCache(frame.NetworkId, info.IP.String(), info)
 		}
 
 		return nil

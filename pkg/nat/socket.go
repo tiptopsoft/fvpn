@@ -36,7 +36,7 @@ func NewSocket() Socket {
 	unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_REUSEPORT, 1)
 	//unix.Bind(fd, &unix.SockaddrInet4{
 	//	Port: 4000,
-	//	Addr: [4]byte{0, 0, 0, 0},
+	//	SourceIP: [4]byte{0, 0, 0, 0},
 	//})
 
 	addr := unix.SockaddrInet4{Port: 6061}

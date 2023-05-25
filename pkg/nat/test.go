@@ -26,12 +26,12 @@ func main() {
 	//	//sock := socket.NewSocket()
 	//	//destAddr1 := unix.SockaddrInet4{
 	//	//	Port: 4000,
-	//	//	Addr: [4]byte{211, 125, 225, 186},
+	//	//	SourceIP: [4]byte{211, 125, 225, 186},
 	//	//}
 	//	//
 	//	//destAddr2 := unix.SockaddrInet4{
 	//	//	Port: 5000,
-	//	//	Addr: [4]byte{81, 70, 36., 156},
+	//	//	SourceIP: [4]byte{81, 70, 36., 156},
 	//	//}
 	//	//err := sock.Connect(&destAddr1)
 	//	//err = sock.Connect(&destAddr2)
