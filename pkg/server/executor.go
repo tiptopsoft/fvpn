@@ -66,17 +66,19 @@ func (r *RegServer) WriteToUdp() {
 
 		switch packetHeader.Flags {
 		case option.MsgTypePacket:
-			header, err := util.GetFrameHeader(pkt.Packet[12:]) //why is 12, because we add our header in, header length is 12
-			if err != nil {
-				logger.Debugf("get header failed, dest ip: %s", header.DestinationIP.String())
-			}
-
-			nodeInfo, err := r.cache.GetNodeInfo(pkt.NetworkId, header.DestinationIP.String())
-			if nodeInfo == nil || err != nil {
-				logger.Debugf("could not found destitation, destIP: %s", header.DestinationIP.String())
-			} else {
-				r.socket.WriteToUdp(pkt.Packet[:], nodeInfo.Addr)
-			}
+			//header, err := util.GetFrameHeader(pkt.Packet[12:]) //why is 12, because we add our header in, header length is 12
+			//if err != nil {
+			//	logger.Debugf("get header failed, dest ip: %s", header.DestinationIP.String())
+			//}
+			//
+			//nodeInfo, err := r.cache.GetNodeInfo(pkt.NetworkId, header.DestinationIP.String())
+			//if nodeInfo == nil || err != nil {
+			//	logger.Debugf("could not found destitation, destIP: %s", header.DestinationIP.String())
+			//} else {
+			//	r.socket.WriteToUdp(pkt.Packet[:], pkt.RemoteAddr)
+			//}
+			logger.Debugf("got relay data: %v", pkt.Packet[:])
+			r.socket.WriteToUdp(pkt.Packet[:], pkt.RemoteAddr)
 			break
 		case option.MsgTypeRegisterAck:
 			r.socket.WriteToUdp(pkt.Packet, pkt.RemoteAddr)
