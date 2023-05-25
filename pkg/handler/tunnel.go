@@ -6,6 +6,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/cache"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"github.com/topcloudz/fvpn/pkg/packet/notify"
 	"github.com/topcloudz/fvpn/pkg/packet/peer"
 	"github.com/topcloudz/fvpn/pkg/socket"
@@ -24,6 +25,7 @@ type Tun struct {
 	Outbound   chan *packet.Frame //used for tun
 	QueryBound chan *packet.Frame
 	P2PBound   chan *cache.NodeInfo
+	P2pChannel chan *P2PSocket
 	cache      *cache.Cache
 	tunHandler Handler
 	udpHandler Handler
@@ -31,18 +33,19 @@ type Tun struct {
 	p2pNode    sync.Map
 }
 
-func NewTun(tunHandler, udpHandler Handler, socket socket.Interface) *Tun {
+func NewTun(tunHandler, udpHandler Handler, s socket.Interface) *Tun {
 	tun := &Tun{
 		Inbound:    make(chan *packet.Frame, 10000),
 		Outbound:   make(chan *packet.Frame, 10000),
 		QueryBound: make(chan *packet.Frame, 10000),
 		P2PBound:   make(chan *cache.NodeInfo, 10000),
+		P2pChannel: make(chan *P2PSocket, 100),
 		device:     make(map[string]*tuntap.Tuntap),
 		cache:      cache.New(),
 		tunHandler: tunHandler,
 		udpHandler: udpHandler,
 	}
-	tun.socket = socket
+	tun.socket = s
 	return tun
 }
 
@@ -115,8 +118,10 @@ func (t *Tun) WriteToUdp() {
 			logger.Debugf("use relay server to connect to: %v", target.IP.String())
 			t.socket.Write(pkt.Packet[:])
 		} else if target.P2P {
-			logger.Debugf("use p2p to connect to: %v", target.IP.String())
-			target.Socket.WriteToUdp(pkt.Packet, target.Addr)
+			logger.Debugf("use p2p to connect to: %v, remoteAddr: %v, sock: %v", target.IP, target.Addr, target.Socket)
+			if err := target.Socket.WriteToUdp(pkt.Packet, target.Addr); err != nil {
+				logger.Errorf("send p2p data failed. %v", err)
+			}
 		} else {
 			//write to notify
 			np := notify.NewPacket(pkt.NetworkId)
@@ -126,8 +131,8 @@ func (t *Tun) WriteToUdp() {
 			np.NatType = util.NatType
 			np.NatIP = self.NatIP
 			np.NatPort = self.NatPort
-			buff, err := notify.Encode(np)
 			np.DestAddr = header.DestinationIP
+			buff, err := notify.Encode(np)
 			if err != nil {
 				logger.Errorf("build notify packet failed: %v", err)
 			}
@@ -250,54 +255,67 @@ func (t *Tun) PunchHole() {
 		}
 
 		//open session, node-> remote addr
-		err = sock.WriteToUdp([]byte("hello"), address)
+		hbuf, _ := header.NewHeader(option.MsgTypePunchHole, node.NetworkId)
+		buff, _ := header.Encode(hbuf)
+		err = sock.WriteToUdp(buff, address)
 		if err != nil {
 			logger.Errorf("open hole failed: %v", err)
 		}
+
 		addr := address.(*unix.SockaddrInet4)
-		logger.Infof(">>>>>>>>>>>>>>>>>>>>>punch message addr: %v natip: %v, natport: %d, ip: %v, port: %v", address, addr.Addr, addr.Port, node.IP, node.Port)
+		logger.Infof(">>>>>>>>>>>>>>>>>>>>>punch message addr: %v natip: %v, natport: %d, ip: %v, port: %v, socket: %v", address, addr.Addr, addr.Port, node.IP, node.Port, sock)
 		node.Status = true
 		node.P2P = true
-		t.cache.SetCache(node.NetworkId, node.IP.String(), node)
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
-		defer cancel()
-		taskCh := make(chan int)
-		go func() {
+		node.Socket = sock
+		node.Addr = address
 
-			for {
-				frame := packet.NewFrame()
-				n, remoteAddr, err := sock.ReadFromUdp(frame.Buff[:])
-				logger.Debugf("read from p2p data: %v", frame.Buff[:n])
-				if err != nil {
-					logger.Errorf("sock read failed: %v, remoteAddr: %v", err, remoteAddr)
-				}
-
-				frame.Packet = frame.Buff[:n]
-				h, err := util.GetPacketHeader(frame.Packet)
-				if err != nil {
-					//taskCh <- 1
-					logger.Debugf("sthis may be a hole msg: %v", string(frame.Packet))
-					continue
-				}
-
-				frame.NetworkId = hex.EncodeToString(h.NetworkId[:])
-				//加入inbound
-				t.Inbound <- frame
-				logger.Debugf("p2p sock read %d byte, data: %v, remoteAddr: %v", n, frame.Packet[:n], remoteAddr)
-				//taskCh <- 1
-			}
-		}()
-
-		select {
-		case <-taskCh:
-			//设置为P2P
-			logger.Infof("use p2p>>>>>>>>>>>>>>>>>>")
-			break
-		case <-ctx.Done():
-			node.Status = false
-			t.p2pNode.Delete(node.IP.String())
-			logger.Infof("p2p connect timeout")
+		p2pInfo := &P2PSocket{
+			Socket:   sock,
+			NodeInfo: node,
 		}
+		t.P2pChannel <- p2pInfo
+	}
+}
+
+type P2PSocket struct {
+	Socket   socket.Interface
+	NodeInfo *cache.NodeInfo
+}
+
+func (t *Tun) P2PSocketLoop() {
+	for {
+		p2pInfo := <-t.P2pChannel
+		go t.p2pLoop(p2pInfo)
 
 	}
+}
+
+func (t *Tun) p2pLoop(p2pInfo *P2PSocket) {
+	for {
+		sock := p2pInfo.Socket
+		frame := packet.NewFrame()
+		n, remoteAddr, err := sock.ReadFromUdp(frame.Buff[:])
+		logger.Debugf(">>>>>>>>>>>>>>read from p2p data: %v", frame.Buff[:n])
+		if err != nil {
+			logger.Errorf("sock read failed: %v, remoteAddr: %v", err, remoteAddr)
+		}
+
+		frame.Packet = frame.Buff[:n]
+		h, err := util.GetPacketHeader(frame.Packet)
+
+		if err != nil {
+			logger.Debugf("not invalid header: %v", string(frame.Packet))
+		}
+
+		frame.NetworkId = hex.EncodeToString(h.NetworkId[:])
+		logger.Infof(">>>>>>>>>>>>>>>>p2p header, networkId: %s", frame.NetworkId)
+		t.cache.SetCache(frame.NetworkId, p2pInfo.NodeInfo.IP.String(), p2pInfo.NodeInfo)
+		logger.Infof(">>>>>>>>>>>>>>>>p2p node cached: %v, networkId: %s", p2pInfo.NodeInfo, frame.NetworkId)
+		//加入inbound
+		if h.Flags != option.MsgTypePunchHole {
+			t.Inbound <- frame
+		}
+		logger.Debugf("p2p sock read %d byte, data: %v, remoteAddr: %v", n, frame.Packet[:n], remoteAddr)
+	}
+
 }

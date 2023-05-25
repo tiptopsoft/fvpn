@@ -20,6 +20,7 @@ const (
 	MsgTypeMaxType          uint16 = 11
 	MsgTypeReRegisterSuper  uint16 = 12
 	MsgTypeNotify           uint16 = 13
+	MsgTypePunchHole        uint16 = 14
 
 	RestrictNat  uint8 = 1
 	SymmetricNAT uint8 = 2
