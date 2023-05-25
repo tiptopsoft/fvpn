@@ -117,6 +117,7 @@ func Handle() handler.HandlerFunc {
 
 			frame.Packet = buff[:]
 			frame.Target = info
+			logger.Debugf("got notify data: %v", info)
 			//c.SetCache(frame.NetworkId, info.IP.String(), info)
 		}
 

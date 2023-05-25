@@ -88,14 +88,13 @@ func (r *RegServer) WriteToUdp() {
 			break
 		case option.MsgTypeNotify:
 			//write to dest
-
 			np, err := notify.Decode(pkt.Packet[:])
 			logger.Debugf("got notify packet: %v, destAddr: %s, networkId: %s", pkt.Packet[:], np.DestAddr.String(), pkt.NetworkId)
 			if err != nil {
 				logger.Errorf("invalid notify packet: %v", err)
 			}
 
-			nodeInfo, err := r.cache.GetNodeInfo(pkt.NetworkId, np.DestAddr.String())
+			nodeInfo, err := r.cache.GetNodeInfo(pkt.NetworkId, np.SourceIP.String())
 			if nodeInfo == nil || err != nil {
 				logger.Errorf("node not on line, err: %v", err)
 				break
