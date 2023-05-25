@@ -75,7 +75,7 @@ func (r *RegServer) WriteToUdp() {
 			if nodeInfo == nil || err != nil {
 				logger.Debugf("could not found destitation, destIP: %s", frameHeader.DestinationIP.String())
 			} else {
-				logger.Infof("packet will relay to: %v", nodeInfo)
+				logger.Infof("packet will relay to: %v", nodeInfo.Addr)
 				r.socket.WriteToUdp(pkt.Packet[:], nodeInfo.Addr)
 			}
 
