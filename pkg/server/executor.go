@@ -50,8 +50,10 @@ func (r *RegServer) ReadFromUdp() {
 		if err != nil {
 			logger.Errorf(err.Error())
 		}
+		if frame.FrameType == option.MsgTypeQueryPeer {
+			logger.Debugf("frame add to queue data: %v, remoteAdr: %v", frame.Packet, frame.SrcAddr)
+		}
 		r.Outbound <- frame
-		logger.Infof("success handler frame")
 	}
 }
 
@@ -120,6 +122,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 		data := frame.Packet[:]
 
 		p := ctx.Value("pkt").(header.Header)
+		frame.FrameType = p.Flags
 		switch p.Flags {
 
 		case option.MsgTypeRegisterSuper:
