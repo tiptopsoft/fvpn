@@ -10,15 +10,20 @@ import (
 func main() {
 
 	sock := socket.NewSocket(1234)
-	sock.Connect(&unix.SockaddrInet4{
+	addr := &unix.SockaddrInet4{
 		Port: 8001,
 		Addr: [4]byte{0, 0, 0, 0},
-	})
+	}
+
+	addr1 := &unix.SockaddrInet4{
+		Port: 8001,
+		Addr: [4]byte{0, 0, 0, 0},
+	}
 
 	go func() {
 		for {
 			time.Sleep(time.Second * 3)
-			sock.Write([]byte("hello, i am 8001"))
+			sock.WriteToUdp([]byte("hello, i am 8001"), addr)
 		}
 	}()
 
@@ -34,23 +39,22 @@ func main() {
 		}
 	}()
 
-	sock1 := socket.NewSocket(1234)
-	sock1.Connect(&unix.SockaddrInet4{
-		Port: 8002,
-		Addr: [4]byte{0, 0, 0, 0},
-	})
+	//sock.Connect(&unix.SockaddrInet4{
+	//	Port: 8002,
+	//	Addr: [4]byte{0, 0, 0, 0},
+	//})
 
 	go func() {
 		for {
 			time.Sleep(time.Second * 3)
-			sock1.Write([]byte("hello, i am 8002"))
+			sock.WriteToUdp([]byte("hello, i am 8002"), addr1)
 		}
 	}()
 
 	data1 := make([]byte, 1024)
 	go func() {
 		for {
-			_, err := sock1.Read(data1)
+			_, err := sock.Read(data1)
 			if err != nil {
 				fmt.Println(err)
 			}

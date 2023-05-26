@@ -13,6 +13,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"golang.org/x/sys/unix"
+	"log"
 	"sync"
 	"time"
 )
@@ -48,6 +49,18 @@ func NewTun(tunHandler, udpHandler Handler, s socket.Interface, relayAddr *unix.
 		relayAddr:  relayAddr,
 	}
 	tun.socket = s
+
+	//timer
+	t := time.NewTimer(time.Second * 10)
+	go func() {
+		for {
+			<-t.C
+			for id := range tun.device {
+				tun.AddQueryRemoteNodes(id)
+			}
+			t.Reset(time.Second * 10)
+		}
+	}()
 	return tun
 }
 
@@ -71,7 +84,7 @@ func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
 		n, err := tun.Read(frame.Buff[:])
 		frame.Packet = frame.Buff[:n]
 		frame.Size = n
-		logger.Debugf("origin packet size: %d, data: %v", n, frame.Packet[:n])
+		log.Printf("origin packet size: %d, data: %v", n, frame.Packet[:n])
 		header, err := util.GetFrameHeader(frame.Packet)
 		if err != nil {
 			logger.Debugf("no packet...")
@@ -91,8 +104,8 @@ func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
 			//ignore
 		} else {
 			frame.Self = nodeInfo
-			t.Outbound <- frame
 		}
+		t.Outbound <- frame
 	}
 }
 
@@ -109,9 +122,7 @@ func (t *Tun) WriteToUdp() {
 		//target
 		target, err := t.cache.GetNodeInfo(pkt.NetworkId, header.DestinationIP.String())
 		if err != nil {
-			if err := t.AddQueryRemoteNodes(pkt.NetworkId); err != nil {
-				logger.Errorf("add query task failed: %v", err)
-			}
+			t.AddQueryRemoteNodes(pkt.NetworkId)
 			continue
 		}
 		if target.NatType == option.SymmetricNAT {
@@ -229,32 +240,35 @@ func (t *Tun) WriteToDevice() {
 }
 
 // 添加一个networkID，查询该networkId下节点，更新cache
-func (t *Tun) AddQueryRemoteNodes(networkId string) error {
+func (t *Tun) AddQueryRemoteNodes(networkId string) {
 	pkt := peer.NewPacket(networkId)
 	buff, err := peer.Encode(pkt)
 	if err != nil {
-		return err
+		log.Printf("query data failed: %v", err)
 	}
-	frame := packet.NewFrame()
-	frame.NetworkId = networkId
-	frame.Packet = buff
-	frame.Buff = buff
-	t.QueryBound <- frame
-	return nil
+	//frame := packet.NewFrame()
+	//frame.NetworkId = networkId
+	//frame.Packet = buff
+	//frame.Buff = buff
+	_, err = t.socket.Write(buff)
+	if err != nil {
+		log.Printf("query data failed: %v", err)
+	}
+	//t.QueryBound <- frame
 }
 
 // QueryRemoteNodes when packet from regserver, this method will be called
-func (t *Tun) QueryRemoteNodes() {
-	for {
-		pkt := <-t.QueryBound
-		_, err := t.socket.Write(pkt.Packet)
-		if err != nil {
-			logger.Errorf("write failed: %v", err)
-		}
-		logger.Debugf("wrote a pkt to query remote nodes data: %v", pkt.Packet)
-	}
-
-}
+//func (t *Tun) QueryRemoteNodes() {
+//	for {
+//		pkt := <-t.QueryBound
+//		_, err := t.socket.Write(pkt.Packet)
+//		if err != nil {
+//			logger.Errorf("write failed: %v", err)
+//		}
+//		logger.Debugf("wrote a pkt to query remote nodes data: %v", pkt.Packet)
+//	}
+//
+//}
 
 func (t *Tun) PunchHole() {
 	for {
@@ -265,9 +279,8 @@ func (t *Tun) PunchHole() {
 		}
 
 		address := node.Addr
-		sock := socket.NewSocket(6061)
-		logger.Infof("new socket: %v, origin socket: %v", sock, t.socket)
-		err := sock.Connect(address)
+		node.Socket = t.socket
+		err := node.Socket.Connect(address)
 		if err != nil {
 			logger.Errorf("init p2p failed. address: %v, err: %v", address, err)
 			continue
@@ -276,21 +289,26 @@ func (t *Tun) PunchHole() {
 		//open session, node-> remote addr
 		headerBuf, _ := header.NewHeader(option.MsgTypePunchHole, node.NetworkId)
 		buff, _ := header.Encode(headerBuf)
-		_, err = sock.Write(buff)
+		_, err = node.Socket.Write(buff)
 		if err != nil {
 			logger.Errorf("open hole failed: %v", err)
 			continue
 		}
 
 		addr := address.(*unix.SockaddrInet4)
-		logger.Debugf(">>>>>>>>>>>>>>>>>>>>>punch message addr: %v natip: %v, natport: %d, ip: %v, port: %v, socket: %v", address, addr.Addr, addr.Port, node.IP, node.Port, sock)
-		node.Socket = sock
+		logger.Debugf(">>>>>>>>>>>>>>>>>>>>>punch message addr: %v natip: %v, natport: %d, ip: %v, port: %v, socket: %v", address, addr.Addr, addr.Port, node.IP, node.Port, node.Socket)
 		node.Addr = address
 		node.Status = true
 		p2pInfo := &P2PSocket{
-			Socket:   sock,
+			Socket:   node.Socket,
 			NodeInfo: node,
 		}
+
+		//重建relay socket
+		t.socket = socket.NewSocket(0)
+		t.socket.Connect(t.relayAddr)
+
+		log.Printf("new relay: %v, p2p socket: %v", t.socket, node.Socket)
 		t.P2pChannel <- p2pInfo
 	}
 }

@@ -34,9 +34,11 @@ func NewSocket(port int) Interface {
 	fd, _ := unix.Socket(unix.AF_INET, unix.SOCK_DGRAM, 0)
 	unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_REUSEADDR, 1)
 	unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_REUSEPORT, 1)
-	addr := unix.SockaddrInet4{Port: port}
-	copy(addr.Addr[:], net.IPv4zero.To4())
-	unix.Bind(fd, &addr)
+	if port != 0 {
+		addr := unix.SockaddrInet4{Port: port}
+		copy(addr.Addr[:], net.IPv4zero.To4())
+		unix.Bind(fd, &addr)
+	}
 	return Socket{Fd: fd}
 }
 

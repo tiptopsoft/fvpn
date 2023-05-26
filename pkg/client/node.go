@@ -4,14 +4,13 @@ import (
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/handler/device"
 	"github.com/topcloudz/fvpn/pkg/handler/udp"
+	"github.com/topcloudz/fvpn/pkg/middleware"
 	"github.com/topcloudz/fvpn/pkg/middleware/infra"
+	"github.com/topcloudz/fvpn/pkg/option"
+	"github.com/topcloudz/fvpn/pkg/socket"
 	"golang.org/x/sys/unix"
 	"runtime"
 	"sync"
-
-	"github.com/topcloudz/fvpn/pkg/middleware"
-	"github.com/topcloudz/fvpn/pkg/option"
-	"github.com/topcloudz/fvpn/pkg/socket"
 )
 
 var (
@@ -40,12 +39,12 @@ func (n *Node) Start() error {
 	tun := n.GetTun() //这里启动的是relaySocket，中继服务器
 	go tun.ReadFromUdp()
 	//查询 all nodes in network
-	go tun.QueryRemoteNodes()
+	//go tun.QueryRemoteNodes()
 	go tun.WriteToDevice()
 	go tun.WriteToUdp()
 	//open hole for p2p
-	go tun.PunchHole()
-	go tun.P2PSocketLoop()
+	//go tun.PunchHole()
+	//go tun.P2PSocketLoop()
 	return n.runHttpServer()
 
 }
@@ -56,6 +55,7 @@ func (n *Node) GetTun() *handler.Tun {
 	udpHandler := middleware.WithMiddlewares(udp.Handle(), m...)
 	tun := handler.NewTun(tunHandler, udpHandler, n.relaySocket, n.relayAddr)
 	n.tun = tun
+
 	return tun
 }
 
