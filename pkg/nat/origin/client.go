@@ -1,6 +1,7 @@
 package origin
 
 //
+////
 //import (
 //	"fmt"
 //	"log"
@@ -53,7 +54,32 @@ package origin
 //
 //		fmt.Printf("error during read: %s", err)
 //	}
-//	conn.Close()
+//
+//	go func() {
+//
+//		for {
+//			if _, err = conn.Write([]byte("hahahahahaha,I'm new peer:" + tag)); err != nil {
+//
+//				log.Panic(err)
+//			}
+//		}
+//	}()
+//	go func() {
+//
+//		for {
+//
+//			data := make([]byte, 1024)
+//			n, _, err := conn.ReadFromUDP(data)
+//			if err != nil {
+//
+//				log.Printf("error during read:%s\n", err)
+//			} else {
+//
+//				log.Printf("原sock收到数据：%s\n", data[:n])
+//			}
+//		}
+//	}()
+//
 //	anotherPeer := parseAddr(string(data[:n]))
 //	fmt.Printf("local:%s server:%s another:%s\n", srcAddr, remoteAddr, anotherPeer)
 //	//开始打洞
