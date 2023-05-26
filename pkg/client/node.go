@@ -6,8 +6,6 @@ import (
 	"github.com/topcloudz/fvpn/pkg/handler/udp"
 	"github.com/topcloudz/fvpn/pkg/middleware/infra"
 	"github.com/topcloudz/fvpn/pkg/util"
-	"golang.org/x/sys/unix"
-	"runtime"
 	"sync"
 
 	"github.com/topcloudz/fvpn/pkg/middleware"
@@ -20,16 +18,11 @@ var (
 	DefaultPort = 6663
 )
 
-func init() {
-	runtime.LockOSThread()
-}
-
 type Node struct {
 	*option.Config
 	Protocol    option.Protocol
 	tun         *handler.Tun //key: networkId, value: Tuntap
 	relaySocket socket.Interface
-	relayAddr   unix.SockaddrInet4
 }
 
 func (n *Node) Start() error {
@@ -58,7 +51,7 @@ func (n *Node) GetTun() *handler.Tun {
 	m := n.initMiddleware()
 	tunHandler := middleware.WithMiddlewares(device.Handle(), m...)
 	udpHandler := middleware.WithMiddlewares(udp.Handle(), m...)
-	tun := handler.NewTun(tunHandler, udpHandler, n.relaySocket, n.relayAddr)
+	tun := handler.NewTun(tunHandler, udpHandler, n.relaySocket)
 	n.tun = tun
 	return tun
 }

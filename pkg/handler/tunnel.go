@@ -19,8 +19,7 @@ import (
 
 type Tun struct {
 	socket     socket.Interface // underlay
-	relayAddr  unix.SockaddrInet4
-	p2pSocket  sync.Map //p2psocket
+	p2pSocket  sync.Map         //p2psocket
 	device     map[string]*tuntap.Tuntap
 	Inbound    chan *packet.Frame //used from udp
 	Outbound   chan *packet.Frame //used for tun
@@ -34,7 +33,7 @@ type Tun struct {
 	p2pNode    sync.Map
 }
 
-func NewTun(tunHandler, udpHandler Handler, s socket.Interface, relayAddr unix.SockaddrInet4) *Tun {
+func NewTun(tunHandler, udpHandler Handler, s socket.Interface) *Tun {
 	tun := &Tun{
 		Inbound:    make(chan *packet.Frame, 10000),
 		Outbound:   make(chan *packet.Frame, 10000),
@@ -45,7 +44,6 @@ func NewTun(tunHandler, udpHandler Handler, s socket.Interface, relayAddr unix.S
 		cache:      cache.New(),
 		tunHandler: tunHandler,
 		udpHandler: udpHandler,
-		relayAddr:  relayAddr,
 	}
 	tun.socket = s
 	return tun
@@ -173,7 +171,7 @@ func (t *Tun) SaveSocket(mac string, s socket.Interface) {
 }
 
 func (t *Tun) ReadFromUdp() {
-	logger.Infof("start a udp loop socket is: %v", t.socket)
+	logger.Debugf("start a udp loop socket is: %v", t.socket)
 	for {
 		ctx := context.Background()
 		frame := packet.NewFrame()
@@ -245,8 +243,8 @@ func (t *Tun) AddQueryRemoteNodes(networkId string) error {
 func (t *Tun) QueryRemoteNodes() {
 	for {
 		pkt := <-t.QueryBound
-		t.socket.WriteToUdp(pkt.Packet, &t.relayAddr)
-		logger.Debugf("wrote a pkt to query remote ndoes")
+		t.socket.Write(pkt.Packet)
+		logger.Debugf("wrote a pkt to query remote ndoes data: %v", pkt.Packet)
 	}
 
 }

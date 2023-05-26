@@ -2,6 +2,7 @@ package peer
 
 import (
 	"errors"
+	"fmt"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
@@ -12,6 +13,11 @@ import (
 type PeerPacket struct {
 	header header.Header
 	SrcMac net.HardwareAddr
+}
+
+func (pkt PeerPacket) String() string {
+	value := fmt.Sprintf("type: %d, srcMac: %s", pkt.header.Flags, pkt.SrcMac.String())
+	return value
 }
 
 func NewPacket(networkId string) PeerPacket {
