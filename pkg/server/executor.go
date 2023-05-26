@@ -85,7 +85,10 @@ func (r *RegServer) WriteToUdp() {
 			break
 		case option.MsgTypeQueryPeer:
 			logger.Debugf("query data to %v, data: %v", pkt.SrcAddr, pkt.Packet)
-			r.socket.WriteToUdp(pkt.Packet, pkt.SrcAddr)
+			err := r.socket.WriteToUdp(pkt.Packet, pkt.SrcAddr)
+			if err != nil {
+				logger.Errorf("write query to dest failed: %v", err)
+			}
 			break
 		case option.MsgTypeNotify:
 			//write to dest
