@@ -89,17 +89,6 @@ func Handle() handler.HandlerFunc {
 			}
 
 			copy(addr.Addr[:], np.NatIP.To4())
-			//var info *cache.NodeInfo
-			//info, err = c.GetNodeInfo(frame.NetworkId, np.SourceIP.String())
-			//if err != nil {
-			//	logger.Errorf("got cache faile. %v", err)
-			//}
-			//
-			//if info != nil {
-			//	frame.Packet = buff[:]
-			//	frame.Target = info
-			//	return nil
-			//} else {
 			info := &cache.NodeInfo{
 				Socket:    nil,
 				NetworkId: frame.NetworkId,
@@ -117,7 +106,7 @@ func Handle() handler.HandlerFunc {
 
 			frame.Packet = buff[:]
 			frame.Target = info
-			logger.Debugf("got notify data: %v", info)
+			logger.Debugf("got notify packet: %v", info)
 			//c.SetCache(frame.NetworkId, info.IP.String(), info)
 		}
 

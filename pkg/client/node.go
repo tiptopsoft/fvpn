@@ -5,8 +5,8 @@ import (
 	"github.com/topcloudz/fvpn/pkg/handler/device"
 	"github.com/topcloudz/fvpn/pkg/handler/udp"
 	"github.com/topcloudz/fvpn/pkg/middleware/infra"
-	"github.com/topcloudz/fvpn/pkg/util"
 	"golang.org/x/sys/unix"
+	"runtime"
 	"sync"
 
 	"github.com/topcloudz/fvpn/pkg/middleware"
@@ -28,20 +28,21 @@ type Node struct {
 }
 
 func (n *Node) Start() error {
+	runtime.GOMAXPROCS(2)
 	once.Do(func() {
 		n.relaySocket = socket.NewSocket(6061)
 		n.Protocol = option.UDP
 		if err := n.conn(); err != nil {
 			logger.Errorf("failed to connect to server: %v", err)
 		}
-		util.Init()
+		//util.Init()
 	})
 	tun := n.GetTun() //这里启动的是relaySocket，中继服务器
 	go tun.ReadFromUdp()
-
 	//查询 all nodes in network
 	go tun.QueryRemoteNodes()
 	go tun.WriteToDevice()
+	go tun.WriteToUdp()
 	//open hole for p2p
 	go tun.PunchHole()
 	go tun.P2PSocketLoop()

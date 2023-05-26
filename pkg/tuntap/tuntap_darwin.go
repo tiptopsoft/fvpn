@@ -3,6 +3,7 @@ package tuntap
 import (
 	"fmt"
 	"github.com/topcloudz/fvpn/pkg/option"
+	"net"
 	"os"
 	"syscall"
 	"unsafe"
@@ -96,5 +97,6 @@ func New(mode Mode, ip, mask, networkId string) (*Tuntap, error) {
 		MacAddr: mac,
 		file:    os.NewFile(uintptr(fd), name),
 		Fd:      fd,
+		IP:      net.ParseIP(ip),
 	}, nil
 }

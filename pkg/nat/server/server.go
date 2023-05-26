@@ -5,11 +5,13 @@ import (
 	"log"
 	"net"
 	"os"
+	"runtime"
 	"strconv"
 )
 
 func main() {
 
+	fmt.Println("CPU: ", runtime.NumCPU())
 	if len(os.Args) < 2 {
 		panic("should give a port")
 	}

@@ -70,7 +70,7 @@ func (n *Node) runHttpServer() error {
 					t.Reset(time.Second * 10)
 				}
 			}()
-			go n.tun.WriteToUdp()
+			//go n.tun.WriteToUdp()
 
 			w.WriteHeader(200)
 			logger.Infof("join network %s success", req.NetworkId)

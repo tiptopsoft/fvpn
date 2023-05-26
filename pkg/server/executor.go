@@ -27,16 +27,17 @@ func (r *RegServer) ReadFromUdp() {
 		packetHeader, err := util.GetPacketHeader(frame.Packet[:12])
 		if err != nil {
 			logger.Errorf("get header falied. %v", err)
+			continue
 		}
-		if packetHeader.Flags == option.MsgTypePacket {
-			header, err := util.GetFrameHeader(frame.Packet[12:])
-			if err != nil {
-				logger.Errorf("get invalid header..:%v", err)
-			}
-			ctx = context.WithValue(ctx, "header", header)
-		}
+		//if packetHeader.Flags == option.MsgTypePacket {
+		//	header, err := util.GetFrameHeader(frame.Packet[12:])
+		//	if err != nil {
+		//		logger.Errorf("get invalid header..:%v", err)
+		//	}
+		//	ctx = context.WithValue(ctx, "header", header)
+		//}
 		networkId := hex.EncodeToString(packetHeader.NetworkId[:])
-		ctx = context.WithValue(ctx, "pkt", packetHeader)
+		//ctx = context.WithValue(ctx, "pkt", packetHeader)
 		ctx = context.WithValue(ctx, "flag", packetHeader.Flags)
 		ctx = context.WithValue(ctx, "networkId", networkId)
 		ctx = context.WithValue(ctx, "size", n)
@@ -49,9 +50,7 @@ func (r *RegServer) ReadFromUdp() {
 		err = r.h.Handle(ctx, frame)
 		if err != nil {
 			logger.Errorf(err.Error())
-		}
-		if frame.FrameType == option.MsgTypeQueryPeer {
-			logger.Debugf("frame add to queue data: %v, remoteAddr: %v", frame.Packet, frame.SrcAddr)
+			continue
 		}
 		r.Outbound <- frame
 	}
@@ -61,9 +60,7 @@ func (r *RegServer) WriteToUdp() {
 	logger.Infof("start a udp write loop")
 	for {
 		pkt := <-r.Outbound
-		//packetHeader, err := util.GetPacketHeader(pkt.Packet[:12])
 		frameType := pkt.FrameType
-
 		switch frameType {
 		case option.MsgTypePacket:
 			frameHeader, err := util.GetFrameHeader(pkt.Packet[12:]) //why is 12, because we add our header in, header length is 12
@@ -84,6 +81,7 @@ func (r *RegServer) WriteToUdp() {
 			r.socket.WriteToUdp(pkt.Packet, pkt.SrcAddr)
 			break
 		case option.MsgTypeQueryPeer:
+			logger.Debugf("query nodes result: %v, write to: %v", pkt.Packet, pkt.SrcAddr)
 			err := r.socket.WriteToUdp(pkt.Packet, pkt.SrcAddr)
 			if err != nil {
 				logger.Errorf("write query to dest failed: %v", err)
@@ -118,9 +116,9 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 		size := ctx.Value("size").(int)
 		data := frame.Packet[:]
 
-		p := ctx.Value("pkt").(header.Header)
-		frame.FrameType = p.Flags
-		switch p.Flags {
+		flag := ctx.Value("flag").(uint16)
+		frame.FrameType = flag
+		switch flag {
 
 		case option.MsgTypeRegisterSuper:
 			regPkt, err := register.Decode(frame.Packet)
@@ -139,7 +137,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			break
 		case option.MsgTypeQueryPeer:
 			peers, size, err := getPeerInfo(r.cache.GetNodes())
-			logger.Infof("server peers: (%v), size: (%v)", peers, size)
+			logger.Debugf("server peers: (%v), size: (%v)", peers, size)
 			if err != nil {
 				logger.Errorf("get peers from server failed. err: %v", err)
 			}
@@ -180,8 +178,4 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 
 		return nil
 	}
-}
-
-func getFrameHeader(ctx context.Context) (*util.FrameHeader, error) {
-	return ctx.Value("header").(*util.FrameHeader), nil
 }
