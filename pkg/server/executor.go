@@ -51,7 +51,7 @@ func (r *RegServer) ReadFromUdp() {
 			logger.Errorf(err.Error())
 		}
 		if frame.FrameType == option.MsgTypeQueryPeer {
-			logger.Debugf("frame add to queue data: %v, remoteAdr: %v", frame.Packet, frame.SrcAddr)
+			logger.Debugf("frame add to queue data: %v, remoteAddr: %v", frame.Packet, frame.SrcAddr)
 		}
 		r.Outbound <- frame
 	}
@@ -61,12 +61,10 @@ func (r *RegServer) WriteToUdp() {
 	logger.Infof("start a udp write loop")
 	for {
 		pkt := <-r.Outbound
-		packetHeader, err := util.GetPacketHeader(pkt.Packet[:12])
-		if err != nil {
-			logger.Errorf("get header failed")
-		}
+		//packetHeader, err := util.GetPacketHeader(pkt.Packet[:12])
+		frameType := pkt.FrameType
 
-		switch packetHeader.Flags {
+		switch frameType {
 		case option.MsgTypePacket:
 			frameHeader, err := util.GetFrameHeader(pkt.Packet[12:]) //why is 12, because we add our header in, header length is 12
 			if err != nil {
@@ -86,7 +84,6 @@ func (r *RegServer) WriteToUdp() {
 			r.socket.WriteToUdp(pkt.Packet, pkt.SrcAddr)
 			break
 		case option.MsgTypeQueryPeer:
-			logger.Debugf("query data to %v, data: %v", pkt.SrcAddr, pkt.Packet)
 			err := r.socket.WriteToUdp(pkt.Packet, pkt.SrcAddr)
 			if err != nil {
 				logger.Errorf("write query to dest failed: %v", err)

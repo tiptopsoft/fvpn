@@ -6,6 +6,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/handler/udp"
 	"github.com/topcloudz/fvpn/pkg/middleware/infra"
 	"github.com/topcloudz/fvpn/pkg/util"
+	"golang.org/x/sys/unix"
 	"sync"
 
 	"github.com/topcloudz/fvpn/pkg/middleware"
@@ -23,6 +24,7 @@ type Node struct {
 	Protocol    option.Protocol
 	tun         *handler.Tun //key: networkId, value: Tuntap
 	relaySocket socket.Interface
+	relayAddr   *unix.SockaddrInet4
 }
 
 func (n *Node) Start() error {

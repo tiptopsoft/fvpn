@@ -27,34 +27,11 @@ func (n *Node) conn() error {
 		if err = n.relaySocket.Connect(&remoteAddr); err != nil {
 			return err
 		}
+
+		n.relayAddr = &remoteAddr
 		logger.Infof("node connected to server: (%v)", n.ClientCfg.Registry)
 	}
 	return err
-}
-
-func (n *Node) queryNodeInfos() error {
-	//n.tuns.Range(func(key, value any) bool {
-	//	networkId := key
-	//	cp := peer.NewPacket(networkId.(string))
-	//	data, err := peer.Encode(cp)
-	//	if err != nil {
-	//		logger.Errorf("error occurd when query peers, networkId: %s, err: %v", networkId, err)
-	//		return false
-	//	}
-	//
-	//	switch n.Protocol {
-	//	case option.UDP:
-	//		logger.Infof("start to query n peer info, data: (%v)", data)
-	//		if _, err := n.relaySocket.Write(data); err != nil {
-	//			logger.Errorf("error occurd when query peers, networkId: %s, err: %v", networkId, err)
-	//			return false
-	//		}
-	//		break
-	//	}
-	//	return true
-	//})
-
-	return nil
 }
 
 // register register a node to center.
