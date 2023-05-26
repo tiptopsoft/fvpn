@@ -53,7 +53,7 @@ func (n *Node) GetTun() *handler.Tun {
 	m := n.initMiddleware()
 	tunHandler := middleware.WithMiddlewares(device.Handle(), m...)
 	udpHandler := middleware.WithMiddlewares(udp.Handle(), m...)
-	tun := handler.NewTun(tunHandler, udpHandler, n.relaySocket)
+	tun := handler.NewTun(tunHandler, udpHandler, n.relaySocket, n.relayAddr)
 	n.tun = tun
 	return tun
 }
