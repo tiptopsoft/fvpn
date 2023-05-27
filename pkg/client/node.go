@@ -43,8 +43,8 @@ func (n *Node) Start() error {
 	go tun.WriteToDevice()
 	go tun.WriteToUdp()
 	//open hole for p2p
-	//go tun.PunchHole()
-	//go tun.P2PSocketLoop()
+	go tun.PunchHole()
+	go tun.P2PSocketLoop()
 	return n.runHttpServer()
 
 }

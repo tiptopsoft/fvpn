@@ -143,32 +143,32 @@ func (t *Tun) WriteToUdp() {
 				logger.Errorf("node has not been query back. %v", err)
 			}
 
-			if v, ok := t.p2pNode.Load(node.IP.String()); !ok || v == nil {
-				//write to notify
-				np := notify.NewPacket(pkt.NetworkId)
-				self := pkt.Self
-				np.SourceIP = self.IP
-				np.Port = self.Port
-				np.NatType = util.NatType
-				np.NatIP = self.NatIP
-				np.NatPort = self.NatPort
-				np.DestAddr = header.DestinationIP
-				buff, err := notify.Encode(np)
-				if err != nil {
-					logger.Errorf("build notify packet failed: %v", err)
-				}
-				logger.Debugf("send a notify packet to: %v, data: %v", ip, buff)
-
-				t.socket.Write(buff[:])
-
-				logger.Infof("add %s to p2pBound", node.IP.String())
-				t.P2PBound <- node
-				t.p2pNode.Store(node.IP.String(), node)
+			//if v, ok := t.p2pNode.Load(node.IP.String()); !ok || v == nil {
+			//write to notify
+			np := notify.NewPacket(pkt.NetworkId)
+			self := pkt.Self
+			np.SourceIP = self.IP
+			np.Port = self.Port
+			np.NatType = util.NatType
+			np.NatIP = self.NatIP
+			np.NatPort = self.NatPort
+			np.DestAddr = header.DestinationIP
+			buff, err := notify.Encode(np)
+			if err != nil {
+				logger.Errorf("build notify packet failed: %v", err)
 			}
+			logger.Debugf("send a notify packet to: %v, data: %v", ip, buff)
 
-			//同时通过relay server发送数据
-			t.socket.Write(pkt.Packet[:])
+			t.socket.Write(buff[:])
+
+			logger.Infof("add %s to p2pBound", node.IP.String())
+			t.P2PBound <- node
+			t.p2pNode.Store(node.IP.String(), node)
 		}
+
+		//同时通过relay server发送数据
+		t.socket.Write(pkt.Packet[:])
+		//}
 	}
 }
 
