@@ -2,9 +2,6 @@ package util
 
 import (
 	"fmt"
-	"github.com/topcloudz/fvpn/pkg/packet/notify"
-	"strconv"
-	"strings"
 	"testing"
 )
 
@@ -31,15 +28,18 @@ func TestCheckNatType(t *testing.T) {
 	//buff := []byte{1, 100, 0, 13, 150, 20, 31, 112, 92, 129, 204, 193, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 192, 168, 0, 6, 23, 173, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 192, 168, 0, 9}
 	np, err := notify.Decode(buff1)
 	fmt.Println(np, err)*/
+	//
+	//s := "1 100 0 13 150 20 31 112 92 129 204 193 0 0 0 0 0 0 0 0 0 0 255 255 192 168 0 6 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 255 255 211 159 225 186 23 173 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+	//arr := strings.Split(s, " ")
+	//var buff []byte
+	//for _, v := range arr {
+	//	value, _ := strconv.Atoi(v)
+	//	buff = append(buff, byte(value))
+	//}
+	//
+	//np, err := notify.Decode(buff)
+	//fmt.Println(np, err)
 
-	s := "1 100 0 13 150 20 31 112 92 129 204 193 0 0 0 0 0 0 0 0 0 0 255 255 192 168 0 6 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 255 255 211 159 225 186 23 173 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
-	arr := strings.Split(s, " ")
-	var buff []byte
-	for _, v := range arr {
-		value, _ := strconv.Atoi(v)
-		buff = append(buff, byte(value))
-	}
-
-	np, err := notify.Decode(buff)
-	fmt.Println(np, err)
+	Init()
+	fmt.Println(NatType)
 }

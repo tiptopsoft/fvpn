@@ -63,10 +63,7 @@ func NewTun(tunHandler, udpHandler Handler, s socket.Interface, relayAddr *unix.
 				}
 			}
 
-			//注册
-
 			t.Reset(time.Second * 30)
-
 		}
 	}()
 	return tun
@@ -151,33 +148,104 @@ func (t *Tun) WriteToUdp() {
 				logger.Errorf("node has not been query back. %v", err)
 			}
 
-			//if v, ok := t.p2pNode.Load(node.IP.String()); !ok || v == nil {
-			//write to notify
-			np := notify.NewPacket(pkt.NetworkId)
-			self := pkt.Self
-			np.SourceIP = self.IP
-			np.Port = self.Port
-			np.NatType = util.NatType
-			np.NatIP = self.NatIP
-			np.NatPort = self.NatPort
-			np.DestAddr = header.DestinationIP
-			buff, err := notify.Encode(np)
-			if err != nil {
-				logger.Errorf("build notify packet failed: %v", err)
+			if v, ok := t.p2pNode.Load(node.IP.String()); !ok || v == nil {
+				go t.p2pHole(pkt, node)
+				t.p2pNode.Store(node.IP.String(), node)
 			}
-			logger.Debugf("send a notify packet to: %v, data: %v", ip, buff)
 
-			t.socket.Write(buff[:])
+			//同时通过relay server发送数据
+			t.socket.Write(pkt.Packet[:])
+		}
+	}
+}
 
-			logger.Infof("add %s to p2pBound", node.IP.String())
-			t.P2PBound <- node
-			t.p2pNode.Store(node.IP.String(), node)
+func (t *Tun) p2pHole(pkt *packet.Frame, node *cache.NodeInfo) (socket.Interface, error) {
+	//这里先尝试P2p, 没有P2P使用relay server
+	hBuf, err := util.GetFrameHeader(pkt.Packet[12:]) //why 12? because header length is 12.
+	if err != nil {
+		return nil, err
+	}
+	//同时进行punch hole
+	ip := hBuf.DestinationIP.String()
+	//node, err := t.cache.GetNodeInfo(pkt.NetworkId, ip)
+	if err != nil {
+		logger.Errorf("node has not been query back. %v", err)
+	}
+	//write to notify
+	np := notify.NewPacket(pkt.NetworkId)
+	self := pkt.Self
+	np.SourceIP = self.IP
+	np.Port = self.Port
+	np.NatType = util.NatType
+	np.NatIP = self.NatIP
+	np.NatPort = self.NatPort
+	np.DestAddr = hBuf.DestinationIP
+	buff, err := notify.Encode(np)
+	if err != nil {
+		logger.Errorf("build notify packet failed: %v", err)
+	}
+	logger.Debugf("send a notify packet to: %v, data: %v", ip, buff)
+	t.socket.Write(buff[:])
+
+	//punch hole
+	sock := socket.NewSocket(6061)
+	err = sock.Connect(node.Addr)
+	if err != nil {
+		return nil, err
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	//open session, node-> remote addr
+	holePacket, _ := header.NewHeader(option.MsgTypePunchHole, node.NetworkId)
+	buff, _ = header.Encode(holePacket)
+	_, err = sock.Write(buff)
+	if err != nil {
+		logger.Errorf("open hole failed: %v", err)
+		return nil, err
+	}
+
+	addr := node.Addr.(*unix.SockaddrInet4)
+	logger.Debugf(">>>>>>>>>>>>>>>>>>>>>punch message addr: %v natip: %v, natport: %d, ip: %v, port: %v, socket: %v", addr, addr.Addr, addr.Port, node.IP, node.Port, node.Socket)
+	go func() {
+		logger.Infof("start a udp socket for p2p addr: %v", addr)
+		for {
+			frame := packet.NewFrame()
+			n, remoteAddr, err := sock.ReadFromUdp(frame.Buff[:])
+			if n < 0 || err != nil {
+				break
+			}
+			logger.Debugf(">>>>>>>>>>>>>>read from p2p data: %v", frame.Buff[:n])
+			if err != nil {
+				logger.Errorf("sock read failed: %v, remoteAddr: %v", err, remoteAddr)
+			}
+
+			frame.Packet = frame.Buff[:n]
+			h, err := util.GetPacketHeader(frame.Packet)
+
+			if err != nil {
+				logger.Debugf("not invalid header: %v", string(frame.Packet))
+			}
+
+			frame.NetworkId = hex.EncodeToString(h.NetworkId[:])
+			logger.Debugf(">>>>>>>>>>>>>>>>p2p header, networkId: %s", frame.NetworkId)
+
+			logger.Debugf(">>>>>>>>>>>>>>>>p2p node cached: %v, networkId: %s", node, frame.NetworkId)
+			node.P2P = true
+			node.Socket = sock
+			t.cache.SetCache(frame.NetworkId, node.IP.String(), node)
+			//加入inbound
+			if h.Flags != option.MsgTypePunchHole {
+				t.Inbound <- frame
+			}
+			logger.Debugf("p2p sock read %d byte, data: %v, remoteAddr: %v", n, frame.Packet[:n], remoteAddr)
 		}
 
-		//同时通过relay server发送数据
-		t.socket.Write(pkt.Packet[:])
-		//}
-	}
+		logger.Errorf("udp socket loop error occurd,  exit: %v", addr)
+	}()
+
+	return nil, nil
 }
 
 func (t *Tun) GetSocket(mac string) socket.Interface {
@@ -200,11 +268,11 @@ func (t *Tun) ReadFromUdp() {
 		frame := packet.NewFrame()
 
 		n, remoteAddr, err := t.socket.ReadFromUdp(frame.Buff[:])
-		logger.Debugf("receive data from remote: %v, size: %d, data: %v", remoteAddr, n, frame.Buff[:n])
 		if n < 0 || err != nil {
 			logger.Errorf("got data err: %v", err)
 			continue
 		}
+		logger.Debugf("receive data from remote: %v, size: %d, data: %v", remoteAddr, n, frame.Buff[:n])
 		ctx = context.WithValue(ctx, "cache", t.cache)
 		err = t.udpHandler.Handle(ctx, frame)
 		if err != nil {
@@ -220,8 +288,10 @@ func (t *Tun) ReadFromUdp() {
 			//will connect to target by udp
 			ip := frame.Target.IP
 			if v, ok := t.p2pNode.Load(ip.String()); !ok || v == nil {
-				logger.Infof("add %s to p2pBound", ip.String())
-				t.P2PBound <- frame.Target
+				//logger.Infof("add %s to p2pBound", ip.String())
+				//t.P2PBound <- frame.Target
+
+				go t.p2pHole(frame, frame.Target)
 				t.p2pNode.Store(ip.String(), frame.Target)
 			}
 		}
@@ -287,7 +357,7 @@ func (t *Tun) PunchHole() {
 		}
 
 		address := node.Addr
-		node.Socket = t.socket
+		node.Socket = socket.NewSocket(6061)
 		err := node.Socket.Connect(address)
 		if err != nil {
 			logger.Errorf("init p2p failed. address: %v, err: %v", address, err)
@@ -312,11 +382,6 @@ func (t *Tun) PunchHole() {
 			NodeInfo: node,
 		}
 
-		//重建relay socket
-		t.socket = socket.NewSocket(0)
-		t.socket.Connect(t.relayAddr)
-
-		log.Printf("new relay: %v, p2p socket: %v", t.socket, node.Socket)
 		t.P2pChannel <- p2pInfo
 	}
 }
@@ -326,44 +391,45 @@ type P2PSocket struct {
 	NodeInfo *cache.NodeInfo
 }
 
-func (t *Tun) P2PSocketLoop() {
-	for {
-		p2pInfo := <-t.P2pChannel
-		go t.p2pLoop(p2pInfo)
+//func (t *Tun) P2PSocketLoop() {
+//	for {
+//		p2pInfo := <-t.P2pChannel
+//		go t.p2pLoop(p2pInfo)
+//
+//	}
+//}
 
-	}
-}
-
-func (t *Tun) p2pLoop(p2pInfo *P2PSocket) {
-	for {
-		sock := p2pInfo.Socket
-		frame := packet.NewFrame()
-		n, remoteAddr, err := sock.ReadFromUdp(frame.Buff[:])
-		if n < 0 || err != nil {
-			continue
-		}
-		logger.Debugf(">>>>>>>>>>>>>>read from p2p data: %v", frame.Buff[:n])
-		if err != nil {
-			logger.Errorf("sock read failed: %v, remoteAddr: %v", err, remoteAddr)
-		}
-
-		frame.Packet = frame.Buff[:n]
-		h, err := util.GetPacketHeader(frame.Packet)
-
-		if err != nil {
-			logger.Debugf("not invalid header: %v", string(frame.Packet))
-		}
-
-		p2pInfo.NodeInfo.P2P = true
-		frame.NetworkId = hex.EncodeToString(h.NetworkId[:])
-		logger.Debugf(">>>>>>>>>>>>>>>>p2p header, networkId: %s", frame.NetworkId)
-		t.cache.SetCache(frame.NetworkId, p2pInfo.NodeInfo.IP.String(), p2pInfo.NodeInfo)
-		logger.Debugf(">>>>>>>>>>>>>>>>p2p node cached: %v, networkId: %s", p2pInfo.NodeInfo, frame.NetworkId)
-		//加入inbound
-		if h.Flags != option.MsgTypePunchHole {
-			t.Inbound <- frame
-		}
-		logger.Debugf("p2p sock read %d byte, data: %v, remoteAddr: %v", n, frame.Packet[:n], remoteAddr)
-	}
-
-}
+//func (t *Tun) p2pLoop(p2pInfo *P2PSocket) {
+//
+//	for {
+//		sock := p2pInfo.Socket
+//		frame := packet.NewFrame()
+//		n, remoteAddr, err := sock.ReadFromUdp(frame.Buff[:])
+//		if n < 0 || err != nil {
+//			continue
+//		}
+//		logger.Debugf(">>>>>>>>>>>>>>read from p2p data: %v", frame.Buff[:n])
+//		if err != nil {
+//			logger.Errorf("sock read failed: %v, remoteAddr: %v", err, remoteAddr)
+//		}
+//
+//		frame.Packet = frame.Buff[:n]
+//		h, err := util.GetPacketHeader(frame.Packet)
+//
+//		if err != nil {
+//			logger.Debugf("not invalid header: %v", string(frame.Packet))
+//		}
+//
+//		p2pInfo.NodeInfo.P2P = true
+//		frame.NetworkId = hex.EncodeToString(h.NetworkId[:])
+//		logger.Debugf(">>>>>>>>>>>>>>>>p2p header, networkId: %s", frame.NetworkId)
+//		//t.cache.SetCache(frame.NetworkId, p2pInfo.NodeInfo.IP.String(), p2pInfo.NodeInfo)
+//		logger.Debugf(">>>>>>>>>>>>>>>>p2p node cached: %v, networkId: %s", p2pInfo.NodeInfo, frame.NetworkId)
+//		//加入inbound
+//		if h.Flags != option.MsgTypePunchHole {
+//			t.Inbound <- frame
+//		}
+//		logger.Debugf("p2p sock read %d byte, data: %v, remoteAddr: %v", n, frame.Packet[:n], remoteAddr)
+//	}
+//
+//}

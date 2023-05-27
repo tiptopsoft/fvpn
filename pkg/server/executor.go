@@ -117,7 +117,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 		data := frame.Packet[:]
 
 		flag := ctx.Value("flag").(uint16)
-		frame.FrameType = flag
+
 		switch flag {
 
 		case option.MsgTypeRegisterSuper:
@@ -134,6 +134,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			f, _ := header.Encode(h)
 			frame.Packet = f
 			frame.SrcAddr = srcAddr
+			frame.FrameType = option.MsgTypeRegisterAck
 			break
 		case option.MsgTypeQueryPeer:
 			peers, size, err := getPeerInfo(r.cache.GetNodes())
@@ -149,9 +150,11 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 
 			frame.Packet = f
 			frame.SrcAddr = srcAddr
+			frame.FrameType = option.MsgTypeQueryPeer
 			break
 		case option.MsgTypePacket:
 			logger.Infof("server got forward packet size:%d, data: %v", size, data)
+			frame.FrameType = option.MsgTypePacket
 			break
 		case option.MsgTypeNotify:
 			logger.Infof("add packet: %v", frame.Packet[:])
@@ -174,6 +177,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 
 			copy(frame.Packet[:], newBuff)
 			logger.Debugf("frame packet: %v", frame.Packet[:])
+			frame.FrameType = option.MsgTypeNotify
 		}
 
 		return nil

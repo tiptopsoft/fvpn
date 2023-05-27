@@ -3,6 +3,7 @@ package udp
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"github.com/topcloudz/fvpn/pkg/cache"
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/log"
@@ -40,8 +41,9 @@ func Handle() handler.HandlerFunc {
 			regAck, err := ack.Decode(buff)
 			if err != nil {
 				//return err
+				fmt.Println(err)
 			}
-			logger.Infof("register success, got server server ack: (%v)", regAck.AutoIP)
+			logger.Infof("register success, got server server ack: (%v)", regAck)
 			break
 		case option.MsgTypeQueryPeer:
 			logger.Debugf("start get query response")
@@ -53,7 +55,7 @@ func Handle() handler.HandlerFunc {
 			logger.Infof("got server peers: (%v)", infos)
 
 			for _, info := range infos {
-				logger.Debugf("got remote node: mac: %v, ip: %s,  natIP: %s, natPort: %d", info.Mac, info.IP, info.NatIp, info.NatPort)
+				//logger.Debugf("got remote node: mac: %v, ip: %s,  natIP: %s, natPort: %d", info.Mac, info.IP, info.NatIp, info.NatPort)
 				address, err := util.GetAddress(info.NatIp.String(), int(info.NatPort))
 				if err != nil {
 					logger.Errorf("resolve addr failed, err: %v", err)
