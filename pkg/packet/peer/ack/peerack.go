@@ -33,7 +33,7 @@ func NewPacket(networkId string) EdgePacketAck {
 }
 
 func Encode(ack EdgePacketAck) ([]byte, error) {
-	b := make([]byte, 2048)
+	b := make([]byte, unsafe.Sizeof(EdgePacketAck{}))
 	cp, err := header.Encode(ack.header)
 	if err != nil {
 		return nil, err
