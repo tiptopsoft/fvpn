@@ -3,12 +3,15 @@ package handler
 import (
 	"context"
 	"encoding/hex"
+	"errors"
+	"github.com/topcloudz/fvpn/pkg/addr"
 	"github.com/topcloudz/fvpn/pkg/cache"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"github.com/topcloudz/fvpn/pkg/packet/notify"
 	"github.com/topcloudz/fvpn/pkg/packet/peer"
+	"github.com/topcloudz/fvpn/pkg/packet/register"
 	"github.com/topcloudz/fvpn/pkg/socket"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"github.com/topcloudz/fvpn/pkg/util"
@@ -57,8 +60,16 @@ func NewTun(tunHandler, udpHandler Handler, s socket.Interface, relayAddr *unix.
 			<-t.C
 			for id := range tun.device {
 				tun.AddQueryRemoteNodes(id)
+				err := sendRegister(tun.device[id])
+				if err != nil {
+					logger.Errorf("send register failed. %v", err)
+				}
 			}
+
+			//注册
+
 			t.Reset(time.Second * 30)
+
 		}
 	}()
 	return tun
@@ -255,6 +266,43 @@ func (t *Tun) AddQueryRemoteNodes(networkId string) {
 		log.Printf("query data failed: %v", err)
 	}
 	//t.QueryBound <- frame
+}
+
+// register register a node to center.
+func sendRegister(tun *tuntap.Tuntap) error {
+	var err error
+	//header, err := packet.NewHeader(option.MsgTypeRegisterSuper, tun.NetworkId)
+	srcMac, srcIP, err := addr.GetMacAddrAndIPByDev(tun.Name)
+	if err != nil {
+		return err
+	}
+
+	if srcIP == nil {
+		return errors.New("device ip not set")
+	}
+	regPkt := register.NewPacket(tun.NetworkId, srcMac, srcIP)
+	copy(regPkt.SrcMac[:], tun.MacAddr)
+	if err != nil {
+		return err
+	}
+
+	data, err := register.Encode(regPkt)
+	if err != nil {
+		return err
+	}
+	logger.Infof("sending server data: %v", data)
+	if err != nil {
+		return err
+	}
+	switch n.Protocol {
+	case option.UDP:
+		logger.Infof("node start to register to server: %v")
+		if _, err := n.relaySocket.Write(data); err != nil {
+			return err
+		}
+		break
+	}
+	return nil
 }
 
 // QueryRemoteNodes when packet from regserver, this method will be called
