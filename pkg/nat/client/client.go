@@ -11,8 +11,8 @@ func main() {
 
 	sock := socket.NewSocket(1234)
 	addr := &unix.SockaddrInet4{
-		Port: 8001,
-		Addr: [4]byte{101, 43, 97, 112},
+		Port: 4000,
+		Addr: [4]byte{0, 0, 0, 0},
 	}
 
 	err := sock.Connect(addr)
@@ -38,30 +38,30 @@ func main() {
 		}
 	}()
 
-	sock1 := socket.NewSocket(1234)
-	sock1.Connect(&unix.SockaddrInet4{
-		Port: 8002,
-		Addr: [4]byte{211, 159, 225, 186},
-	})
-
-	go func() {
-		for {
-			time.Sleep(time.Second * 3)
-			sock1.Write([]byte("hello, i am 8002"))
-		}
-	}()
-
-	go func() {
-		for {
-			data1 := make([]byte, 1024)
-			_, err := sock1.Read(data1)
-			if err != nil {
-				fmt.Println(err)
-			}
-
-			fmt.Println(" receive 8002 data:", string(data1))
-		}
-	}()
+	//sock1 := socket.NewSocket(1234)
+	//sock1.Connect(&unix.SockaddrInet4{
+	//	Port: 8002,
+	//	Addr: [4]byte{211, 159, 225, 186},
+	//})
+	//
+	//go func() {
+	//	for {
+	//		time.Sleep(time.Second * 3)
+	//		sock1.Write([]byte("hello, i am 8002"))
+	//	}
+	//}()
+	//
+	//go func() {
+	//	for {
+	//		data1 := make([]byte, 1024)
+	//		_, err := sock1.Read(data1)
+	//		if err != nil {
+	//			fmt.Println(err)
+	//		}
+	//
+	//		fmt.Println(" receive 8002 data:", string(data1))
+	//	}
+	//}()
 
 	time.Sleep(time.Hour * 1)
 }

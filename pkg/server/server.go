@@ -59,24 +59,7 @@ func (r *RegServer) start(address string) error {
 		r.h = middleware.WithMiddlewares(r.serverUdpHandler(), infra.Middlewares(false, false)...)
 	})
 
-	switch r.Protocol {
-	case option.UDP:
-		addr, err := ResolveAddr(address)
-		if err != nil {
-			return err
-		}
-
-		err = r.socket.Listen(addr)
-		if err != nil {
-			return err
-		}
-		logger.Infof("server start at: %s", address)
-		if err != nil {
-			return err
-		}
-	default:
-		logger.Info("this is a tcp server")
-	}
+	logger.Debugf("server start at: %s", address)
 
 	return nil
 }
