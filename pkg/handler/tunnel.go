@@ -56,8 +56,11 @@ func NewTun(tunHandler, udpHandler Handler, s socket.Interface, relayAddr *unix.
 		for {
 			<-t.C
 			for id := range tun.device {
-				tun.AddQueryRemoteNodes(id)
-				err := util.SendRegister(tun.device[id], tun.socket)
+				err := util.SendQueryPeer(id, tun.socket)
+				if err != nil {
+					logger.Errorf("send query nodes failed. %v", err)
+				}
+				err = util.SendRegister(tun.device[id], tun.socket)
 				if err != nil {
 					logger.Errorf("send register failed. %v", err)
 				}
@@ -127,7 +130,10 @@ func (t *Tun) WriteToUdp() {
 		//target
 		target, err := t.cache.GetNodeInfo(pkt.NetworkId, header.DestinationIP.String())
 		if err != nil {
-			t.AddQueryRemoteNodes(pkt.NetworkId)
+			err := util.SendQueryPeer(pkt.NetworkId, t.socket)
+			if err != nil {
+				logger.Errorf("%v", err)
+			}
 			continue
 		}
 		if target.NatType == option.SymmetricNAT {

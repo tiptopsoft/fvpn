@@ -43,7 +43,7 @@ func Handle() handler.HandlerFunc {
 				//return err
 				fmt.Println(err)
 			}
-			logger.Infof("register success, got server server ack: (%v)", regAck)
+			logger.Debugf("register success, got server server ack: (%v)", regAck)
 			break
 		case option.MsgTypeQueryPeer:
 			logger.Debugf("start get query response")
