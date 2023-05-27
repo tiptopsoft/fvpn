@@ -11,7 +11,7 @@ func TestEncode(t *testing.T) {
 }
 func TestDecode(t *testing.T) {
 
-	pkt := NewPacket()
+	pkt := NewPacket("")
 	pkt.Size = 1
 
 	mac, _ := net.ParseMAC("01:e1:22:23:12:12")
