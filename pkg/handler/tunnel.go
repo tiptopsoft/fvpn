@@ -51,14 +51,14 @@ func NewTun(tunHandler, udpHandler Handler, s socket.Interface, relayAddr *unix.
 	tun.socket = s
 
 	//timer
-	t := time.NewTimer(time.Second * 10)
+	t := time.NewTimer(time.Second * 30)
 	go func() {
 		for {
 			<-t.C
 			for id := range tun.device {
 				tun.AddQueryRemoteNodes(id)
 			}
-			t.Reset(time.Second * 10)
+			t.Reset(time.Second * 30)
 		}
 	}()
 	return tun
