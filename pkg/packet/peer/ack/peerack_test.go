@@ -20,7 +20,7 @@ func TestDecode(t *testing.T) {
 		Mac:     mac,
 		IP:      ip,
 		Port:    4000,
-		P2P:     0,
+		P2P:     1,
 		NatIp:   ip,
 		NatPort: 54230,
 	}
