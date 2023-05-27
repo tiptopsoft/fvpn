@@ -7,6 +7,7 @@ import (
 	"fmt"
 	nativehttp "github.com/topcloudz/fvpn/pkg/http"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
+	"github.com/topcloudz/fvpn/pkg/util"
 	"io"
 	"net/http"
 )
@@ -55,7 +56,7 @@ func (n *Node) runHttpServer() error {
 				return
 			}
 			n.tun.CacheDevice(req.NetworkId, tap)
-			err = n.register(tap)
+			err = util.SendRegister(tap, n.relaySocket)
 			if err != nil {
 				return
 			}
