@@ -37,16 +37,11 @@ func (n *Node) Start() error {
 		//util.Init()
 	})
 	tun := n.GetTun() //这里启动的是relaySocket，中继服务器
-	go tun.ReadFromUdp()
-	//查询 all nodes in network
-	//go tun.QueryRemoteNodes()
-	go tun.WriteToDevice()
-	go tun.WriteToUdp()
-	//open hole for p2p
-	//go tun.PunchHole()
-	//go tun.P2PSocketLoop()
-	return n.runHttpServer()
+	go tun.HandleFrame()
+	go n.runHttpServer()
 
+	tun.ReadFromUdp()
+	return nil
 }
 
 func (n *Node) GetTun() *handler.Tun {

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	nativehttp "github.com/topcloudz/fvpn/pkg/http"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
-	"github.com/topcloudz/fvpn/pkg/util"
 	"io"
 	"net/http"
 )
@@ -56,12 +55,11 @@ func (n *Node) runHttpServer() error {
 				return
 			}
 			n.tun.CacheDevice(req.NetworkId, tap)
-			err = util.SendRegister(tap, n.relaySocket)
+			err = n.tun.SendRegister(tap)
 			if err != nil {
 				return
 			}
 			go n.tun.ReadFromTun(context.Background(), req.NetworkId)
-			go n.tun.WriteToUdp()
 
 			w.WriteHeader(200)
 			logger.Infof("join network %s success", req.NetworkId)

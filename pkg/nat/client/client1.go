@@ -103,24 +103,31 @@ func bidirectionHole(anotherAddr *net.UDPAddr) {
 		for {
 
 			time.Sleep(10 * time.Second)
-			if err = sock.WriteToUdp([]byte("from ["+tag+"]"), addr); err != nil {
+			if _, err = sock.Write([]byte("from [" + tag + "]")); err != nil {
 				log.Println("send msg fail", err)
 			}
 		}
 	}()
 
-	for {
+	//ch := make(chan Socket, 1)
+	//ch <- sock
 
-		data := make([]byte, 1024)
-		n, _, err := sock.ReadFromUdp(data)
-		if err != nil {
+	go func() {
+		for {
+			data := make([]byte, 1024)
+			n, err := sock.Read(data)
+			if err != nil {
 
-			log.Printf("error during read:%s\n", err)
-		} else {
+				log.Printf("error during read:%s\n", err)
+			} else {
 
-			log.Printf("收到数据：%s\n", data[:n])
+				log.Printf("收到数据：%s\n", data[:n])
+			}
 		}
-	}
+	}()
+
+	time.Sleep(time.Hour * 1)
+
 }
 
 type Socket struct {
