@@ -109,7 +109,7 @@ func (r *RegServer) WriteToUdp() {
 
 func transferUdpAddr(address unix.Sockaddr) *net.UDPAddr {
 	addr := address.(*unix.SockaddrInet4)
-	ip := net.ParseIP(fmt.Sprint("%d.%d.%d.%d", addr.Addr[0], addr.Addr[1], addr.Addr[2], addr.Addr[3]))
+	ip := net.ParseIP(fmt.Sprintf("%d.%d.%d.%d", addr.Addr[0], addr.Addr[1], addr.Addr[2], addr.Addr[3]))
 	return &net.UDPAddr{IP: ip, Port: addr.Port}
 }
 
