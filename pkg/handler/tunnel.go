@@ -92,13 +92,13 @@ func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
 		n, err := tun.Read(frame.Buff[:])
 		frame.Packet = frame.Buff[:n]
 		frame.Size = n
-		log.Printf("origin packet size: %d, data: %v", n, frame.Packet[:n])
-		header, err := util.GetFrameHeader(frame.Packet)
+		logger.Debugf("origin packet size: %d, data: %v", n, frame.Packet[:n])
+		h, err := util.GetFrameHeader(frame.Packet)
 		if err != nil {
 			logger.Debugf("no packet...")
 			continue
 		}
-		ctx = context.WithValue(ctx, "header", header)
+		ctx = context.WithValue(ctx, "header", h)
 		err = t.tunHandler.Handle(ctx, frame)
 		if err != nil {
 			logger.Errorf("tun handle packet failed: %v", err)
@@ -134,14 +134,14 @@ func (t *Tun) WriteToUdp() {
 	for {
 		pkt := <-t.Outbound
 		//这里先尝试P2p, 没有P2P使用relay server
-		header, err := util.GetFrameHeader(pkt.Packet[12:]) //why 12? because header length is 12.
-		logger.Debugf("packet will be write to : mac: %s, ip: %s, content: %v", header.DestinationAddr, header.DestinationIP.String(), pkt.Packet)
+		h, err := util.GetFrameHeader(pkt.Packet[12:]) //why 12? because h length is 12.
+		logger.Debugf("packet will be write to : mac: %s, ip: %s, content: %v", h.DestinationAddr, h.DestinationIP.String(), pkt.Packet)
 		if err != nil {
 			continue
 		}
 
 		//target
-		target, err := t.cache.GetNodeInfo(pkt.NetworkId, header.DestinationIP.String())
+		target, err := t.cache.GetNodeInfo(pkt.NetworkId, h.DestinationIP.String())
 		if err != nil {
 			err := util.SendQueryPeer(pkt.NetworkId, t.socket)
 			if err != nil {
@@ -161,7 +161,7 @@ func (t *Tun) WriteToUdp() {
 		} else {
 
 			//同时进行punch hole
-			ip := header.DestinationIP.String()
+			ip := h.DestinationIP.String()
 			node, err := t.cache.GetNodeInfo(pkt.NetworkId, ip)
 			if err != nil {
 				logger.Errorf("node has not been query back. %v", err)
