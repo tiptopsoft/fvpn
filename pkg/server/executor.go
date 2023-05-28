@@ -41,7 +41,7 @@ func (r *RegServer) ReadFromUdp() {
 		ctx = context.WithValue(ctx, "flag", packetHeader.Flags)
 		ctx = context.WithValue(ctx, "networkId", networkId)
 		ctx = context.WithValue(ctx, "size", n)
-		ctx = context.WithValue(ctx, "srcAddr", addr)
+		ctx = context.WithValue(ctx, "srcAddr", transferSockAddr(addr))
 		frame.NetworkId = networkId
 		if err != nil || n < 0 {
 			logger.Warnf("no data exists")
@@ -73,16 +73,16 @@ func (r *RegServer) WriteToUdp() {
 				logger.Debugf("could not found destitation, destIP: %s", frameHeader.DestinationIP.String())
 			} else {
 				logger.Infof("packet will relay to: %v", nodeInfo.Addr)
-				r.socket.WriteToUDP(pkt.Packet[:], transferAddr(nodeInfo.Addr))
+				r.socket.WriteToUDP(pkt.Packet[:], transferUdpAddr(nodeInfo.Addr))
 			}
 
 			break
 		case option.MsgTypeRegisterAck:
-			r.socket.WriteToUDP(pkt.Packet, transferAddr(pkt.SrcAddr))
+			r.socket.WriteToUDP(pkt.Packet, transferUdpAddr(pkt.SrcAddr))
 			break
 		case option.MsgTypeQueryPeer:
 			logger.Debugf("query nodes result: %v, write to: %v", pkt.Packet, pkt.SrcAddr)
-			_, err := r.socket.WriteToUDP(pkt.Packet, transferAddr(pkt.SrcAddr))
+			_, err := r.socket.WriteToUDP(pkt.Packet, transferUdpAddr(pkt.SrcAddr))
 			if err != nil {
 				logger.Errorf("write query to dest failed: %v", err)
 			}
@@ -101,23 +101,32 @@ func (r *RegServer) WriteToUdp() {
 				break
 			}
 
-			r.socket.WriteToUDP(pkt.Packet, transferAddr(nodeInfo.Addr))
+			r.socket.WriteToUDP(pkt.Packet, transferUdpAddr(nodeInfo.Addr))
 		}
 
 	}
 }
 
-func transferAddr(address unix.Sockaddr) *net.UDPAddr {
+func transferUdpAddr(address unix.Sockaddr) *net.UDPAddr {
 	addr := address.(*unix.SockaddrInet4)
 	ip := net.ParseIP(fmt.Sprint("%d.%d.%d.%d", addr.Addr[0], addr.Addr[1], addr.Addr[2], addr.Addr[3]))
 	return &net.UDPAddr{IP: ip, Port: addr.Port}
+}
+
+func transferSockAddr(address *net.UDPAddr) *unix.SockaddrInet4 {
+	addr := &unix.SockaddrInet4{
+		Port: address.Port,
+		Addr: [4]byte{},
+	}
+	copy(addr.Addr[:], address.IP.To4())
+	return addr
 }
 
 // serverUdpHandler  core self handler
 func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 	return func(ctx context.Context, frame *packet.Frame) error {
 
-		srcAddr := ctx.Value("srcAddr").(unix.Sockaddr)
+		srcAddr := ctx.Value("srcAddr").(*unix.SockaddrInet4)
 		networkId := ctx.Value("networkId").(string)
 		size := ctx.Value("size").(int)
 		data := frame.Packet[:]
@@ -132,7 +141,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 				logger.Errorf("register failed, err:%v", err)
 				return err
 			}
-			err = r.registerAck(srcAddr.(*unix.SockaddrInet4), regPkt.SrcMac, regPkt.SrcIP, networkId)
+			err = r.registerAck(srcAddr, regPkt.SrcMac, regPkt.SrcIP, networkId)
 			h, err := header.NewHeader(option.MsgTypeRegisterAck, networkId)
 			if err != nil {
 				logger.Errorf("build resp failed. err: %v", err)
@@ -170,7 +179,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			}
 
 			//add nat info to packet
-			addr := srcAddr.(*unix.SockaddrInet4)
+			addr := srcAddr
 			natIP := net.ParseIP(fmt.Sprintf("%d.%d.%d.%d", addr.Addr[0], addr.Addr[1], addr.Addr[2], addr.Addr[3]))
 			np.NatIP = natIP
 			np.NatPort = uint16(addr.Port)

@@ -33,9 +33,10 @@ type RegServer struct {
 }
 
 func (r *RegServer) Start(address string) error {
-	go func() {
-		r.start(address)
-	}()
+	err := r.start(address)
+	if err != nil {
+		return err
+	}
 
 	//启动udp处理goroutine
 	go r.ReadFromUdp()
