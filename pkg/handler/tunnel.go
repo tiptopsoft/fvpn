@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"github.com/topcloudz/fvpn/pkg/cache"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
@@ -31,8 +32,7 @@ type Tun struct {
 	cache      *cache.Cache
 	tunHandler Handler
 	udpHandler Handler
-	NetworkId  string
-	p2pNode    sync.Map
+	p2pNode    sync.Map // ip target -> socket
 }
 
 func NewTun(tunHandler, udpHandler Handler, s socket.Interface, relayAddr *unix.SockaddrInet4) *Tun {
@@ -104,17 +104,30 @@ func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
 			logger.Errorf("tun handle packet failed: %v", err)
 		}
 
-		ip := t.device[networkId].IP
 		//find self, send self to remote to tell remote to connect to self
-		nodeInfo, err := t.cache.GetNodeInfo(networkId, ip.String())
+		nodeInfo, err := t.GetSelf(networkId)
 		if err != nil {
-			logger.Errorf("self not register yet: %v, ip: %s", err, ip.String())
-			//ignore
+			logger.Errorf("%v", err)
 		} else {
 			frame.Self = nodeInfo
 		}
 		t.Outbound <- frame
 	}
+}
+
+// GetSelf get self node from cache
+func (t *Tun) GetSelf(networkId string) (*cache.NodeInfo, error) {
+	device := t.device[networkId]
+	if device == nil {
+		return nil, fmt.Errorf("you have not to join this network: %s", networkId)
+	}
+
+	ip := device.IP
+	return t.cache.GetNodeInfo(networkId, ip.String())
+}
+
+func (t *Tun) findNode(networkId, ip string) (*cache.NodeInfo, error) {
+	return t.cache.GetNodeInfo(networkId, ip)
 }
 
 func (t *Tun) WriteToUdp() {
@@ -179,6 +192,7 @@ func (t *Tun) p2pHole(pkt *packet.Frame, node *cache.NodeInfo) (socket.Interface
 	}
 	//write to notify
 	np := notify.NewPacket(pkt.NetworkId)
+
 	self := pkt.Self
 	np.SourceIP = self.IP
 	np.Port = self.Port
@@ -196,9 +210,6 @@ func (t *Tun) p2pHole(pkt *packet.Frame, node *cache.NodeInfo) (socket.Interface
 	//punch hole
 	sock := socket.NewSocket(6061)
 	err = sock.Connect(node.Addr)
-	if err != nil {
-		return nil, err
-	}
 	if err != nil {
 		return nil, err
 	}
@@ -254,8 +265,8 @@ func (t *Tun) p2pHole(pkt *packet.Frame, node *cache.NodeInfo) (socket.Interface
 	return nil, nil
 }
 
-func (t *Tun) GetSocket(mac string) socket.Interface {
-	v, b := t.p2pSocket.Load(mac)
+func (t *Tun) GetSocket(targetIP string) socket.Interface {
+	v, b := t.p2pSocket.Load(targetIP)
 	if !b {
 		return nil
 	}
@@ -263,8 +274,8 @@ func (t *Tun) GetSocket(mac string) socket.Interface {
 	return v.(socket.Interface)
 }
 
-func (t *Tun) SaveSocket(mac string, s socket.Interface) {
-	t.p2pSocket.Store(mac, s)
+func (t *Tun) SaveSocket(tagetIP string, s socket.Interface) {
+	t.p2pSocket.Store(tagetIP, s)
 }
 
 func (t *Tun) ReadFromUdp() {
@@ -286,6 +297,7 @@ func (t *Tun) ReadFromUdp() {
 			continue
 		}
 		//forward packet to device
+
 		if frame.FrameType == option.MsgTypePacket {
 			t.Inbound <- frame
 		}
@@ -294,11 +306,20 @@ func (t *Tun) ReadFromUdp() {
 			//will connect to target by udp
 			ip := frame.Target.IP
 			if v, ok := t.p2pNode.Load(ip.String()); !ok || v == nil {
-				//logger.Infof("add %s to p2pBound", ip.String())
-				//t.P2PBound <- frame.Target
 
-				go t.p2pHole(frame, frame.Target)
-				t.p2pNode.Store(ip.String(), frame.Target)
+				if frame.Self == nil {
+					nodeInfo, err := t.GetSelf(frame.NetworkId)
+					if err != nil {
+						logger.Errorf("%v", err)
+					}
+
+					frame.Self = nodeInfo
+				}
+
+				if frame.Self != nil {
+					go t.p2pHole(frame, frame.Target)
+					t.p2pNode.Store(ip.String(), frame.Target)
+				}
 			}
 		}
 

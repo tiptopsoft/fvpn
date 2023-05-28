@@ -11,7 +11,6 @@ import (
 	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
-	"github.com/topcloudz/fvpn/pkg/socket"
 	"golang.org/x/sys/unix"
 )
 
@@ -23,7 +22,8 @@ var (
 // RegServer use as server
 type RegServer struct {
 	*option.ServerConfig
-	socket   socket.Interface
+	//socket   socket.Interface
+	socket   *net.UDPConn
 	cache    *cache.Cache
 	packet   packet.Interface
 	ws       sync.WaitGroup
@@ -53,11 +53,14 @@ func (r *RegServer) Start(address string) error {
 
 // Peer register cache for net, and for user create client
 func (r *RegServer) start(address string) error {
-	r.socket = socket.NewSocket(4000)
+	//r.socket = socket.NewSocket(4000)
+	socket, _ := net.ListenUDP("udp", &net.UDPAddr{
+		IP: net.IPv4zero, Port: 4000})
 	once.Do(func() {
 		r.cache = cache.New()
 		r.h = middleware.WithMiddlewares(r.serverUdpHandler(), infra.Middlewares(false, false)...)
 	})
+	r.socket = socket
 
 	logger.Debugf("server start at: %s", address)
 

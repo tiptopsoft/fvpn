@@ -1,8 +1,7 @@
-package origin
+package main
 
 import (
 	"fmt"
-	"github.com/topcloudz/fvpn/pkg/nat/socket"
 	"golang.org/x/sys/unix"
 	"log"
 	"net"
@@ -24,7 +23,7 @@ func main() {
 		os.Exit(0) //Exit让当前程序以给出的状态码code退出。一般来说，状态码0表示成功，非0表示出错。程序会立刻终止，defer的函数不会被执行
 	}
 	tag = os.Args[1]
-	sock := socket.NewSocket(6061)
+	sock := NewSocket(6061)
 	err := sock.Connect(&unix.SockaddrInet4{
 		Port: 9527,
 		Addr: [4]byte{211, 159, 225, 186},
@@ -85,7 +84,7 @@ func parseAddr(addr string) net.UDPAddr {
 }
 
 func bidirectionHole(anotherAddr *net.UDPAddr) {
-	sock := socket.NewSocket(0)
+	sock := NewSocket(6061)
 	addr := &unix.SockaddrInet4{
 		Port: anotherAddr.Port,
 		Addr: [4]byte{},
@@ -124,4 +123,49 @@ func bidirectionHole(anotherAddr *net.UDPAddr) {
 	}
 }
 
-// Socket use to wrap fd
+type Socket struct {
+	Fd int
+}
+
+func (socket Socket) ReadFromUdp(bytes []byte) (n int, addr unix.Sockaddr, err error) {
+	return unix.Recvfrom(socket.Fd, bytes, 0)
+}
+
+func (socket Socket) WriteToUdp(bytes []byte, addr unix.Sockaddr) (err error) {
+	return unix.Sendto(socket.Fd, bytes, 0, addr)
+}
+
+func (socket Socket) Read(bytes []byte) (n int, err error) {
+	return unix.Read(socket.Fd, bytes)
+}
+
+func (socket Socket) Write(bytes []byte) (n int, err error) {
+	return unix.Write(socket.Fd, bytes)
+}
+
+func (socket Socket) Close() error {
+	return unix.Close(socket.Fd)
+}
+
+func NewSocket(port int) Socket {
+	fd, _ := unix.Socket(unix.AF_INET, unix.SOCK_DGRAM, 0)
+	unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_REUSEADDR, 1)
+	unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_REUSEPORT, 1)
+
+	if port != 0 {
+		addr := unix.SockaddrInet4{Port: port}
+		copy(addr.Addr[:], net.IPv4zero.To4())
+		unix.Bind(fd, &addr)
+	}
+
+	return Socket{Fd: fd}
+}
+
+func (socket Socket) Connect(addr unix.Sockaddr) error {
+
+	return unix.Connect(socket.Fd, addr)
+}
+
+func (socket Socket) Listen(addr unix.Sockaddr) error {
+	return unix.Bind(socket.Fd, addr)
+}

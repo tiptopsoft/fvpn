@@ -9,4 +9,5 @@ type Interface interface {
 	Write(bytes []byte) (n int, err error)
 	WriteToUdp(bytes []byte, addr unix.Sockaddr) (err error)
 	ReadFromUdp(bytes []byte) (n int, addr unix.Sockaddr, err error)
+	Close() error
 }

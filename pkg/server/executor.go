@@ -20,7 +20,7 @@ func (r *RegServer) ReadFromUdp() {
 	for {
 		ctx := context.Background()
 		frame := packet.NewFrame()
-		n, addr, err := r.socket.ReadFromUdp(frame.Buff[:])
+		n, addr, err := r.socket.ReadFromUDP(frame.Buff[:])
 		frame.Packet = frame.Buff[:n]
 		logger.Debugf("Read from udp %d byte, data: %v", n, frame.Packet)
 
@@ -73,16 +73,16 @@ func (r *RegServer) WriteToUdp() {
 				logger.Debugf("could not found destitation, destIP: %s", frameHeader.DestinationIP.String())
 			} else {
 				logger.Infof("packet will relay to: %v", nodeInfo.Addr)
-				r.socket.WriteToUdp(pkt.Packet[:], nodeInfo.Addr)
+				r.socket.WriteToUDP(pkt.Packet[:], transferAddr(nodeInfo.Addr))
 			}
 
 			break
 		case option.MsgTypeRegisterAck:
-			r.socket.WriteToUdp(pkt.Packet, pkt.SrcAddr)
+			r.socket.WriteToUDP(pkt.Packet, transferAddr(pkt.SrcAddr))
 			break
 		case option.MsgTypeQueryPeer:
 			logger.Debugf("query nodes result: %v, write to: %v", pkt.Packet, pkt.SrcAddr)
-			err := r.socket.WriteToUdp(pkt.Packet, pkt.SrcAddr)
+			_, err := r.socket.WriteToUDP(pkt.Packet, transferAddr(pkt.SrcAddr))
 			if err != nil {
 				logger.Errorf("write query to dest failed: %v", err)
 			}
@@ -101,10 +101,16 @@ func (r *RegServer) WriteToUdp() {
 				break
 			}
 
-			r.socket.WriteToUdp(pkt.Packet, nodeInfo.Addr)
+			r.socket.WriteToUDP(pkt.Packet, transferAddr(nodeInfo.Addr))
 		}
 
 	}
+}
+
+func transferAddr(address unix.Sockaddr) *net.UDPAddr {
+	addr := address.(*unix.SockaddrInet4)
+	ip := net.ParseIP(fmt.Sprint("%d.%d.%d.%d", addr.Addr[0], addr.Addr[1], addr.Addr[2], addr.Addr[3]))
+	return &net.UDPAddr{IP: ip, Port: addr.Port}
 }
 
 // serverUdpHandler  core self handler
