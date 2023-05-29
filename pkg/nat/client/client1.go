@@ -90,12 +90,14 @@ func bidirectionHole(anotherAddr *net.UDPAddr) {
 		Addr: [4]byte{},
 	}
 	copy(addr.Addr[:], anotherAddr.IP.To4())
-	err := sock.Connect(addr)
-	if err != nil {
-		fmt.Println("connnect failed:", err)
-	}
+	//err := sock.Connect(addr)
+	//if err != nil {
+	//	fmt.Println("connnect failed:", err)
+	//}
 
-	if _, err := sock.Write([]byte(HAND_SHAKE_MSG)); err != nil {
+	var err error
+
+	if err = sock.WriteToUdp([]byte(HAND_SHAKE_MSG), addr); err != nil {
 		fmt.Println("send handshake:", err)
 	}
 	go func() {
@@ -103,7 +105,7 @@ func bidirectionHole(anotherAddr *net.UDPAddr) {
 		for {
 
 			time.Sleep(10 * time.Second)
-			if _, err = sock.Write([]byte("from [" + tag + "]")); err != nil {
+			if err = sock.WriteToUdp([]byte("from ["+tag+"]"), addr); err != nil {
 				log.Println("send msg fail", err)
 			}
 		}
@@ -115,7 +117,7 @@ func bidirectionHole(anotherAddr *net.UDPAddr) {
 	go func() {
 		for {
 			data := make([]byte, 1024)
-			n, err := sock.Read(data)
+			n, _, err := sock.ReadFromUdp(data)
 			if err != nil {
 
 				log.Printf("error during read:%s\n", err)

@@ -174,7 +174,7 @@ func (t *Tun) WriteToUdp(pkt *packet.Frame) error {
 			}
 		} else if target.P2P {
 			logger.Debugf("use p2p to connect to: %v, remoteAddr: %v, sock: %v", target.IP, target.Addr, target.Socket)
-			if _, err := target.Socket.Write(pkt.Packet); err != nil {
+			if err := target.Socket.WriteToUdp(pkt.Packet, target.Addr); err != nil {
 				logger.Errorf("send p2p data failed. %v", err)
 			}
 		} else {
@@ -190,6 +190,8 @@ func (t *Tun) WriteToUdp(pkt *packet.Frame) error {
 					NodeInfo: node,
 					Frame:    pkt,
 				}
+				self, _ := t.GetSelf(pkt.NetworkId)
+				pkt.Self = self
 				t.P2PBound <- pNode
 				//go t.p2pHole(pkt, node)
 				t.p2pNode.Store(node.IP.String(), node)
@@ -209,13 +211,13 @@ func (t *Tun) WriteToUdp(pkt *packet.Frame) error {
 func (t *Tun) p2pRunner(sock socket.Interface, node *cache.NodeInfo) {
 	for {
 		frame := packet.NewFrame()
-		n, remoteAddr, err := sock.ReadFromUdp(frame.Buff[:])
+		n, err := sock.Read(frame.Buff[:])
 		if n < 0 || err != nil {
 			break
 		}
 		logger.Debugf(">>>>>>>>>>>>>>read from p2p data: %v", frame.Buff[:n])
 		if err != nil {
-			logger.Errorf("sock read failed: %v, remoteAddr: %v", err, remoteAddr)
+			logger.Errorf("sock read failed: %v", err)
 		}
 
 		frame.Packet = frame.Buff[:n]
@@ -236,7 +238,7 @@ func (t *Tun) p2pRunner(sock socket.Interface, node *cache.NodeInfo) {
 		if h.Flags != option.MsgTypePunchHole {
 			t.Inbound <- frame
 		}
-		logger.Debugf("p2p sock read %d byte, data: %v, remoteAddr: %v", n, frame.Packet[:n], remoteAddr)
+		logger.Debugf("p2p sock read %d byte, data: %v", n, frame.Packet[:n])
 	}
 }
 
@@ -249,8 +251,8 @@ func (t *Tun) GetSocket(targetIP string) socket.Interface {
 	return v.(socket.Interface)
 }
 
-func (t *Tun) SaveSocket(tagetIP string, s socket.Interface) {
-	t.p2pSocket.Store(tagetIP, s)
+func (t *Tun) SaveSocket(target string, s socket.Interface) {
+	t.p2pSocket.Store(target, s)
 }
 
 func (t *Tun) ReadFromUdp() {
@@ -281,25 +283,15 @@ func (t *Tun) ReadFromUdp() {
 			//will connect to target by udp
 			ip := frame.Target.IP
 			if v, ok := t.p2pNode.Load(ip.String()); !ok || v == nil {
-
-				if frame.Self == nil {
-					nodeInfo, err := t.GetSelf(frame.NetworkId)
-					if err != nil {
-						logger.Errorf("%v", err)
-					}
-
-					frame.Self = nodeInfo
+				self, _ := t.GetSelf(frame.NetworkId)
+				frame.Self = self
+				//go t.p2pHole(frame, frame.Target)
+				pNode := &P2PNode{
+					NodeInfo: frame.Target,
+					Frame:    frame,
 				}
-
-				if frame.Self != nil {
-					//go t.p2pHole(frame, frame.Target)
-					pNode := &P2PNode{
-						NodeInfo: frame.Target,
-						Frame:    frame,
-					}
-					t.P2PBound <- pNode
-					t.p2pNode.Store(ip.String(), frame.Target)
-				}
+				t.P2PBound <- pNode
+				t.p2pNode.Store(ip.String(), frame.Target)
 			}
 		}
 
@@ -308,16 +300,17 @@ func (t *Tun) ReadFromUdp() {
 }
 
 // WriteToDevice write to device from the queue
-func (t *Tun) WriteToDevice(pkt *packet.Frame) {
+func (t *Tun) WriteToDevice(pkt *packet.Frame) error {
 	device := t.device[pkt.NetworkId]
 	if device == nil {
-		logger.Errorf("invalid network: %s", pkt.NetworkId)
+		return errors.New("invalid network: " + pkt.NetworkId)
 	}
-	logger.Debugf("write to device data :%v", pkt.Packet[12:])
 	_, err := device.Write(pkt.Packet[12:]) // start 12, because header length 12
 	if err != nil {
-		logger.Errorf("write to device err: %v", err)
+		return err
 	}
+
+	return nil
 }
 
 func (t *Tun) HandleFrame() {
@@ -361,7 +354,7 @@ func (t *Tun) HandleFrame() {
 
 			//punch hole
 			sock := socket.NewSocket(6061)
-			err = sock.Connect(pkt.Self.Addr)
+			err = sock.Connect(pNode.NodeInfo.Addr)
 			if err != nil {
 				logger.Errorf("%v", err)
 			}
@@ -369,16 +362,24 @@ func (t *Tun) HandleFrame() {
 			//open session, node-> remote addr
 			holePacket, _ := header.NewHeader(option.MsgTypePunchHole, pkt.NetworkId)
 			buff, _ = header.Encode(holePacket)
+			logger.Debugf(">>>>>>> punching hole to: %v", pNode.NodeInfo.Addr)
 			_, err = sock.Write(buff)
 			if err != nil {
 				logger.Errorf("open hole failed: %v", err)
 			}
+
+			//start a p2p runner
+			go t.p2pRunner(sock, pNode.NodeInfo)
 		case pkt := <-t.QueryBound:
 			t.socket.Write(pkt.Packet)
 		case pkt := <-t.RegisterBound:
 			t.socket.Write(pkt.Packet)
 		case pkt := <-t.Inbound:
-			t.WriteToDevice(pkt)
+			err := t.WriteToDevice(pkt)
+			if err != nil {
+				logger.Errorf("write to device failed: %v", err)
+			}
+			logger.Debugf("write to device data :%v", pkt.Packet[12:])
 		case pkt := <-t.Outbound:
 			err := t.WriteToUdp(pkt)
 			if err != nil {
@@ -431,7 +432,7 @@ func (t *Tun) sendQueryPeer(networkId string) error {
 	frame.Packet = data
 	frame.FrameType = option.MsgTypeQueryPeer
 	frame.Type = option.PacketFromUdp
-	t.QueryBound <- frame
+	t.Outbound <- frame
 
 	return nil
 }
