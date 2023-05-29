@@ -416,7 +416,7 @@ func (t *Tun) SendRegister(tun *tuntap.Tuntap) error {
 	frame.FrameType = option.MsgTypeRegister
 	frame.FrameType = option.PacketFromUdp
 
-	t.RegisterBound <- frame
+	t.Outbound <- frame
 	return nil
 }
 
@@ -434,9 +434,4 @@ func (t *Tun) sendQueryPeer(networkId string) error {
 	t.QueryBound <- frame
 
 	return nil
-}
-
-type P2PSocket struct {
-	Socket   socket.Interface
-	NodeInfo *cache.NodeInfo
 }
