@@ -24,6 +24,7 @@ func Handle() handler.HandlerFunc {
 		frame.Packet = newPacket[:idx]
 		frame.NetworkId = networkId
 		frame.FrameType = option.MsgTypePacket
+		frame.Type = option.PacketFromTap
 
 		return nil
 

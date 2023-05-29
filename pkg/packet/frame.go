@@ -15,6 +15,7 @@ type Frame struct {
 	NetworkId string
 	SrcAddr   unix.Sockaddr
 	FrameType uint16
+	Type      uint16
 	Self      *cache.NodeInfo
 	Target    *cache.NodeInfo
 }

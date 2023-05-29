@@ -21,6 +21,8 @@ const (
 	MsgTypeReRegisterSuper  uint16 = 12
 	MsgTypeNotify           uint16 = 13
 	MsgTypePunchHole        uint16 = 14
+	PacketFromTap           uint16 = 15
+	PacketFromUdp           uint16 = 16
 
 	RestrictNat  uint8 = 1
 	SymmetricNAT uint8 = 2

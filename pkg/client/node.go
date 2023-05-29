@@ -34,14 +34,11 @@ func (n *Node) Start() error {
 		if err := n.conn(); err != nil {
 			logger.Errorf("failed to connect to server: %v", err)
 		}
-		//util.Init()
 	})
 	tun := n.GetTun() //这里启动的是relaySocket，中继服务器
 	go tun.HandleFrame()
-	go n.runHttpServer()
-
-	tun.ReadFromUdp()
-	return nil
+	go tun.ReadFromUdp()
+	return n.runHttpServer()
 }
 
 func (n *Node) GetTun() *handler.Tun {
