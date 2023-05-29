@@ -24,7 +24,7 @@ func New() *Cache {
 
 // NodeInfo 节点注册到registry时，应保存device ip, NATHost, NATPort
 type NodeInfo struct {
-	Socket    socket.Interface //natip or innerip
+	Socket    socket.Socket //natip or innerip
 	NetworkId string
 	Addr      unix.Sockaddr //natip , natport
 	MacAddr   net.HardwareAddr

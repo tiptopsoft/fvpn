@@ -23,7 +23,7 @@ import (
 )
 
 type Tun struct {
-	socket        socket.Interface // underlay
+	socket        socket.Socket // underlay
 	relayAddr     *unix.SockaddrInet4
 	p2pSocket     sync.Map //p2psocket
 	device        map[string]*tuntap.Tuntap
@@ -44,7 +44,7 @@ type P2PNode struct {
 	Frame    *packet.Frame
 }
 
-func NewTun(tunHandler, udpHandler Handler, s socket.Interface, relayAddr *unix.SockaddrInet4) *Tun {
+func NewTun(tunHandler, udpHandler Handler, s socket.Socket, relayAddr *unix.SockaddrInet4) *Tun {
 	tun := &Tun{
 		Inbound:       make(chan *packet.Frame, 10000),
 		Outbound:      make(chan *packet.Frame, 10000),
@@ -174,7 +174,7 @@ func (t *Tun) WriteToUdp(pkt *packet.Frame) error {
 			}
 		} else if target.P2P {
 			logger.Debugf("use p2p to connect to: %v, remoteAddr: %v, sock: %v", target.IP, target.Addr, target.Socket)
-			if err := target.Socket.WriteToUdp(pkt.Packet, target.Addr); err != nil {
+			if _, err := target.Socket.Write(pkt.Packet); err != nil {
 				logger.Errorf("send p2p data failed. %v", err)
 			}
 		} else {
@@ -208,13 +208,15 @@ func (t *Tun) WriteToUdp(pkt *packet.Frame) error {
 }
 
 // p2pRunner
-func (t *Tun) p2pRunner(sock socket.Interface, node *cache.NodeInfo) {
+func (t *Tun) p2pRunner(sock socket.Socket, node *cache.NodeInfo) {
 	for {
+		logger.Debugf("start a p2p runner......")
 		frame := packet.NewFrame()
 		n, err := sock.Read(frame.Buff[:])
 		if n < 0 || err != nil {
 			break
 		}
+
 		logger.Debugf(">>>>>>>>>>>>>>read from p2p data: %v", frame.Buff[:n])
 		if err != nil {
 			logger.Errorf("sock read failed: %v", err)
@@ -228,12 +230,9 @@ func (t *Tun) p2pRunner(sock socket.Interface, node *cache.NodeInfo) {
 		}
 
 		frame.NetworkId = hex.EncodeToString(h.NetworkId[:])
+
 		logger.Debugf(">>>>>>>>>>>>>>>>p2p header, networkId: %s", frame.NetworkId)
 
-		logger.Debugf(">>>>>>>>>>>>>>>>p2p node cached: %v, networkId: %s", node, frame.NetworkId)
-		node.P2P = true
-		node.Socket = sock
-		t.cache.SetCache(frame.NetworkId, node.IP.String(), node)
 		//加入inbound
 		if h.Flags != option.MsgTypePunchHole {
 			t.Inbound <- frame
@@ -242,22 +241,27 @@ func (t *Tun) p2pRunner(sock socket.Interface, node *cache.NodeInfo) {
 	}
 }
 
-func (t *Tun) GetSocket(targetIP string) socket.Interface {
+func (t *Tun) GetSocket(targetIP string) socket.Socket {
 	v, b := t.p2pSocket.Load(targetIP)
 	if !b {
-		return nil
+		return socket.Socket{}
 	}
 
-	return v.(socket.Interface)
+	return v.(socket.Socket)
 }
 
-func (t *Tun) SaveSocket(target string, s socket.Interface) {
+func (t *Tun) SaveSocket(target string, s socket.Socket) {
 	t.p2pSocket.Store(target, s)
 }
 
 func (t *Tun) ReadFromUdp() {
 	logger.Debugf("start a udp loop socket is: %v", t.socket)
+
 	for {
+		if !t.socket.Run {
+			logger.Debugf("exit origin reader from udp")
+			break
+		}
 		ctx := context.Background()
 		frame := packet.NewFrame()
 
@@ -362,14 +366,53 @@ func (t *Tun) HandleFrame() {
 			//open session, node-> remote addr
 			holePacket, _ := header.NewHeader(option.MsgTypePunchHole, pkt.NetworkId)
 			buff, _ = header.Encode(holePacket)
-			logger.Debugf(">>>>>>> punching hole to: %v", pNode.NodeInfo.Addr)
+			logger.Debugf(">>>>>>> punching hole to: %v, socket is: %v", pNode.NodeInfo.Addr, sock)
 			_, err = sock.Write(buff)
 			if err != nil {
 				logger.Errorf("open hole failed: %v", err)
 			}
 
-			//start a p2p runner
-			go t.p2pRunner(sock, pNode.NodeInfo)
+			timeout, cancel := context.WithTimeout(context.Background(), time.Second*30)
+			defer cancel()
+			ch := make(chan int)
+			data := make([]byte, 1024)
+			go func() {
+				n, err := sock.Read(data)
+				if err != nil {
+					ch <- 0
+				}
+				logger.Debugf("hole msg size: %d, data: %v", n, data)
+				if n > 0 {
+					//start a p2p runner
+					//关闭原来socket
+					t.socket.Run = false //退出goroutine
+					t.socket.Close()
+					t.socket = socket.NewSocket(0)
+					err := t.socket.Connect(t.relayAddr)
+					if err != nil {
+						logger.Errorf("reconnect relay :%v", t.relayAddr)
+					}
+					go t.ReadFromUdp()
+
+					go t.p2pRunner(sock, pNode.NodeInfo)
+					ch <- 1
+				}
+			}()
+
+			select {
+			case v := <-ch:
+				if v == 1 {
+					pNode.NodeInfo.P2P = true
+					pNode.NodeInfo.Socket = sock
+					t.cache.SetCache(frame.NetworkId, pNode.NodeInfo.IP.String(), pNode.NodeInfo)
+					logger.Debugf("punch hole success")
+				} else {
+					logger.Debugf("punch hole failed.")
+				}
+			case <-timeout.Done():
+				logger.Debugf("punch hole failed.")
+			}
+
 		case pkt := <-t.QueryBound:
 			t.socket.Write(pkt.Packet)
 		case pkt := <-t.RegisterBound:
@@ -436,3 +479,24 @@ func (t *Tun) sendQueryPeer(networkId string) error {
 
 	return nil
 }
+
+//func (t *Tun) sendNewClient(networkId string, dest net.IP) error {
+//	sock := socket.NewSocket(0)
+//	sock.Connect(t.relayAddr)
+//	p := ping.NewPacket()
+//	p.IP = t.device[networkId].IP
+//	buff, _ := ping.Encode(p)
+//	_, err := sock.Write(buff)
+//	if err != nil {
+//		return err
+//	}
+//
+//	data := make([]byte, 1024)
+//	_, err = sock.Read(data)
+//	if err != nil {
+//		return err
+//	}
+//
+//	h, err := header.Decode(data[:12])
+//
+//}

@@ -7,7 +7,8 @@ import (
 
 // Socket use to wrap fd
 type Socket struct {
-	Fd int
+	Fd  int
+	Run bool
 }
 
 func (socket Socket) ReadFromUdp(bytes []byte) (n int, addr unix.Sockaddr, err error) {
@@ -30,7 +31,7 @@ func (socket Socket) Close() error {
 	return unix.Close(socket.Fd)
 }
 
-func NewSocket(port int) Interface {
+func NewSocket(port int) Socket {
 	fd, _ := unix.Socket(unix.AF_INET, unix.SOCK_DGRAM, 0)
 	unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_REUSEADDR, 1)
 	unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_REUSEPORT, 1)
@@ -39,7 +40,7 @@ func NewSocket(port int) Interface {
 		copy(addr.Addr[:], net.IPv4zero.To4())
 		unix.Bind(fd, &addr)
 	}
-	return Socket{Fd: fd}
+	return Socket{Fd: fd, Run: true}
 }
 
 func (socket Socket) Connect(addr unix.Sockaddr) error {

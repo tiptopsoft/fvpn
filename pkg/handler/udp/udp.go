@@ -92,7 +92,7 @@ func Handle() handler.HandlerFunc {
 
 			copy(addr.Addr[:], np.NatIP.To4())
 			info := &cache.NodeInfo{
-				Socket:    nil,
+				Socket:    socket.Socket{},
 				NetworkId: frame.NetworkId,
 				Addr:      addr,
 				MacAddr:   nil,

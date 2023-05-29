@@ -22,7 +22,7 @@ type Node struct {
 	*option.Config
 	Protocol    option.Protocol
 	tun         *handler.Tun //key: networkId, value: Tuntap
-	relaySocket socket.Interface
+	relaySocket socket.Socket
 	relayAddr   *unix.SockaddrInet4
 }
 

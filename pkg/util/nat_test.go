@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -40,6 +39,7 @@ func TestCheckNatType(t *testing.T) {
 	//np, err := notify.Decode(buff)
 	//fmt.Println(np, err)
 
-	Init()
-	fmt.Println(NatType)
+	//Init()
+	//fmt.Println(NatType)
+
 }
