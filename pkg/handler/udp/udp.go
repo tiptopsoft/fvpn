@@ -11,6 +11,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"github.com/topcloudz/fvpn/pkg/packet/notify"
+	notifyAck "github.com/topcloudz/fvpn/pkg/packet/notify/ack"
 	peerack "github.com/topcloudz/fvpn/pkg/packet/peer/ack"
 	"github.com/topcloudz/fvpn/pkg/packet/register/ack"
 	"github.com/topcloudz/fvpn/pkg/socket"
@@ -109,6 +110,33 @@ func Handle() handler.HandlerFunc {
 			frame.Packet = buff[:]
 			frame.Target = info
 			logger.Debugf("read from udp , got notify packet: %v", info)
+		case option.MsgTypeNotifyAck:
+			np, err := notifyAck.Decode(buff)
+			if err != nil {
+				logger.Errorf("got invalid NotifyPacket: %v", err)
+			}
+			addr := &unix.SockaddrInet4{
+				Port: int(np.NatPort),
+			}
+
+			copy(addr.Addr[:], np.NatIP.To4())
+			info := &cache.NodeInfo{
+				Socket:    socket.Socket{},
+				NetworkId: frame.NetworkId,
+				Addr:      addr,
+				MacAddr:   nil,
+				IP:        np.SourceIP,
+				Port:      np.Port,
+				P2P:       false,
+				Status:    false,
+				NatType:   np.NatType,
+				NatIP:     np.NatIP,
+				NatPort:   np.NatPort,
+			}
+			//}
+			frame.Packet = buff[:]
+			frame.Target = info
+			logger.Debugf("read from udp , got notify ack packet: %v", info)
 		}
 
 		return nil

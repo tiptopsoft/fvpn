@@ -212,6 +212,26 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			frame.FrameType = option.MsgTypeNotify
 
 		case option.MsgTypeNotifyAck:
+			logger.Infof("add packet: %v", frame.Packet[:])
+			np, err := ack.Decode(frame.Packet[:])
+			if err != nil {
+				logger.Errorf("invalid notify packet: %v", err)
+			}
+
+			//add nat info to packet
+			addr := srcAddr
+			natIP := net.ParseIP(fmt.Sprintf("%d.%d.%d.%d", addr.Addr[0], addr.Addr[1], addr.Addr[2], addr.Addr[3]))
+			np.NatIP = natIP
+			np.NatPort = uint16(addr.Port)
+
+			newBuff, err := ack.Encode(np)
+			logger.Debugf("new notify ack buff, srcIP: %v, srcPort: %v, natIP: %v, natPort: %v", np.SourceIP, np.Port, np.NatIP, np.NatPort)
+			if err != nil {
+				logger.Errorf("encode failed:%v", err)
+			}
+
+			copy(frame.Packet[:], newBuff)
+			logger.Debugf("frame packet: %v", frame.Packet[:])
 			frame.FrameType = option.MsgTypeNotifyAck
 		}
 
