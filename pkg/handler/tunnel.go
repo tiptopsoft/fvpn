@@ -197,8 +197,10 @@ func (t *Tun) WriteToUdp(pkt *packet.Frame) error {
 }
 
 func (t *Tun) sendNotifyMessage(networkId string, address unix.Sockaddr, ip string, flag uint16) {
+	srcIP := t.device[networkId].IP
 	if _, ok := t.p2pSocket.Load(ip); !ok {
 		//新建一个client
+		logger.Debugf("========will create a new socket for p2p connection for: %v", ip)
 		newSocket := socket.NewSocket(0)
 		err := newSocket.Connect(address)
 		if err != nil {
@@ -209,23 +211,25 @@ func (t *Tun) sendNotifyMessage(networkId string, address unix.Sockaddr, ip stri
 		var buff []byte
 		if flag == option.MsgTypeNotify {
 			pkt := notify.NewPacket(networkId)
+			pkt.DestAddr = net.ParseIP(ip)
 			addr, err := newSocket.LocalAddr()
 			if err != nil {
 				return
 			}
-			pkt.SourceIP = net.ParseIP(fmt.Sprintf("%d.%d.%d.%d", addr.Addr[0], addr.Addr[1], addr.Addr[2], addr.Addr[3]))
+			pkt.SourceIP = srcIP
 			pkt.Port = uint16(addr.Port)
 			buff, err = notify.Encode(pkt)
 		}
 
 		if flag == option.MsgTypeNotifyAck {
 			pkt := ack.NewPacket(networkId)
-			addr, err := newSocket.LocalAddr()
+			pkt.DestAddr = net.ParseIP(ip)
+			localAddr, err := newSocket.LocalAddr()
 			if err != nil {
 				return
 			}
-			pkt.SourceIP = net.ParseIP(fmt.Sprintf("%d.%d.%d.%d", addr.Addr[0], addr.Addr[1], addr.Addr[2], addr.Addr[3]))
-			pkt.Port = uint16(addr.Port)
+			pkt.SourceIP = srcIP
+			pkt.Port = uint16(localAddr.Port)
 			buff, err = ack.Encode(pkt)
 		}
 
@@ -320,6 +324,7 @@ func (t *Tun) ReadFromUdp() {
 		case option.MsgTypePacket:
 			t.Inbound <- frame
 		case option.MsgTypeNotify:
+
 			//send a ack,  open hole
 			ch := make(chan int)
 			go func() {

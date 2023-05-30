@@ -9,6 +9,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"github.com/topcloudz/fvpn/pkg/packet/notify"
+	"github.com/topcloudz/fvpn/pkg/packet/notify/ack"
 	"github.com/topcloudz/fvpn/pkg/packet/register"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"golang.org/x/sys/unix"
@@ -90,6 +91,22 @@ func (r *RegServer) WriteToUdp() {
 		case option.MsgTypeNotify:
 			//write to dest
 			np, err := notify.Decode(pkt.Packet[:])
+			logger.Debugf("got notify packet: %v, destAddr: %s, networkId: %s", pkt.Packet[:], np.DestAddr.String(), pkt.NetworkId)
+			if err != nil {
+				logger.Errorf("invalid notify packet: %v", err)
+			}
+
+			nodeInfo, err := r.cache.GetNodeInfo(pkt.NetworkId, np.DestAddr.String())
+			if nodeInfo == nil || err != nil {
+				logger.Errorf("node not on line, err: %v", err)
+				break
+			}
+
+			r.socket.WriteToUDP(pkt.Packet, transferUdpAddr(nodeInfo.Addr))
+
+		case option.MsgTypeNotifyAck:
+			//write to dest
+			np, err := ack.Decode(pkt.Packet[:])
 			logger.Debugf("got notify packet: %v, destAddr: %s, networkId: %s", pkt.Packet[:], np.DestAddr.String(), pkt.NetworkId)
 			if err != nil {
 				logger.Errorf("invalid notify packet: %v", err)
@@ -185,7 +202,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			np.NatPort = uint16(addr.Port)
 
 			newBuff, err := notify.Encode(np)
-			logger.Debugf("new notify buff: %v", newBuff[:])
+			logger.Debugf("new notify buff, srcIP: %v, srcPort: %v, natIP: %v, natPort: %v", np.SourceIP, np.Port, np.NatIP, np.NatPort)
 			if err != nil {
 				logger.Errorf("encode failed:%v", err)
 			}
@@ -193,6 +210,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			copy(frame.Packet[:], newBuff)
 			logger.Debugf("frame packet: %v", frame.Packet[:])
 			frame.FrameType = option.MsgTypeNotify
+
 		case option.MsgTypeNotifyAck:
 			frame.FrameType = option.MsgTypeNotifyAck
 		}

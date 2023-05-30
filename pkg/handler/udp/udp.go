@@ -108,8 +108,7 @@ func Handle() handler.HandlerFunc {
 
 			frame.Packet = buff[:]
 			frame.Target = info
-			logger.Debugf("got notify packet: %v", info)
-
+			logger.Debugf("read from udp , got notify packet: %v", info)
 		}
 
 		return nil

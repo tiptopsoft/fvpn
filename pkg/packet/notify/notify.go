@@ -17,7 +17,7 @@ type NotifyPacket struct {
 	NatIP    net.IP        // nat ip 16
 	NatPort  uint16        //nat port2
 	NatType  uint8         //1 retrict 2 symmtrict nat 1
-	DestAddr net.IP        //目标IP 2
+	DestAddr net.IP        //目标IP
 }
 
 func NewPacket(networkId string) NotifyPacket {
