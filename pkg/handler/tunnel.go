@@ -390,6 +390,9 @@ func (t *Tun) HandleFrame() {
 			pkt := pNode.Frame
 			//同时进行punch hole
 			sock := pNode.Socket
+			addr, _ := sock.LocalAddr()
+			newSock := socket.NewSocket(addr.Port)
+
 			//open session, node-> remote addr
 			holePacket, _ := header.NewHeader(option.MsgTypePunchHole, pkt.NetworkId)
 			buff, _ := header.Encode(holePacket)
@@ -398,7 +401,7 @@ func (t *Tun) HandleFrame() {
 				logger.Errorf("open hole failed: %v", err)
 			}
 
-			_, err = sock.Write(buff)
+			err = newSock.WriteToUdp(buff, pNode.NodeInfo.Addr)
 			if err != nil {
 				logger.Errorf("send punch hole failed: %v", err)
 				return
@@ -409,14 +412,14 @@ func (t *Tun) HandleFrame() {
 			ch := make(chan int)
 			data := make([]byte, 1024)
 			go func() {
-				n, err := sock.Read(data)
+				n, err := newSock.Read(data)
 				if err != nil {
 					ch <- 0
 				}
 				logger.Debugf("hole msg size: %d, data: %v", n, data)
 				if n > 0 {
 					//start a p2p runner
-					go t.p2pRunner(sock, pNode.NodeInfo)
+					go t.p2pRunner(newSock, pNode.NodeInfo)
 					ch <- 1
 				}
 			}()
@@ -444,7 +447,6 @@ func (t *Tun) HandleFrame() {
 			if err != nil {
 				logger.Errorf("write to device failed: %v", err)
 			}
-			logger.Debugf("write to device data :%v", pkt.Packet[12:])
 		case pkt := <-t.Outbound:
 			err := t.WriteToUdp(pkt)
 			if err != nil {
