@@ -29,7 +29,7 @@ type Node struct {
 func (n *Node) Start() error {
 	runtime.GOMAXPROCS(2)
 	once.Do(func() {
-		n.relaySocket = socket.NewSocket(6061)
+		n.relaySocket = socket.NewSocket(0)
 		n.Protocol = option.UDP
 		if err := n.conn(); err != nil {
 			logger.Errorf("failed to connect to server: %v", err)

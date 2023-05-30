@@ -1,8 +1,13 @@
 package socket
 
 import (
+	"github.com/topcloudz/fvpn/pkg/log"
 	"golang.org/x/sys/unix"
 	"net"
+)
+
+var (
+	logger = log.Log()
 )
 
 // Socket use to wrap fd
@@ -29,6 +34,11 @@ func (socket Socket) Write(bytes []byte) (n int, err error) {
 
 func (socket Socket) Close() error {
 	return unix.Close(socket.Fd)
+}
+
+func (socket Socket) LocalAddr() (*unix.SockaddrInet4, error) {
+	addr, err := unix.Getsockname(socket.Fd)
+	return addr.(*unix.SockaddrInet4), err
 }
 
 func NewSocket(port int) Socket {

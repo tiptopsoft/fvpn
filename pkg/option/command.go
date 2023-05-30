@@ -20,6 +20,7 @@ const (
 	MsgTypeMaxType          uint16 = 11
 	MsgTypeReRegisterSuper  uint16 = 12
 	MsgTypeNotify           uint16 = 13
+	MsgTypeNotifyAck        uint16 = 19
 	MsgTypePunchHole        uint16 = 14
 	PacketFromTap           uint16 = 15
 	PacketFromUdp           uint16 = 16

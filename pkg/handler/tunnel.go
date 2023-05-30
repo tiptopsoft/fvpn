@@ -11,6 +11,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"github.com/topcloudz/fvpn/pkg/packet/notify"
+	"github.com/topcloudz/fvpn/pkg/packet/notify/ack"
 	"github.com/topcloudz/fvpn/pkg/packet/peer"
 	"github.com/topcloudz/fvpn/pkg/packet/register"
 	"github.com/topcloudz/fvpn/pkg/socket"
@@ -18,6 +19,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/util"
 	"golang.org/x/sys/unix"
 	"log"
+	"net"
 	"sync"
 	"time"
 )
@@ -42,6 +44,7 @@ type Tun struct {
 type P2PNode struct {
 	NodeInfo *cache.NodeInfo
 	Frame    *packet.Frame
+	Socket   socket.Socket
 }
 
 func NewTun(tunHandler, udpHandler Handler, s socket.Socket, relayAddr *unix.SockaddrInet4) *Tun {
@@ -114,13 +117,13 @@ func (t *Tun) ReadFromTun(ctx context.Context, networkId string) {
 			logger.Errorf("tun handle packet failed: %v", err)
 		}
 
-		//find self, send self to remote to tell remote to connect to self
-		nodeInfo, err := t.GetSelf(networkId)
-		if err != nil {
-			logger.Errorf("%v", err)
-		} else {
-			frame.Self = nodeInfo
-		}
+		////find self, send self to remote to tell remote to connect to self
+		//nodeInfo, err := t.GetSelf(networkId)
+		//if err != nil {
+		//	logger.Errorf("%v", err)
+		//} else {
+		//	frame.Self = nodeInfo
+		//}
 		t.Outbound <- frame
 	}
 }
@@ -156,7 +159,8 @@ func (t *Tun) WriteToUdp(pkt *packet.Frame) error {
 		}
 
 		//target
-		target, err := t.cache.GetNodeInfo(pkt.NetworkId, frameHeader.DestinationIP.String())
+		ip := frameHeader.DestinationIP.String()
+		target, err := t.cache.GetNodeInfo(pkt.NetworkId, ip)
 		if err != nil {
 			err := t.sendQueryPeer(pkt.NetworkId)
 			if err != nil {
@@ -178,33 +182,67 @@ func (t *Tun) WriteToUdp(pkt *packet.Frame) error {
 				logger.Errorf("send p2p data failed. %v", err)
 			}
 		} else {
-			//同时进行punch hole
-			ip := frameHeader.DestinationIP.String()
-			node, err := t.cache.GetNodeInfo(pkt.NetworkId, ip)
-			if err != nil {
-				logger.Errorf("node has not been query back. %v", err)
-			}
-
-			if v, ok := t.p2pNode.Load(node.IP.String()); !ok || v == nil {
-				pNode := &P2PNode{
-					NodeInfo: node,
-					Frame:    pkt,
-				}
-				self, _ := t.GetSelf(pkt.NetworkId)
-				pkt.Self = self
-				t.P2PBound <- pNode
-				//go t.p2pHole(pkt, node)
-				t.p2pNode.Store(node.IP.String(), node)
-			}
-
 			//同时通过relay server发送数据
 			t.socket.Write(pkt.Packet[:])
+
+			//同时进行punch hole
+			go t.sendNotifyMessage(pkt.NetworkId, t.relayAddr, ip, option.MsgTypeNotify)
+
 		}
 	} else {
 		t.socket.Write(pkt.Packet)
 	}
 
 	return nil
+}
+
+func (t *Tun) sendNotifyMessage(networkId string, address unix.Sockaddr, ip string, flag uint16) {
+	if _, ok := t.p2pSocket.Load(ip); !ok {
+		//新建一个client
+		newSocket := socket.NewSocket(0)
+		err := newSocket.Connect(address)
+		if err != nil {
+			logger.Errorf("connect to registry failed:%v", err)
+			return
+		}
+
+		var buff []byte
+		if flag == option.MsgTypeNotify {
+			pkt := notify.NewPacket(networkId)
+			addr, err := newSocket.LocalAddr()
+			if err != nil {
+				return
+			}
+			pkt.SourceIP = net.ParseIP(fmt.Sprintf("%d.%d.%d.%d", addr.Addr[0], addr.Addr[1], addr.Addr[2], addr.Addr[3]))
+			pkt.Port = uint16(addr.Port)
+			buff, err = notify.Encode(pkt)
+		}
+
+		if flag == option.MsgTypeNotifyAck {
+			pkt := ack.NewPacket(networkId)
+			addr, err := newSocket.LocalAddr()
+			if err != nil {
+				return
+			}
+			pkt.SourceIP = net.ParseIP(fmt.Sprintf("%d.%d.%d.%d", addr.Addr[0], addr.Addr[1], addr.Addr[2], addr.Addr[3]))
+			pkt.Port = uint16(addr.Port)
+			buff, err = ack.Encode(pkt)
+		}
+
+		if err != nil {
+			logger.Errorf("encode notify failed: %v", err)
+			return
+		}
+		//发送notify message
+		_, err = newSocket.Write(buff)
+		if err != nil {
+			logger.Errorf("write notify packet failed: %v", err)
+			return
+		}
+
+		t.p2pSocket.Store(ip, newSocket)
+	}
+
 }
 
 // p2pRunner
@@ -278,29 +316,49 @@ func (t *Tun) ReadFromUdp() {
 			continue
 		}
 		//forward packet to device
-
-		if frame.FrameType == option.MsgTypePacket {
+		switch frame.FrameType {
+		case option.MsgTypePacket:
 			t.Inbound <- frame
-		}
+		case option.MsgTypeNotify:
+			//send a ack,  open hole
+			ch := make(chan int)
+			go func() {
+				t.sendNotifyMessage(frame.NetworkId, t.relayAddr, frame.Target.IP.String(), option.MsgTypeNotifyAck)
+				ch <- 1
+			}()
 
-		if frame.FrameType == option.MsgTypeNotify {
-			//will connect to target by udp
-			ip := frame.Target.IP
-			if v, ok := t.p2pNode.Load(ip.String()); !ok || v == nil {
-				self, _ := t.GetSelf(frame.NetworkId)
-				frame.Self = self
-				//go t.p2pHole(frame, frame.Target)
-				pNode := &P2PNode{
-					NodeInfo: frame.Target,
-					Frame:    frame,
-				}
-				t.P2PBound <- pNode
-				t.p2pNode.Store(ip.String(), frame.Target)
+			//also punch hole
+			go func() {
+				<-ch
+				t.bidirectionHole(frame, err)
+			}()
+
+		case option.MsgTypeNotifyAck:
+			//go t.p2pHole(frame, frame.Target)
+			if t.bidirectionHole(frame, err) {
+				return
 			}
 		}
 
 	}
 
+}
+
+func (t *Tun) bidirectionHole(frame *packet.Frame, err error) bool {
+	ip := frame.Target.IP.String()
+	s, ok := t.p2pSocket.Load(ip)
+	if !ok {
+		logger.Errorf("notify ack get socket failed: %v", err)
+		return true
+	}
+	sock := s.(socket.Socket)
+	pNode := &P2PNode{
+		NodeInfo: frame.Target,
+		Frame:    frame,
+		Socket:   sock,
+	}
+	t.P2PBound <- pNode
+	return false
 }
 
 // WriteToDevice write to device from the queue
@@ -323,53 +381,22 @@ func (t *Tun) HandleFrame() {
 		select {
 		case pNode := <-t.P2PBound:
 			//这里先尝试P2p, 没有P2P使用relay server
+			var err error
 			pkt := pNode.Frame
-			hBuf, err := util.GetFrameHeader(pNode.Frame.Packet[12:]) //why 12? because header length is 12.
-			if err != nil {
-				logger.Errorf("%v", err)
-			}
 			//同时进行punch hole
-			ip := hBuf.DestinationIP.String()
-			//node, err := t.cache.GetNodeInfo(pkt.NetworkId, ip)
-			if err != nil {
-				logger.Errorf("node has not been query back. %v", err)
-			}
-			//write to notify
-			np := notify.NewPacket(pkt.NetworkId)
-
-			self := pkt.Self
-			np.SourceIP = self.IP
-			np.Port = self.Port
-			np.NatType = util.NatType
-			np.NatIP = self.NatIP
-			np.NatPort = self.NatPort
-			np.DestAddr = hBuf.DestinationIP
-			buff, err := notify.Encode(np)
-			if err != nil {
-				logger.Errorf("build notify packet failed: %v", err)
-			}
-
-			logger.Debugf("build a notify packet to: %v, data: %v", ip, buff)
-			frame := packet.NewFrame()
-			frame.Packet = buff[:]
-			frame.FrameType = option.MsgTypePunchHole
-			frame.Type = option.PacketFromUdp
-			t.Outbound <- frame
-
-			//punch hole
-			sock := socket.NewSocket(6061)
-			err = sock.Connect(pNode.NodeInfo.Addr)
-			if err != nil {
-				logger.Errorf("%v", err)
-			}
-
+			sock := pNode.Socket
 			//open session, node-> remote addr
 			holePacket, _ := header.NewHeader(option.MsgTypePunchHole, pkt.NetworkId)
-			buff, _ = header.Encode(holePacket)
+			buff, _ := header.Encode(holePacket)
 			logger.Debugf(">>>>>>> punching hole to: %v, socket is: %v", pNode.NodeInfo.Addr, sock)
-			_, err = sock.Write(buff)
 			if err != nil {
 				logger.Errorf("open hole failed: %v", err)
+			}
+
+			_, err = sock.Write(buff)
+			if err != nil {
+				logger.Errorf("send punch hole failed: %v", err)
+				return
 			}
 
 			timeout, cancel := context.WithTimeout(context.Background(), time.Second*30)
@@ -384,16 +411,6 @@ func (t *Tun) HandleFrame() {
 				logger.Debugf("hole msg size: %d, data: %v", n, data)
 				if n > 0 {
 					//start a p2p runner
-					//关闭原来socket
-					t.socket.Run = false //退出goroutine
-					t.socket.Close()
-					t.socket = socket.NewSocket(0)
-					err := t.socket.Connect(t.relayAddr)
-					if err != nil {
-						logger.Errorf("reconnect relay :%v", t.relayAddr)
-					}
-					go t.ReadFromUdp()
-
 					go t.p2pRunner(sock, pNode.NodeInfo)
 					ch <- 1
 				}
@@ -404,7 +421,7 @@ func (t *Tun) HandleFrame() {
 				if v == 1 {
 					pNode.NodeInfo.P2P = true
 					pNode.NodeInfo.Socket = sock
-					t.cache.SetCache(frame.NetworkId, pNode.NodeInfo.IP.String(), pNode.NodeInfo)
+					t.cache.SetCache(pkt.NetworkId, pNode.NodeInfo.IP.String(), pNode.NodeInfo)
 					logger.Debugf("punch hole success")
 				} else {
 					logger.Debugf("punch hole failed.")
@@ -433,7 +450,7 @@ func (t *Tun) HandleFrame() {
 
 }
 
-// register register a node to center.
+// SendRegister register register a node to center.
 func (t *Tun) SendRegister(tun *tuntap.Tuntap) error {
 	var err error
 	//header, err := packet.NewHeader(option.MsgTypeRegisterSuper, tun.NetworkId)
@@ -479,24 +496,3 @@ func (t *Tun) sendQueryPeer(networkId string) error {
 
 	return nil
 }
-
-//func (t *Tun) sendNewClient(networkId string, dest net.IP) error {
-//	sock := socket.NewSocket(0)
-//	sock.Connect(t.relayAddr)
-//	p := ping.NewPacket()
-//	p.IP = t.device[networkId].IP
-//	buff, _ := ping.Encode(p)
-//	_, err := sock.Write(buff)
-//	if err != nil {
-//		return err
-//	}
-//
-//	data := make([]byte, 1024)
-//	_, err = sock.Read(data)
-//	if err != nil {
-//		return err
-//	}
-//
-//	h, err := header.Decode(data[:12])
-//
-//}
