@@ -193,6 +193,8 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			copy(frame.Packet[:], newBuff)
 			logger.Debugf("frame packet: %v", frame.Packet[:])
 			frame.FrameType = option.MsgTypeNotify
+		case option.MsgTypeNotifyAck:
+			frame.FrameType = option.MsgTypeNotifyAck
 		}
 
 		return nil
