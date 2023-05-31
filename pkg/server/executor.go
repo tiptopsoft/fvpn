@@ -212,7 +212,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			frame.FrameType = option.MsgTypeNotify
 
 		case option.MsgTypeNotifyAck:
-			logger.Infof("add packet: %v", frame.Packet[:])
+			logger.Infof(">>>>>>>>>>>>> go notify ack packet: %v", frame.Packet[:])
 			np, err := ack.Decode(frame.Packet[:])
 			if err != nil {
 				logger.Errorf("invalid notify packet: %v", err)

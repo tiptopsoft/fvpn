@@ -237,7 +237,7 @@ func (t *Tun) sendNotifyMessage(networkId string, address unix.Sockaddr, ip stri
 			logger.Errorf("encode notify failed: %v", err)
 			return
 		}
-		//发送notify message
+		//发送notify message or notify ack message
 		_, err = newSocket.Write(buff)
 		if err != nil {
 			logger.Errorf("write notify packet failed: %v", err)
