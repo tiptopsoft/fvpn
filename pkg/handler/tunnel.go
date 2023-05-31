@@ -196,11 +196,12 @@ func (t *Tun) WriteToUdp(pkt *packet.Frame) error {
 	return nil
 }
 
-func (t *Tun) sendNotifyMessage(networkId string, address unix.Sockaddr, ip string, flag uint16) {
+// ip: 是目的IP
+func (t *Tun) sendNotifyMessage(networkId string, address unix.Sockaddr, destIP string, flag uint16) {
 	srcIP := t.device[networkId].IP
-	if _, ok := t.p2pSocket.Load(ip); !ok {
+	if _, ok := t.p2pSocket.Load(destIP); !ok {
 		//新建一个client
-		logger.Debugf("========will create a new socket for p2p connection for: %v", ip)
+		logger.Debugf("========will create a new socket for p2p connection for: %v", destIP)
 		newSocket := socket.NewSocket(0)
 		err := newSocket.Connect(address)
 		if err != nil {
@@ -211,7 +212,7 @@ func (t *Tun) sendNotifyMessage(networkId string, address unix.Sockaddr, ip stri
 		var buff []byte
 		if flag == option.MsgTypeNotify {
 			pkt := notify.NewPacket(networkId)
-			pkt.DestAddr = net.ParseIP(ip)
+			pkt.DestAddr = net.ParseIP(destIP)
 			addr, err := newSocket.LocalAddr()
 			if err != nil {
 				return
@@ -223,7 +224,7 @@ func (t *Tun) sendNotifyMessage(networkId string, address unix.Sockaddr, ip stri
 
 		if flag == option.MsgTypeNotifyAck {
 			pkt := ack.NewPacket(networkId)
-			pkt.DestAddr = net.ParseIP(ip)
+			pkt.DestAddr = net.ParseIP(destIP)
 			localAddr, err := newSocket.LocalAddr()
 			if err != nil {
 				return
@@ -244,7 +245,7 @@ func (t *Tun) sendNotifyMessage(networkId string, address unix.Sockaddr, ip stri
 			return
 		}
 
-		t.p2pSocket.Store(ip, newSocket)
+		t.p2pSocket.Store(destIP, newSocket)
 	}
 
 }

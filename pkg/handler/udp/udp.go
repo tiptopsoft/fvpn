@@ -109,7 +109,7 @@ func Handle() handler.HandlerFunc {
 
 			frame.Packet = buff[:]
 			frame.Target = info
-			logger.Debugf("read from udp , got notify packet: %v", info)
+			logger.Debugf("============ got notify packet: %v", info)
 		case option.MsgTypeNotifyAck:
 			np, err := notifyAck.Decode(buff)
 			if err != nil {
@@ -136,7 +136,7 @@ func Handle() handler.HandlerFunc {
 			//}
 			frame.Packet = buff[:]
 			frame.Target = info
-			logger.Debugf("read from udp , got notify ack packet: %v", info)
+			logger.Debugf("=========== got notify ack packet: %v", info)
 		}
 
 		return nil

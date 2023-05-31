@@ -107,7 +107,7 @@ func (r *RegServer) WriteToUdp() {
 		case option.MsgTypeNotifyAck:
 			//write to dest
 			np, err := ack.Decode(pkt.Packet[:])
-			logger.Debugf("got notify packet: %v, destAddr: %s, networkId: %s", pkt.Packet[:], np.DestAddr.String(), pkt.NetworkId)
+			logger.Debugf("got notify ack packet: %v, destAddr: %s, networkId: %s", pkt.Packet[:], np.DestAddr.String(), pkt.NetworkId)
 			if err != nil {
 				logger.Errorf("invalid notify packet: %v", err)
 			}
@@ -196,10 +196,8 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			}
 
 			//add nat info to packet
-			addr := srcAddr
-			natIP := net.ParseIP(fmt.Sprintf("%d.%d.%d.%d", addr.Addr[0], addr.Addr[1], addr.Addr[2], addr.Addr[3]))
-			np.NatIP = natIP
-			np.NatPort = uint16(addr.Port)
+			np.NatIP = net.ParseIP(fmt.Sprintf("%s:%d", srcAddr.Addr, srcAddr.Port))
+			np.NatPort = uint16(srcAddr.Port)
 
 			newBuff, err := notify.Encode(np)
 			logger.Debugf("new notify buff, srcIP: %v, srcPort: %v, natIP: %v, natPort: %v", np.SourceIP, np.Port, np.NatIP, np.NatPort)
@@ -219,10 +217,8 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			}
 
 			//add nat info to packet
-			addr := srcAddr
-			natIP := net.ParseIP(fmt.Sprintf("%d.%d.%d.%d", addr.Addr[0], addr.Addr[1], addr.Addr[2], addr.Addr[3]))
-			np.NatIP = natIP
-			np.NatPort = uint16(addr.Port)
+			np.NatIP = net.ParseIP(fmt.Sprintf("%s:%d", srcAddr.Addr, srcAddr.Port))
+			np.NatPort = uint16(srcAddr.Port)
 
 			newBuff, err := ack.Encode(np)
 			logger.Debugf("new notify ack buff, srcIP: %v, srcPort: %v, natIP: %v, natPort: %v", np.SourceIP, np.Port, np.NatIP, np.NatPort)
