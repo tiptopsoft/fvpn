@@ -196,8 +196,12 @@ func (t *Tun) WriteToUdp(pkt *packet.Frame) error {
 	return nil
 }
 
+var m sync.Mutex
+
 // ip: 是目的IP
 func (t *Tun) sendNotifyMessage(networkId string, address unix.Sockaddr, destIP string, flag uint16) {
+	m.Lock()
+	defer m.Unlock()
 	srcIP := t.device[networkId].IP
 	if _, ok := t.p2pSocket.Load(destIP); !ok {
 		//新建一个client
@@ -234,10 +238,10 @@ func (t *Tun) sendNotifyMessage(networkId string, address unix.Sockaddr, destIP 
 			buff, err = ack.Encode(pkt)
 		}
 
-		if err != nil {
-			logger.Errorf("encode notify failed: %v", err)
-			return
-		}
+		//if err != nil {
+		//	logger.Errorf("encode notify failed: %v", err)
+		//	return
+		//}
 		//发送notify message or notify ack message
 		_, err = newSocket.Write(buff)
 		if err != nil {
@@ -393,16 +397,26 @@ func (t *Tun) HandleFrame() {
 			sock := pNode.Socket
 			addr, _ := sock.LocalAddr()
 			newSock := socket.NewSocket(addr.Port)
+			//关闭原来的socket
+			err = sock.Close()
+			if err != nil {
+				logger.Errorf("close origin socket failed: %v", err)
+			}
+			err = newSock.Connect(pNode.NodeInfo.Addr)
+			if err != nil {
+				logger.Errorf("connect p2p address failed. %v", err)
+			}
 
 			//open session, node-> remote addr
 			holePacket, _ := header.NewHeader(option.MsgTypePunchHole, pkt.NetworkId)
 			buff, _ := header.Encode(holePacket)
-			logger.Debugf(">>>>>>> punching hole to: %v, socket is: %v", pNode.NodeInfo.Addr, sock)
+			newAddr, _ := newSock.LocalAddr()
+			destAddr := pNode.NodeInfo.Addr.(*unix.SockaddrInet4)
+			logger.Debugf(">>>>>>> punching hole, localIP: %v, port: %v, destIP: %v, destPort: %v", newAddr.Addr, newAddr.Port, destAddr.Addr, destAddr.Port)
 			if err != nil {
 				logger.Errorf("open hole failed: %v", err)
 			}
-
-			err = newSock.WriteToUdp(buff, pNode.NodeInfo.Addr)
+			_, err = newSock.Write(buff)
 			if err != nil {
 				logger.Errorf("send punch hole failed: %v", err)
 				return
@@ -429,7 +443,7 @@ func (t *Tun) HandleFrame() {
 			case v := <-ch:
 				if v == 1 {
 					pNode.NodeInfo.P2P = true
-					pNode.NodeInfo.Socket = sock
+					pNode.NodeInfo.Socket = newSock
 					t.cache.SetCache(pkt.NetworkId, pNode.NodeInfo.IP.String(), pNode.NodeInfo)
 					logger.Debugf("punch hole success")
 				} else {
