@@ -197,7 +197,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 
 			//add nat info to packet
 			addr := fmt.Sprintf("%d.%d.%d.%d", srcAddr.Addr[0], srcAddr.Addr[1], srcAddr.Addr[2], srcAddr.Addr[3])
-			np.NatIP = net.ParseIP(fmt.Sprintf("%s:%d", addr, srcAddr.Port))
+			np.NatIP = net.ParseIP(addr)
 			np.NatPort = uint16(srcAddr.Port)
 
 			newBuff, err := notify.Encode(np)
@@ -219,7 +219,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 
 			//add nat info to packet
 			addr := fmt.Sprintf("%d.%d.%d.%d", srcAddr.Addr[0], srcAddr.Addr[1], srcAddr.Addr[2], srcAddr.Addr[3])
-			np.NatIP = net.ParseIP(fmt.Sprintf("%s:%d", addr, srcAddr.Port))
+			np.NatIP = net.ParseIP(addr)
 			np.NatPort = uint16(srcAddr.Port)
 
 			newBuff, err := ack.Encode(np)
