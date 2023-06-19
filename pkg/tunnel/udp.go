@@ -12,11 +12,13 @@ import (
 	"github.com/topcloudz/fvpn/pkg/packet/handshake"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"github.com/topcloudz/fvpn/pkg/packet/notify"
+	notifyack "github.com/topcloudz/fvpn/pkg/packet/notify/ack"
 	peerack "github.com/topcloudz/fvpn/pkg/packet/peer/ack"
 	"github.com/topcloudz/fvpn/pkg/packet/register/ack"
 	"github.com/topcloudz/fvpn/pkg/socket"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"golang.org/x/sys/unix"
+	"net"
 	"time"
 )
 
@@ -24,7 +26,7 @@ import (
 func (t *Tunnel) Handle() handler.HandlerFunc {
 
 	return func(ctx context.Context, frame *packet.Frame) error {
-		dest := ctx.Value("destAddr").(string)
+		//dest := ctx.Value("destAddr").(string)
 		buff := frame.Buff[:]
 
 		headerBuff, err := header.Decode(buff)
@@ -79,71 +81,83 @@ func (t *Tunnel) Handle() handler.HandlerFunc {
 		case option.MsgTypePacket:
 			frame.Packet = buff[:]
 			t.Inbound <- frame
-		case option.MsgTypeNotifyType:
+		case option.MsgTypeNotify:
 			np, err := notify.Decode(buff)
 			if err != nil {
 				return err
 			}
-
-			//use socket write a notify to dest
-			buff, err := buildNotifyMessage(frame.NetworkId)
+			//write back a notify
+			logger.Debugf("got p2p notify, will create p2p tunnel........, source ip:%v", np.SourceIP)
+			buff, err := t.buildNotifyMessageAck(np.SourceIP.String(), frame.NetworkId)
 			if err != nil {
 				return err
 			}
 
-			// write a handshake
 			t.socket.Write(buff)
-
-			//begin to punch hole
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*30))
-			defer cancel()
+			// write back notify
 			go func() {
-				portPair := <-Pool.ch
-				conn := socket.NewSocket(int(portPair.SrcPort))
-				destAddr := unix.SockaddrInet4{Port: int(np.NatPort)}
-				copy(destAddr.Addr[:], portPair.NatIP.To4())
-				conn.Connect(&destAddr)
-
-				handPkt := handshake.NewPacket(frame.NetworkId)
-				buff, err := handshake.Encode(handPkt)
-				if err != nil {
-					logger.Errorf("bad handshake packet")
-					return
-				}
-
-				for {
-					_, err := conn.Write(buff)
-					if err != nil {
-						logger.Errorf("bad handshake packet")
-						return
-					}
-
-					buff := make([]byte, 1024)
-					_, err = conn.Read(buff)
-					if err != nil {
-						logger.Errorf("punch hole failed. try again")
-						continue
-					}
-
-					//success
-					logger.Debugf("punch hole success. will create a new tunnel")
-					p2pTunnel := NewTunnel(t.tunHandler, conn, t.devices, infra.Middlewares(true, true), t.manager)
-					t.manager.SetTunnel(dest, p2pTunnel)
-					p2pTunnel.Start() //start this p2p tunnel to service data
-					break
-				}
+				t.handshaking(frame, np.NatIP, int(np.NatPort), np.SourceIP.String())
 			}()
-
-			select {
-			case <-ctx.Done():
-				logger.Debugf("punch hole finished.")
-			case <-time.After(time.Second * 30):
-				fmt.Println("timeout!!!")
+		case option.MsgTypeNotifyAck:
+			logger.Debugf("got p2p notify ack, will create p2p tunnel........")
+			nck, err := notifyack.Decode(buff)
+			if err != nil {
+				return err
 			}
-
+			go func() {
+				t.handshaking(frame, nck.NatIP, int(nck.NatPort), nck.SourceIP.String())
+			}()
 		}
 
 		return nil
 	}
+}
 
+func (t *Tunnel) handshaking(frame *packet.Frame, natIP net.IP, natPort int, destIP string) {
+	//begin to punch hole
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+	go func() {
+		portPair := <-Pool.ch
+		conn := socket.NewSocket(int(portPair.SrcPort))
+		destAddr := unix.SockaddrInet4{Port: natPort}
+		copy(destAddr.Addr[:], natIP.To4())
+		conn.Connect(&destAddr)
+
+		handPkt := handshake.NewPacket(frame.NetworkId)
+		buff, err := handshake.Encode(handPkt)
+		if err != nil {
+			logger.Errorf("bad handshake packet")
+			return
+		}
+
+		for {
+			_, err := conn.Write(buff)
+			if err != nil {
+				logger.Errorf("bad handshake packet")
+				return
+			}
+
+			buff := make([]byte, 1024)
+			_, err = conn.Read(buff)
+			if err != nil {
+				logger.Errorf("punch hole failed. try again")
+				continue
+			}
+
+			//success
+			logger.Debugf("punch hole success. will create a new tunnel")
+			p2pTunnel := NewTunnel(t.tunHandler, conn, t.devices, infra.Middlewares(true, true), t.manager)
+			t.manager.SetTunnel(destIP, p2pTunnel)
+			p2pTunnel.Start() //start this p2p tunnel to service data
+			break
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		logger.Debugf("punch hole finished.")
+	case <-time.After(time.Second * 30):
+		fmt.Println("timeout!!!")
+	}
 }

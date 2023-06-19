@@ -38,7 +38,7 @@ type Peer struct {
 	tunHandler  handler.Handler
 	udpHandler  handler.Handler
 	Outbound    chan *packet.Frame //read frame from tun
-	Inbound     chan *packet.Frame // write frame to tun
+	//Inbound     chan *packet.Frame // write frame to tun
 
 	relayTunnel *tunnel.Tunnel
 	manager     *tunnel.Manager
@@ -66,7 +66,6 @@ func (p *Peer) Start() error {
 	p.relayTunnel.Start()
 
 	go p.WriteToUDP()
-	go p.WriteToTun()
 	return p.runHttpServer()
 }
 
@@ -85,9 +84,13 @@ func (p *Peer) ReadFromTun(tun *tuntap.Tuntap, networkId string) {
 		frame := packet.NewFrame()
 		n, err := tun.Read(frame.Buff[:])
 		frame.Packet = frame.Buff[:n]
+		frame.NetworkId = networkId
 		frame.Size = n
 		logger.Debugf("origin packet size: %d, data: %v", n, frame.Packet[:n])
 		h, err := util.GetFrameHeader(frame.Packet)
+
+		dest := h.DestinationIP.String()
+		frame.RemoteAddr = dest
 		if err != nil {
 			logger.Debugf("no packet...")
 			continue
@@ -100,25 +103,6 @@ func (p *Peer) ReadFromTun(tun *tuntap.Tuntap, networkId string) {
 
 		p.Outbound <- frame
 	}
-}
-
-func (p *Peer) WriteToTun() {
-	for {
-		select {
-		case pkt := <-p.Inbound:
-			networkId := pkt.NetworkId
-			tun := p.GetTun(networkId)
-			if tun != nil {
-				tun.Write(pkt.Packet)
-			}
-		default:
-			return
-		}
-	}
-}
-
-func (p *Peer) GetTun(networkId string) *tuntap.Tuntap {
-	return p.devices[networkId]
 }
 
 // WriteToUDP  data from tun write to destination
@@ -134,11 +118,7 @@ func (p *Peer) WriteToUDP() {
 			}
 
 			logger.Debugf("pkt type: %v", packetHeader.Flags)
-			frameHeader, err := util.GetFrameHeader(pkt.Packet[12:]) //why 12? because packer.Header length is 12.
-			dest := frameHeader.DestinationIP.String()
-
-			//if p2p use a p2p tunnel, if not use relay tunnel
-			peerTunnel := p.getPeerTunnel(dest)
+			peerTunnel := p.getPeerTunnel(pkt.RemoteAddr)
 			peerTunnel.Outbound <- pkt
 			//if pkt.Type == option.PacketFromTap {
 			//

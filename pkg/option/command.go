@@ -13,13 +13,12 @@ const (
 	MsgTypeUnregisterSuper uint16 = 6
 	MsgTypeQueryPeer       uint16 = 11
 	HandShakeMsgType       uint16 = 12
-	MsgTypeNotifyType      uint16 = 13
-	//MsgTypeNotifyAck       uint16 = 19
-	//MsgTypePunchHole       uint16 = 14
-	PacketFromTap  uint16 = 15
-	PacketFromUdp  uint16 = 16
-	MsgTypePing    uint16 = 17
-	MsgTypePingAck uint16 = 18
+	MsgTypeNotify          uint16 = 13
+	MsgTypeNotifyAck       uint16 = 14
+	PacketFromTap          uint16 = 15
+	PacketFromUdp          uint16 = 16
+	MsgTypePing            uint16 = 17
+	MsgTypePingAck         uint16 = 18
 
 	RestrictNat  uint8 = 1
 	SymmetricNAT uint8 = 2

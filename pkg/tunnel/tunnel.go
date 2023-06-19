@@ -9,9 +9,11 @@ import (
 	"github.com/topcloudz/fvpn/pkg/middleware"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/notify"
+	"github.com/topcloudz/fvpn/pkg/packet/notify/ack"
 	"github.com/topcloudz/fvpn/pkg/socket"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"github.com/topcloudz/fvpn/pkg/util"
+	"net"
 	"sync"
 )
 
@@ -46,6 +48,7 @@ type P2PNode struct {
 func (t *Tunnel) Start() {
 	go t.ReadFromUDP()
 	go t.WriteToUdp()
+	go t.WriteToTun()
 }
 
 func (t *Tunnel) Close() {
@@ -91,6 +94,24 @@ func (t *Tunnel) findNode(networkId, ip string) (*cache.Endpoint, error) {
 	return t.cache.GetNodeInfo(networkId, ip)
 }
 
+func (t *Tunnel) WriteToTun() {
+	for {
+		select {
+		case pkt := <-t.Inbound:
+			networkId := pkt.NetworkId
+			tun := t.GetTun(networkId)
+			if tun != nil {
+				tun.Write(pkt.Packet[12:])
+			}
+		default:
+		}
+	}
+}
+
+func (t *Tunnel) GetTun(networkId string) *tuntap.Tuntap {
+	return t.devices[networkId]
+}
+
 // WriteToUdp data write to remote
 func (t *Tunnel) WriteToUdp() {
 	for {
@@ -100,29 +121,48 @@ func (t *Tunnel) WriteToUdp() {
 				//here is the default relay tunnel
 				t.socket.Write(pkt.Packet)
 			} else {
-				buff, err := buildNotifyMessage(pkt.NetworkId)
-				if err != nil {
-					logger.Errorf("send hand shake failed: %v", err)
-					return
-				}
+				if pkt.RemoteAddr != "" && !t.manager.GetNotifyStatus(pkt.RemoteAddr) {
+					buff, err := t.buildNotifyMessage(pkt.RemoteAddr, pkt.NetworkId)
+					if err != nil {
+						logger.Errorf("send hand shake failed: %v", err)
+						continue
+					}
 
-				t.socket.Write(buff)
+					t.socket.Write(buff)
+					t.manager.SetNotifyStatus(pkt.RemoteAddr, true)
+				}
+				t.socket.Write(pkt.Packet)
 			}
 		default:
 		}
 	}
 }
 
-func buildNotifyMessage(networkId string) ([]byte, error) {
+func (t *Tunnel) buildNotifyMessage(destIP, networkId string) ([]byte, error) {
 	// send self data to remote， to tell remote to connected to.
 	pkt := notify.NewPacket(networkId)
 	portPair := <-Pool.ch
 	//send handshake to remote
-	pkt.SourceIP = portPair.SrcIP
+	tap := t.GetTun(networkId)
+	pkt.SourceIP = tap.IP
 	pkt.Port = portPair.SrcPort
 	pkt.NatIP = portPair.NatIP
 	pkt.NatPort = portPair.NatPort
+	pkt.DestAddr = net.ParseIP(destIP)
 	return notify.Encode(pkt)
+}
+func (t *Tunnel) buildNotifyMessageAck(destIP, networkId string) ([]byte, error) {
+	// send self data to remote， to tell remote to connected to.
+	pkt := ack.NewPacket(networkId)
+	portPair := <-Pool.ch
+	//send handshake to remote
+	tap := t.GetTun(networkId)
+	pkt.SourceIP = tap.IP
+	pkt.Port = portPair.SrcPort
+	pkt.NatIP = portPair.NatIP
+	pkt.NatPort = portPair.NatPort
+	pkt.DestAddr = net.ParseIP(destIP)
+	return ack.Encode(pkt)
 }
 
 var m sync.Mutex

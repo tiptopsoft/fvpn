@@ -9,6 +9,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"github.com/topcloudz/fvpn/pkg/packet/notify"
+	notifyack "github.com/topcloudz/fvpn/pkg/packet/notify/ack"
 	"github.com/topcloudz/fvpn/pkg/packet/register"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"golang.org/x/sys/unix"
@@ -87,7 +88,7 @@ func (r *RegServer) WriteToUdp() {
 				logger.Errorf("write query to dest failed: %v", err)
 			}
 			break
-		case option.MsgTypeNotifyType:
+		case option.MsgTypeNotify:
 			//write to dest
 			np, err := notify.Decode(pkt.Packet[:])
 			logger.Debugf("got notify packet: %v, destAddr: %s, networkId: %s", pkt.Packet[:], np.DestAddr.String(), pkt.NetworkId)
@@ -103,6 +104,21 @@ func (r *RegServer) WriteToUdp() {
 
 			r.socket.WriteToUDP(pkt.Packet, transferUdpAddr(nodeInfo.Addr))
 
+		case option.MsgTypeNotifyAck:
+			//write to dest
+			np, err := notifyack.Decode(pkt.Packet[:])
+			logger.Debugf("got notify ack packet: %v, destAddr: %s, networkId: %s", pkt.Packet[:], np.DestAddr.String(), pkt.NetworkId)
+			if err != nil {
+				logger.Errorf("invalid notify ack packet: %v", err)
+			}
+
+			nodeInfo, err := r.cache.GetNodeInfo(pkt.NetworkId, np.DestAddr.String())
+			if nodeInfo == nil || err != nil {
+				logger.Errorf("node not on line, err: %v", err)
+				break
+			}
+
+			r.socket.WriteToUDP(pkt.Packet, transferUdpAddr(nodeInfo.Addr))
 		}
 
 	}
@@ -172,9 +188,9 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			logger.Infof("server got forward packet size:%d, data: %v", size, data)
 			frame.FrameType = option.MsgTypePacket
 			break
-		case option.MsgTypeNotifyType:
+		case option.MsgTypeNotify:
 			logger.Debugf("frame packet: %v", frame.Packet[:])
-			frame.FrameType = option.MsgTypeNotifyType
+			frame.FrameType = option.MsgTypeNotify
 
 		}
 

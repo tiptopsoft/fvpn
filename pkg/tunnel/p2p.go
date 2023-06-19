@@ -95,20 +95,22 @@ type PortPairPool struct {
 // init 10
 func NewPool() PortPairPool {
 	ch := make(chan *PortPair, 10)
+	pp := PortPairPool{
+		ch: ch,
+	}
 
 	go func() {
-		for i := 0; i < 10; i++ {
+		for {
 			p, err := initPortPair()
 
 			if err != nil {
-				ch <- p
+				logger.Errorf("init port pair failed. %v:", err)
 			}
+			pp.ch <- p
 		}
 	}()
 
-	return PortPairPool{
-		ch: ch,
-	}
+	return pp
 }
 
 func initPortPair() (*PortPair, error) {
@@ -133,6 +135,7 @@ func initPortPair() (*PortPair, error) {
 	p.NatIP = net.ParseIP(host.IP())
 	p.NatPort = host.Port()
 
+	logger.Debugf("init a portpair..............")
 	return p, nil
 }
 

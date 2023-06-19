@@ -9,6 +9,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"io"
+	"net"
 	"net/http"
 )
 
@@ -67,6 +68,8 @@ func (p *Peer) runHttpServer() error {
 			}
 
 			// start tap
+			tap.IP = net.ParseIP(req.Ip)
+			p.devices[req.NetworkId] = tap
 			go p.ReadFromTun(tap, req.NetworkId)
 			p.SendRegister(tap)
 			//give a timer

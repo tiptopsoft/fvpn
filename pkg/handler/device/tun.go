@@ -22,7 +22,6 @@ func Handle() handler.HandlerFunc {
 		idx = packet.EncodeBytes(newPacket, frame.Buff[:frame.Size], idx)
 
 		frame.Packet = newPacket[:idx]
-		//frame.NetworkId = networkId
 		frame.FrameType = option.MsgTypePacket
 		frame.Type = option.PacketFromTap
 
