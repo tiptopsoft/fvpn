@@ -12,8 +12,8 @@ var (
 
 // Socket use to wrap fd
 type Socket struct {
-	Fd  int
-	Run bool
+	Fd int
+	//Run bool
 }
 
 func (socket Socket) ReadFromUDP(bytes []byte) (n int, addr unix.Sockaddr, err error) {
@@ -43,18 +43,21 @@ func (socket Socket) LocalAddr() (*unix.SockaddrInet4, error) {
 
 func NewSocket(port int) Socket {
 	fd, _ := unix.Socket(unix.AF_INET, unix.SOCK_DGRAM, 0)
-	unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_REUSEADDR, 1)
-	unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_REUSEPORT, 1)
+	//unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_REUSEADDR, 1)
+	//unix.SetsockoptInt(fd, unix.SOL_SOCKET, unix.SO_REUSEPORT, 1)
+	//if port != 0 {
+
+	//	unix.Bind(fd, &addr)
+	//}
 	if port != 0 {
 		addr := unix.SockaddrInet4{Port: port}
 		copy(addr.Addr[:], net.IPv4zero.To4())
 		unix.Bind(fd, &addr)
 	}
-	return Socket{Fd: fd, Run: true}
+	return Socket{Fd: fd}
 }
 
 func (socket Socket) Connect(addr unix.Sockaddr) error {
-
 	return unix.Connect(socket.Fd, addr)
 }
 

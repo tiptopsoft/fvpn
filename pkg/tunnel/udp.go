@@ -99,11 +99,11 @@ func (t *Tunnel) Handle() handler.HandlerFunc {
 				t.handshaking(frame, np.NatIP, int(np.NatPort), np.SourceIP.String())
 			}()
 		case option.MsgTypeNotifyAck:
-			logger.Debugf("got p2p notify ack, will create p2p tunnel........")
 			nck, err := notifyack.Decode(buff)
 			if err != nil {
 				return err
 			}
+			logger.Debugf("got p2p notify ack, will create p2p tunnel........, source ip:%v, source port: %v, remote addr: %v, remote nat port: %v", nck.SourceIP, nck.Port, nck.NatIP, nck.NatPort)
 			go func() {
 				t.handshaking(frame, nck.NatIP, int(nck.NatPort), nck.SourceIP.String())
 			}()
@@ -119,11 +119,15 @@ func (t *Tunnel) handshaking(frame *packet.Frame, natIP net.IP, natPort int, des
 	defer cancel()
 	go func() {
 		//portPair := <-Pool.ch
-		portPair := t.manager.GetNotifyStatus(destIP)
+		portPair := t.manager.GetNotifyPortPair(destIP)
+		logger.Debugf("===========got cached port pair, source ip: %v, source port: %v, nat ip: %v, nat port: %v", portPair.SrcIP, portPair.SrcPort, portPair.NatIP, portPair.NatPort)
 		conn := socket.NewSocket(int(portPair.SrcPort))
 		destAddr := unix.SockaddrInet4{Port: natPort}
 		copy(destAddr.Addr[:], natIP.To4())
 		conn.Connect(&destAddr)
+
+		a, _ := conn.LocalAddr()
+		logger.Debugf(">>>>>>>>>>>>connection : %v", a)
 
 		handPkt := handshake.NewPacket(frame.NetworkId)
 		buff, err := handshake.Encode(handPkt)

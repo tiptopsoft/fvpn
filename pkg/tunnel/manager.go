@@ -4,6 +4,8 @@ import (
 	"sync"
 )
 
+var l sync.Mutex
+
 // Manager tunnel manager
 type Manager struct {
 	lock      sync.Mutex
@@ -28,10 +30,15 @@ func (m *Manager) SetTunnel(dest string, t *Tunnel) {
 	m.tunnels[dest] = t
 }
 
-func (m *Manager) GetNotifyStatus(dest string) *PortPair {
+func (m *Manager) GetNotifyPortPair(dest string) *PortPair {
 	return m.notifyMap[dest]
 }
 
-func (m *Manager) SetNotifyStatus(dest string, pkt *PortPair) {
+func (m *Manager) SetNotifyPortPair(dest string, pkt *PortPair) {
+	l.Lock()
+	if m.notifyMap[dest] != nil {
+		return
+	}
 	m.notifyMap[dest] = pkt
+	defer l.Unlock()
 }

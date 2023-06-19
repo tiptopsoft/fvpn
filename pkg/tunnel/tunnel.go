@@ -121,7 +121,7 @@ func (t *Tunnel) WriteToUdp() {
 				//here is the default relay tunnel
 				t.socket.Write(pkt.Packet)
 			} else {
-				if pkt.RemoteAddr != "" && t.manager.GetNotifyStatus(pkt.RemoteAddr) == nil {
+				if pkt.RemoteAddr != "" && t.manager.GetNotifyPortPair(pkt.RemoteAddr) == nil {
 					buff, err := t.buildNotifyMessage(pkt.RemoteAddr, pkt.NetworkId)
 					if err != nil {
 						logger.Errorf("send hand shake failed: %v", err)
@@ -142,7 +142,8 @@ func (t *Tunnel) buildNotifyMessage(destIP, networkId string) ([]byte, error) {
 	// send self data to remote， to tell remote to connected to.
 	pkt := notify.NewPacket(networkId)
 	portPair := <-Pool.ch
-	t.manager.SetNotifyStatus(destIP, portPair)
+	t.manager.SetNotifyPortPair(destIP, portPair)
+	logger.Debugf("<<<<<<<<<<<<<<<cached port pair, source ip: %v, source port: %v, nat ip: %v, nat port: %v", portPair.SrcIP, portPair.SrcPort, portPair.NatIP, portPair.NatPort)
 	//send handshake to remote
 	tap := t.GetTun(networkId)
 	pkt.SourceIP = tap.IP
@@ -150,7 +151,7 @@ func (t *Tunnel) buildNotifyMessage(destIP, networkId string) ([]byte, error) {
 	pkt.NatIP = portPair.NatIP
 	pkt.NatPort = portPair.NatPort
 	pkt.DestAddr = net.ParseIP(destIP)
-
+	logger.Debugf(">>>>>> build a notify: source ip: %v, source port: %v, natip: %v, natport: %v", pkt.SourceIP, pkt.Port, pkt.NatIP, pkt.NatPort)
 	return notify.Encode(pkt)
 }
 
@@ -158,7 +159,8 @@ func (t *Tunnel) buildNotifyMessageAck(destIP, networkId string) ([]byte, error)
 	// send self data to remote， to tell remote to connected to.
 	pkt := notifyack.NewPacket(networkId)
 	portPair := <-Pool.ch
-	t.manager.SetNotifyStatus(destIP, portPair)
+	t.manager.SetNotifyPortPair(destIP, portPair)
+	logger.Debugf("<<<<<<<<<<<<<<<cached port pair, source ip: %v, source port: %v, nat ip: %v, nat port: %v", portPair.SrcIP, portPair.SrcPort, portPair.NatIP, portPair.NatPort)
 	//send handshake to remote
 	tap := t.GetTun(networkId)
 	pkt.SourceIP = tap.IP
@@ -166,6 +168,7 @@ func (t *Tunnel) buildNotifyMessageAck(destIP, networkId string) ([]byte, error)
 	pkt.NatIP = portPair.NatIP
 	pkt.NatPort = portPair.NatPort
 	pkt.DestAddr = net.ParseIP(destIP)
+	logger.Debugf(">>>>>> build a notify ack: source ip: %v, source port: %v, natip: %v, natport: %v", pkt.SourceIP, pkt.Port, pkt.NatIP, pkt.NatPort)
 	return notifyack.Encode(pkt)
 }
 
