@@ -87,7 +87,7 @@ func (t *Tunnel) Handle() handler.HandlerFunc {
 				return err
 			}
 			//write back a notify
-			logger.Debugf("got p2p notify, will create p2p tunnel........, source ip:%v", np.SourceIP)
+			logger.Debugf(">>>>>>>>>>>>>>got p2p notify, will create p2p tunnel........, source ip:%v, source port: %v, remote addr: %v, remote nat port: %v", np.SourceIP, np.Port, np.NatIP, np.NatPort)
 			buff, err := t.buildNotifyMessageAck(np.SourceIP.String(), frame.NetworkId)
 			if err != nil {
 				return err
@@ -118,7 +118,8 @@ func (t *Tunnel) handshaking(frame *packet.Frame, natIP net.IP, natPort int, des
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 	go func() {
-		portPair := <-Pool.ch
+		//portPair := <-Pool.ch
+		portPair := t.manager.GetNotifyStatus(destIP)
 		conn := socket.NewSocket(int(portPair.SrcPort))
 		destAddr := unix.SockaddrInet4{Port: natPort}
 		copy(destAddr.Addr[:], natIP.To4())

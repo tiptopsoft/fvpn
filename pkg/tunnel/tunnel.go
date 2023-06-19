@@ -9,7 +9,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/middleware"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/notify"
-	"github.com/topcloudz/fvpn/pkg/packet/notify/ack"
+	notifyack "github.com/topcloudz/fvpn/pkg/packet/notify/ack"
 	"github.com/topcloudz/fvpn/pkg/socket"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"github.com/topcloudz/fvpn/pkg/util"
@@ -121,7 +121,7 @@ func (t *Tunnel) WriteToUdp() {
 				//here is the default relay tunnel
 				t.socket.Write(pkt.Packet)
 			} else {
-				if pkt.RemoteAddr != "" && !t.manager.GetNotifyStatus(pkt.RemoteAddr) {
+				if pkt.RemoteAddr != "" && t.manager.GetNotifyStatus(pkt.RemoteAddr) == nil {
 					buff, err := t.buildNotifyMessage(pkt.RemoteAddr, pkt.NetworkId)
 					if err != nil {
 						logger.Errorf("send hand shake failed: %v", err)
@@ -129,7 +129,7 @@ func (t *Tunnel) WriteToUdp() {
 					}
 
 					t.socket.Write(buff)
-					t.manager.SetNotifyStatus(pkt.RemoteAddr, true)
+
 				}
 				t.socket.Write(pkt.Packet)
 			}
@@ -142,6 +142,7 @@ func (t *Tunnel) buildNotifyMessage(destIP, networkId string) ([]byte, error) {
 	// send self data to remote， to tell remote to connected to.
 	pkt := notify.NewPacket(networkId)
 	portPair := <-Pool.ch
+	t.manager.SetNotifyStatus(destIP, portPair)
 	//send handshake to remote
 	tap := t.GetTun(networkId)
 	pkt.SourceIP = tap.IP
@@ -149,12 +150,15 @@ func (t *Tunnel) buildNotifyMessage(destIP, networkId string) ([]byte, error) {
 	pkt.NatIP = portPair.NatIP
 	pkt.NatPort = portPair.NatPort
 	pkt.DestAddr = net.ParseIP(destIP)
+
 	return notify.Encode(pkt)
 }
+
 func (t *Tunnel) buildNotifyMessageAck(destIP, networkId string) ([]byte, error) {
 	// send self data to remote， to tell remote to connected to.
-	pkt := ack.NewPacket(networkId)
+	pkt := notifyack.NewPacket(networkId)
 	portPair := <-Pool.ch
+	t.manager.SetNotifyStatus(destIP, portPair)
 	//send handshake to remote
 	tap := t.GetTun(networkId)
 	pkt.SourceIP = tap.IP
@@ -162,7 +166,7 @@ func (t *Tunnel) buildNotifyMessageAck(destIP, networkId string) ([]byte, error)
 	pkt.NatIP = portPair.NatIP
 	pkt.NatPort = portPair.NatPort
 	pkt.DestAddr = net.ParseIP(destIP)
-	return ack.Encode(pkt)
+	return notifyack.Encode(pkt)
 }
 
 var m sync.Mutex

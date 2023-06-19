@@ -1,18 +1,20 @@
 package tunnel
 
-import "sync"
+import (
+	"sync"
+)
 
 // Manager tunnel manager
 type Manager struct {
 	lock      sync.Mutex
 	tunnels   map[string]*Tunnel // map addr->tunnel p2p tunnels
-	notifyMap map[string]bool
+	notifyMap map[string]*PortPair
 }
 
 func NewManager() *Manager {
 	return &Manager{
 		tunnels:   make(map[string]*Tunnel, 1),
-		notifyMap: make(map[string]bool, 1),
+		notifyMap: make(map[string]*PortPair, 1),
 	}
 }
 
@@ -26,10 +28,10 @@ func (m *Manager) SetTunnel(dest string, t *Tunnel) {
 	m.tunnels[dest] = t
 }
 
-func (m *Manager) GetNotifyStatus(dest string) bool {
+func (m *Manager) GetNotifyStatus(dest string) *PortPair {
 	return m.notifyMap[dest]
 }
 
-func (m *Manager) SetNotifyStatus(dest string, status bool) {
-	m.notifyMap[dest] = status
+func (m *Manager) SetNotifyStatus(dest string, pkt *PortPair) {
+	m.notifyMap[dest] = pkt
 }

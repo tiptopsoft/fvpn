@@ -189,9 +189,11 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			frame.FrameType = option.MsgTypePacket
 			break
 		case option.MsgTypeNotify:
-			logger.Debugf("frame packet: %v", frame.Packet[:])
+			logger.Debugf("notify frame packet: %v", frame.Packet[:])
 			frame.FrameType = option.MsgTypeNotify
-
+		case option.MsgTypeNotifyAck:
+			logger.Debugf("notify ack frame packet: %v", frame.Packet[:])
+			frame.FrameType = option.MsgTypeNotify
 		}
 
 		return nil
