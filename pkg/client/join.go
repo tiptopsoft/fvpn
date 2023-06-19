@@ -11,7 +11,7 @@ const (
 	localUrl = "http://localhost:6663"
 )
 
-func (n *Node) RunJoinNetwork(netId string) error {
+func (p *Peer) RunJoinNetwork(netId string) error {
 	logger.Infof("start to join %s", netId)
 	req := new(http.JoinRequest)
 	mac, err := addr.GetHostMac()
@@ -41,7 +41,7 @@ func (n *Node) RunJoinNetwork(netId string) error {
 	return nil
 }
 
-func (n *Node) RunLeaveNetwork(networkId string) error {
+func (p *Peer) RunLeaveNetwork(networkId string) error {
 
 	return nil
 }

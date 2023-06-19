@@ -9,7 +9,7 @@ import (
 
 func (r *RegServer) registerAck(peerAddr *unix.SockaddrInet4, srcMac net.HardwareAddr, srcIP net.IP, networkId string) error {
 
-	ackNode := &cache.NodeInfo{
+	ackNode := &cache.Endpoint{
 		Addr:      peerAddr,
 		NetworkId: "",
 		MacAddr:   srcMac,

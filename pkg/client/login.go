@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 )
 
-func (n *Node) Login(username, password string) error {
+func (p *Peer) Login(username, password string) error {
 	client := http.New(userUrl)
 	req := new(http.LoginRequest)
 	req.Username = username

@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"github.com/topcloudz/fvpn/pkg/addr"
 	"github.com/topcloudz/fvpn/pkg/log"
-	"github.com/topcloudz/fvpn/pkg/option"
 	"golang.org/x/sys/unix"
-	"net"
 	"os"
 	"syscall"
 	"unsafe"
@@ -16,7 +14,7 @@ var (
 	logger = log.Log()
 )
 
-func New(mode Mode, ip, mask, networkId string) (*Tuntap, error) {
+func New(mode Mode, networkId string) (*Tuntap, error) {
 	name := fmt.Sprintf("%s%s", NamePrefix, networkId[:10])
 	var f = "/dev/net/tun"
 
@@ -60,10 +58,10 @@ func New(mode Mode, ip, mask, networkId string) (*Tuntap, error) {
 		err = fmt.Errorf("tuntap set group error, errno %v", errno)
 	}
 
-	//设置IP
-	if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", name, ip, mask, 1420)); err != nil {
-		return nil, err
-	}
+	////设置IP
+	//if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", name, ip, mask, 1420)); err != nil {
+	//	return nil, err
+	//}
 
 	mac, _, _ := addr.GetMacAddrAndIPByDev(name)
 	return &Tuntap{
@@ -72,7 +70,7 @@ func New(mode Mode, ip, mask, networkId string) (*Tuntap, error) {
 		file:      os.NewFile(uintptr(fd), name),
 		Fd:        fd,
 		NetworkId: networkId,
-		IP:        net.ParseIP(ip),
+		//IP:        net.ParseIP(ip),
 	}, nil
 }
 

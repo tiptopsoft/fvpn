@@ -2,6 +2,8 @@ package tuntap
 
 import (
 	"fmt"
+	"github.com/topcloudz/fvpn/pkg/option"
+	"net"
 	"os"
 	"syscall"
 	"unsafe"
@@ -13,7 +15,7 @@ import (
 const appleCTLIOCGINFO = (0x40000000 | 0x80000000) | ((100 & 0x1fff) << 16) | uint32(byte('N'))<<8 | 3
 
 // New create a Tuntap
-func New(mode Mode, networkId string) (*Tuntap, error) {
+func New(mode Mode, ip, mask, networkId string) (*Tuntap, error) {
 	i := 0
 	var name string
 	var err error
@@ -74,10 +76,10 @@ func New(mode Mode, networkId string) (*Tuntap, error) {
 		//if _, _, errno = unix.Syscall(unix.SYS_IOCTL, uintptr(fd), TUNSETOWNER, uintptr(os.Geteuid())); errno < 0 {
 		//	err = fmt.Errorf("tuntap set group error, errno %v", errno)
 		//}
-		////设置IP
-		//if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", name, ip, mask, 1420)); err != nil {
-		//	return nil, err
-		//}
+		//设置IP
+		if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", name, ip, mask, 1420)); err != nil {
+			return nil, err
+		}
 
 		if err != nil && i < 255 {
 			i++
@@ -95,6 +97,6 @@ func New(mode Mode, networkId string) (*Tuntap, error) {
 		MacAddr: mac,
 		file:    os.NewFile(uintptr(fd), name),
 		Fd:      fd,
-		//IP:      net.ParseIP(ip),
+		IP:      net.ParseIP(ip),
 	}, nil
 }

@@ -16,8 +16,8 @@ type Frame struct {
 	SrcAddr   unix.Sockaddr
 	FrameType uint16
 	Type      uint16
-	Self      *cache.NodeInfo
-	Target    *cache.NodeInfo
+	Self      *cache.Endpoint
+	Target    *cache.Endpoint
 }
 
 func NewFrame() *Frame {

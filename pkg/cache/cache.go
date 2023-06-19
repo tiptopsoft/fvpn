@@ -14,16 +14,16 @@ var (
 )
 
 type Cache struct {
-	local map[string]*NodeInfo
+	local map[string]*Endpoint
 }
 
 func New() *Cache {
-	m := make(map[string]*NodeInfo)
+	m := make(map[string]*Endpoint)
 	return &Cache{local: m}
 }
 
-// NodeInfo 节点注册到registry时，应保存device ip, NATHost, NATPort
-type NodeInfo struct {
+// Endpoint 节点注册到registry时，应保存device ip, NATHost, NATPort
+type Endpoint struct {
 	Socket    socket.Socket //natip or innerip
 	NetworkId string
 	Addr      unix.Sockaddr //natip , natport
@@ -39,19 +39,19 @@ type NodeInfo struct {
 
 var LocalCache sync.Map
 
-func (c *Cache) SetCache(networkId, ip string, node *NodeInfo) {
+func (c *Cache) SetCache(networkId, peerId string, node *Endpoint) {
 	m, b := LocalCache.Load(networkId)
 	if !b {
-		c.local[ip] = node
+		c.local[peerId] = node
 		LocalCache.Store(networkId, c)
 	} else {
 		s := m.(*Cache)
-		s.local[ip] = node
+		s.local[peerId] = node
 	}
-	logger.Debugf("cache %s, ip: %s", networkId, ip)
+	logger.Debugf("cache %s, ip: %s", networkId, peerId)
 }
 
-func (c *Cache) GetNodeInfo(networkId, ip string) (*NodeInfo, error) {
+func (c *Cache) GetNodeInfo(networkId, ip string) (*Endpoint, error) {
 	m, b := LocalCache.Load(networkId)
 	if !b {
 		return nil, errors.New("not networkId " + networkId + " cached")
@@ -65,7 +65,7 @@ func (c *Cache) GetNodeInfo(networkId, ip string) (*NodeInfo, error) {
 }
 
 // ListNodesByNetworkId list all node in this networkId
-func (c *Cache) ListNodesByNetworkId(networkId string) (nodes []*NodeInfo, err error) {
+func (c *Cache) ListNodesByNetworkId(networkId string) (nodes []*Endpoint, err error) {
 	m, b := LocalCache.Load(networkId)
 	if !b {
 		return nil, errors.New("not networkId " + networkId + " cached")
@@ -77,7 +77,7 @@ func (c *Cache) ListNodesByNetworkId(networkId string) (nodes []*NodeInfo, err e
 	return nodes, nil
 }
 
-func (c *Cache) GetNodes() (nodes []*NodeInfo) {
+func (c *Cache) GetNodes() (nodes []*Endpoint) {
 	for _, value := range c.local {
 		nodes = append(nodes, value)
 	}

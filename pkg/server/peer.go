@@ -8,7 +8,7 @@ import (
 	"net"
 )
 
-func getPeerInfo(nodes []*cache.NodeInfo) ([]ack.EdgeInfo, uint8, error) {
+func getPeerInfo(nodes []*cache.Endpoint) ([]ack.EdgeInfo, uint8, error) {
 	var result []ack.EdgeInfo
 
 	for _, peer := range nodes {

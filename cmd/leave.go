@@ -48,7 +48,7 @@ func runLeave(args []string) error {
 		return err
 	}
 
-	s := &client.Node{
+	s := &client.Peer{
 		Config: config,
 	}
 

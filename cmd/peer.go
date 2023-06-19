@@ -43,7 +43,7 @@ func runNode(opts *upOptions) error {
 		return err
 	}
 
-	s := &client.Node{
+	s := &client.Peer{
 		Config: config,
 	}
 	return s.Start()

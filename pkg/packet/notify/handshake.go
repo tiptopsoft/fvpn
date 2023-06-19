@@ -1,4 +1,4 @@
-package ack
+package notify
 
 import (
 	"errors"
@@ -9,26 +9,27 @@ import (
 	"unsafe"
 )
 
-type NotifyPacketAck struct {
+// NotifyPacket use to tell dest node to connect, punch hole
+type NotifyPacket struct {
 	header   header.Header //12
 	SourceIP net.IP        // inner ip 16
 	Port     uint16        // inner port 2
 	NatIP    net.IP        // nat ip 16
 	NatPort  uint16        //nat port2
 	NatType  uint8         //1 retrict 2 symmtrict nat 1
-	DestAddr net.IP        //目标IP 2
+	DestAddr net.IP        //目标IP
 }
 
-func NewPacket(networkId string) NotifyPacketAck {
-	headerPacket, _ := header.NewHeader(option.MsgTypeNotifyAck, networkId)
-	return NotifyPacketAck{
+func NewPacket(networkId string) NotifyPacket {
+	headerPacket, _ := header.NewHeader(option.HandShakeMsgType, networkId)
+	return NotifyPacket{
 		header: headerPacket,
 	}
 }
 
 // Encode encode a NotifyPacket to bytes  sequence ip-> port->nattype->destAddr ->natip->natport
-func Encode(np NotifyPacketAck) ([]byte, error) {
-	b := make([]byte, unsafe.Sizeof(NotifyPacketAck{}))
+func Encode(np NotifyPacket) ([]byte, error) {
+	b := make([]byte, unsafe.Sizeof(NotifyPacket{}))
 	headerBuff, err := header.Encode(np.header)
 	if err != nil {
 		return nil, errors.New("encode common packet failed")
@@ -46,11 +47,11 @@ func Encode(np NotifyPacketAck) ([]byte, error) {
 }
 
 // Decode decode buff to NotifyPacket   ip-> port->nattype->destAddr ->natip->natport
-func Decode(buff []byte) (NotifyPacketAck, error) {
+func Decode(buff []byte) (NotifyPacket, error) {
 	res := NewPacket("")
 	h, err := header.Decode(buff)
 	if err != nil {
-		return NotifyPacketAck{}, errors.New("decode common packet failed")
+		return NotifyPacket{}, errors.New("decode common packet failed")
 	}
 	idx := 0
 	res.header = h

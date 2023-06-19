@@ -16,7 +16,7 @@ type Socket struct {
 	Run bool
 }
 
-func (socket Socket) ReadFromUdp(bytes []byte) (n int, addr unix.Sockaddr, err error) {
+func (socket Socket) ReadFromUDP(bytes []byte) (n int, addr unix.Sockaddr, err error) {
 	return unix.Recvfrom(socket.Fd, bytes, 0)
 }
 

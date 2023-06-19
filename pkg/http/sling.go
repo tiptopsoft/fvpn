@@ -10,7 +10,7 @@ import (
 )
 
 type Interface interface {
-	ListNodes(userId string) []cache.NodeInfo
+	ListNodes(userId string) []cache.Endpoint
 }
 
 type Client struct {

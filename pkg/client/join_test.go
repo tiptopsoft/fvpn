@@ -9,7 +9,7 @@ import (
 func TestNode_RunJoinNetwork(t *testing.T) {
 
 	//c04d6b84fd4fc978
-	//node := new(Node)
+	//node := new(Peer)
 	//err := node.RunJoinNetwork("c04d6b84fd4fc978")
 	//if err != nil {
 	//	t.Fail()

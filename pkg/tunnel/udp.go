@@ -1,4 +1,4 @@
-package udp
+package tunnel
 
 import (
 	"context"
@@ -6,43 +6,41 @@ import (
 	"fmt"
 	"github.com/topcloudz/fvpn/pkg/cache"
 	"github.com/topcloudz/fvpn/pkg/handler"
-	"github.com/topcloudz/fvpn/pkg/log"
+	"github.com/topcloudz/fvpn/pkg/middleware/infra"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet/handshake"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"github.com/topcloudz/fvpn/pkg/packet/notify"
-	notifyAck "github.com/topcloudz/fvpn/pkg/packet/notify/ack"
 	peerack "github.com/topcloudz/fvpn/pkg/packet/peer/ack"
 	"github.com/topcloudz/fvpn/pkg/packet/register/ack"
 	"github.com/topcloudz/fvpn/pkg/socket"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"golang.org/x/sys/unix"
+	"time"
 )
 
-var (
-	logger = log.Log()
-)
-
-func Handle() handler.HandlerFunc {
+// Handle union udp handler
+func (t *Tunnel) Handle() handler.HandlerFunc {
 
 	return func(ctx context.Context, frame *packet.Frame) error {
+		dest := ctx.Value("destAddr").(string)
 		buff := frame.Buff[:]
 
 		headerBuff, err := header.Decode(buff)
 		if err != nil {
-			logger.Errorf("decode err: %v", err)
+			return err
 		}
 
 		frame.NetworkId = hex.EncodeToString(headerBuff.NetworkId[:])
 		c := ctx.Value("cache").(*cache.Cache)
 
-		frame.FrameType = headerBuff.Flags
+		//frame.FrameType = headerBuff.Flags
 		switch headerBuff.Flags {
 		case option.MsgTypeRegisterAck:
 			regAck, err := ack.Decode(buff)
 			if err != nil {
-				//return err
-				fmt.Println(err)
+				return err
 			}
 			logger.Debugf("register success, got server server ack: (%v)", regAck)
 			break
@@ -50,7 +48,7 @@ func Handle() handler.HandlerFunc {
 			logger.Debugf("start get query response")
 			peerPacketAck, err := peerack.Decode(buff)
 			if err != nil {
-				//return err
+				return err
 			}
 			infos := peerPacketAck.NodeInfos
 			logger.Infof("got server peers: (%v)", infos)
@@ -59,12 +57,12 @@ func Handle() handler.HandlerFunc {
 				//logger.Debugf("got remote node: mac: %v, ip: %s,  natIP: %s, natPort: %d", info.Mac, info.IP, info.NatIp, info.NatPort)
 				address, err := util.GetAddress(info.NatIp.String(), int(info.NatPort))
 				if err != nil {
-					logger.Errorf("resolve addr failed, err: %v", err)
+					return err
 				}
 				node, err := c.GetNodeInfo(frame.NetworkId, info.IP.String())
 				if node == nil || err != nil {
 					sock := socket.NewSocket(6061)
-					nodeInfo := &cache.NodeInfo{
+					nodeInfo := &cache.Endpoint{
 						Socket:  sock,
 						MacAddr: info.Mac,
 						IP:      info.IP,
@@ -80,63 +78,69 @@ func Handle() handler.HandlerFunc {
 			break
 		case option.MsgTypePacket:
 			frame.Packet = buff[:]
-			break
-		case option.MsgTypeNotify:
+			t.Inbound <- frame
+		case option.MsgTypeNotifyType:
 			np, err := notify.Decode(buff)
 			if err != nil {
-				logger.Errorf("got invalid NotifyPacket: %v", err)
+				return err
 			}
 
-			addr := &unix.SockaddrInet4{
-				Port: int(np.NatPort),
-			}
-
-			copy(addr.Addr[:], np.NatIP.To4())
-			info := &cache.NodeInfo{
-				Socket:    socket.Socket{},
-				NetworkId: frame.NetworkId,
-				Addr:      addr,
-				MacAddr:   nil,
-				IP:        np.SourceIP,
-				Port:      np.Port,
-				P2P:       false,
-				Status:    false,
-				NatType:   np.NatType,
-				NatIP:     np.NatIP,
-				NatPort:   np.NatPort,
-			}
-			//}
-
-			frame.Packet = buff[:]
-			frame.Target = info
-			logger.Debugf("============ got notify packet: %v", info)
-		case option.MsgTypeNotifyAck:
-			np, err := notifyAck.Decode(buff)
+			//use socket write a notify to dest
+			buff, err := buildNotifyMessage(frame.NetworkId)
 			if err != nil {
-				logger.Errorf("got invalid NotifyPacket: %v", err)
-			}
-			addr := &unix.SockaddrInet4{
-				Port: int(np.NatPort),
+				return err
 			}
 
-			copy(addr.Addr[:], np.NatIP.To4())
-			info := &cache.NodeInfo{
-				Socket:    socket.Socket{},
-				NetworkId: frame.NetworkId,
-				Addr:      addr,
-				MacAddr:   nil,
-				IP:        np.SourceIP,
-				Port:      np.Port,
-				P2P:       false,
-				Status:    false,
-				NatType:   np.NatType,
-				NatIP:     np.NatIP,
-				NatPort:   np.NatPort,
+			// write a handshake
+			t.socket.Write(buff)
+
+			//begin to punch hole
+			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*30))
+			defer cancel()
+			go func() {
+				portPair := <-Pool.ch
+				conn := socket.NewSocket(int(portPair.SrcPort))
+				destAddr := unix.SockaddrInet4{Port: int(np.NatPort)}
+				copy(destAddr.Addr[:], portPair.NatIP.To4())
+				conn.Connect(&destAddr)
+
+				handPkt := handshake.NewPacket(frame.NetworkId)
+				buff, err := handshake.Encode(handPkt)
+				if err != nil {
+					logger.Errorf("bad handshake packet")
+					return
+				}
+
+				for {
+					_, err := conn.Write(buff)
+					if err != nil {
+						logger.Errorf("bad handshake packet")
+						return
+					}
+
+					buff := make([]byte, 1024)
+					_, err = conn.Read(buff)
+					if err != nil {
+						logger.Errorf("punch hole failed. try again")
+						continue
+					}
+
+					//success
+					logger.Debugf("punch hole success. will create a new tunnel")
+					p2pTunnel := NewTunnel(t.tunHandler, conn, t.devices, infra.Middlewares(true, true), t.manager)
+					t.manager.SetTunnel(dest, p2pTunnel)
+					p2pTunnel.Start() //start this p2p tunnel to service data
+					break
+				}
+			}()
+
+			select {
+			case <-ctx.Done():
+				logger.Debugf("punch hole finished.")
+			case <-time.After(time.Second * 30):
+				fmt.Println("timeout!!!")
 			}
-			//}
-			frame.Packet = buff[:]
-			frame.Target = info
-			logger.Debugf("=========== got notify ack packet: %v", info)
+
 		}
 
 		return nil

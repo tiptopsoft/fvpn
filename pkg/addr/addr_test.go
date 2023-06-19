@@ -45,7 +45,3 @@ func TestGetMacAddrAndIPByDev(t *testing.T) {
 
 	fmt.Println(fa.HardwareAddr.String(), nil, err)
 }
-
-func TestTuntap(t *testing.T) {
-
-}

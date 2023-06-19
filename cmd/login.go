@@ -46,7 +46,7 @@ func runLogin(opts loginOptions) error {
 		return err
 	}
 
-	s := &client.Node{
+	s := &client.Peer{
 		Config: config,
 	}
 

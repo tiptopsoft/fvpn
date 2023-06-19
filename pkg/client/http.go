@@ -2,16 +2,17 @@ package client
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	nativehttp "github.com/topcloudz/fvpn/pkg/http"
+	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
+	"github.com/topcloudz/fvpn/pkg/util"
 	"io"
 	"net/http"
 )
 
-func (n *Node) runHttpServer() error {
+func (p *Peer) runHttpServer() error {
 	s := nativehttp.NewServer()
 	s.HandlerFunc("/api/v1/join", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -43,23 +44,34 @@ func (n *Node) runHttpServer() error {
 
 			logger.Infof("request network is: %s", req.NetworkId)
 
+			tap, err := tuntap.New(tuntap.TAP, req.NetworkId)
+			if err != nil {
+				w.WriteHeader(500)
+				return
+			}
+			if p.devices == nil {
+				p.devices[req.NetworkId] = tap
+			}
+
 			if err := json.NewEncoder(w).Encode(req); err != nil {
 				w.WriteHeader(500)
 				return
 			}
 
 			logger.Infof("get result ip: %s, mask: %s", req.Ip, req.Mask)
-			tap, err := tuntap.New(tuntap.TAP, req.Ip, req.Mask, req.NetworkId)
-			if err != nil {
+
+			//get dev
+			if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", tap.Name, req.Ip, req.Mask, 1420)); err != nil {
 				w.WriteHeader(500)
 				return
 			}
-			n.tun.CacheDevice(req.NetworkId, tap)
-			err = n.tun.SendRegister(tap)
-			if err != nil {
-				return
-			}
-			go n.tun.ReadFromTun(context.Background(), req.NetworkId)
+
+			// start tap
+			go p.ReadFromTun(tap, req.NetworkId)
+			p.SendRegister(tap)
+			//give a timer
+
+			go util.AddJob(req.NetworkId, p.sendQueryPeer)
 
 			w.WriteHeader(200)
 			logger.Infof("join network %s success", req.NetworkId)
@@ -92,7 +104,7 @@ func (n *Node) runHttpServer() error {
 
 			//TODO 把networkId加进来
 			logger.Infof("join network %s success", body.NetworkId)
-			if err = n.RunJoinNetwork(body.NetworkId); err != nil {
+			if err = p.RunJoinNetwork(body.NetworkId); err != nil {
 				w.WriteHeader(500)
 				return
 			}
@@ -103,18 +115,8 @@ func (n *Node) runHttpServer() error {
 	return s.Start(fmt.Sprintf(":%d", DefaultPort))
 }
 
-//func (n *Node) addTuns(networkId string) error {
-//	tun, err := tuntap.GetTuntap(networkId)
-//	if err != nil {
-//		return err
-//	}
-//
-//	n.tuns.Store(networkId, tun)
-//	return nil
-//}
-
 // GetNetworkIds get network ids when node starting, so can monitor the traffic on the device.
-func (n *Node) GetNetworkIds() ([]string, error) {
+func (p *Peer) GetNetworkIds() ([]string, error) {
 	var body struct {
 		userId string
 	}

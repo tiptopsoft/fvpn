@@ -9,7 +9,6 @@ import (
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"github.com/topcloudz/fvpn/pkg/packet/notify"
-	"github.com/topcloudz/fvpn/pkg/packet/notify/ack"
 	"github.com/topcloudz/fvpn/pkg/packet/register"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"golang.org/x/sys/unix"
@@ -88,7 +87,7 @@ func (r *RegServer) WriteToUdp() {
 				logger.Errorf("write query to dest failed: %v", err)
 			}
 			break
-		case option.MsgTypeNotify:
+		case option.MsgTypeNotifyType:
 			//write to dest
 			np, err := notify.Decode(pkt.Packet[:])
 			logger.Debugf("got notify packet: %v, destAddr: %s, networkId: %s", pkt.Packet[:], np.DestAddr.String(), pkt.NetworkId)
@@ -104,21 +103,6 @@ func (r *RegServer) WriteToUdp() {
 
 			r.socket.WriteToUDP(pkt.Packet, transferUdpAddr(nodeInfo.Addr))
 
-		case option.MsgTypeNotifyAck:
-			//write to dest
-			np, err := ack.Decode(pkt.Packet[:])
-			logger.Debugf("got notify ack packet: %v, destAddr: %s, networkId: %s", pkt.Packet[:], np.DestAddr.String(), pkt.NetworkId)
-			if err != nil {
-				logger.Errorf("invalid notify packet: %v", err)
-			}
-
-			nodeInfo, err := r.cache.GetNodeInfo(pkt.NetworkId, np.DestAddr.String())
-			if nodeInfo == nil || err != nil {
-				logger.Errorf("node not on line, err: %v", err)
-				break
-			}
-
-			r.socket.WriteToUDP(pkt.Packet, transferUdpAddr(nodeInfo.Addr))
 		}
 
 	}
@@ -188,49 +172,10 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			logger.Infof("server got forward packet size:%d, data: %v", size, data)
 			frame.FrameType = option.MsgTypePacket
 			break
-		case option.MsgTypeNotify:
-			logger.Infof("add packet: %v", frame.Packet[:])
-			np, err := notify.Decode(frame.Packet[:])
-			if err != nil {
-				logger.Errorf("invalid notify packet: %v", err)
-			}
-
-			//add nat info to packet
-			addr := fmt.Sprintf("%d.%d.%d.%d", srcAddr.Addr[0], srcAddr.Addr[1], srcAddr.Addr[2], srcAddr.Addr[3])
-			np.NatIP = net.ParseIP(addr)
-			np.NatPort = uint16(srcAddr.Port)
-
-			newBuff, err := notify.Encode(np)
-			logger.Debugf("new notify buff, srcIP: %v, srcPort: %v, natIP: %v, natPort: %v", np.SourceIP, np.Port, np.NatIP, np.NatPort)
-			if err != nil {
-				logger.Errorf("encode failed:%v", err)
-			}
-
-			copy(frame.Packet[:], newBuff)
+		case option.MsgTypeNotifyType:
 			logger.Debugf("frame packet: %v", frame.Packet[:])
-			frame.FrameType = option.MsgTypeNotify
+			frame.FrameType = option.MsgTypeNotifyType
 
-		case option.MsgTypeNotifyAck:
-			logger.Infof(">>>>>>>>>>>>> go notify ack packet: %v", frame.Packet[:])
-			np, err := ack.Decode(frame.Packet[:])
-			if err != nil {
-				logger.Errorf("invalid notify packet: %v", err)
-			}
-
-			//add nat info to packet
-			addr := fmt.Sprintf("%d.%d.%d.%d", srcAddr.Addr[0], srcAddr.Addr[1], srcAddr.Addr[2], srcAddr.Addr[3])
-			np.NatIP = net.ParseIP(addr)
-			np.NatPort = uint16(srcAddr.Port)
-
-			newBuff, err := ack.Encode(np)
-			logger.Debugf("new notify ack buff, srcIP: %v, srcPort: %v, natIP: %v, natPort: %v", np.SourceIP, np.Port, np.NatIP, np.NatPort)
-			if err != nil {
-				logger.Errorf("encode failed:%v", err)
-			}
-
-			copy(frame.Packet[:], newBuff)
-			logger.Debugf("frame packet: %v", frame.Packet[:])
-			frame.FrameType = option.MsgTypeNotifyAck
 		}
 
 		return nil
