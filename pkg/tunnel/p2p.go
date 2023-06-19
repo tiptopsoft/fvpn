@@ -2,11 +2,15 @@ package tunnel
 
 import (
 	"context"
+	"crypto/rand"
+	"fmt"
 	"github.com/ccding/go-stun/stun"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"github.com/topcloudz/fvpn/pkg/socket"
+	"math"
+	"math/big"
 
 	"net"
 	"time"
@@ -116,7 +120,9 @@ func NewPool() PortPairPool {
 func initPortPair() (*PortPair, error) {
 	client := stun.NewClient()
 
-	conn, _ := net.ListenUDP("udp", nil)
+	localPort := RandomPort(10000, 50000)
+	laddr, _ := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", localPort))
+	conn, _ := net.ListenUDP("udp", laddr)
 	stun.NewClientWithConnection(conn)
 
 	addr := conn.LocalAddr().(*net.UDPAddr)
@@ -139,6 +145,16 @@ func initPortPair() (*PortPair, error) {
 	return p, nil
 }
 
-func GetPortPair() {
-
+func RandomPort(min, max int64) int64 {
+	if min > max {
+		panic("the min is greater than max!")
+	}
+	if min < 0 {
+		f64Min := math.Abs(float64(min))
+		i64Min := int64(f64Min)
+		result, _ := rand.Int(rand.Reader, big.NewInt(max+1+i64Min))
+		return result.Int64() - i64Min
+	}
+	result, _ := rand.Int(rand.Reader, big.NewInt(max-min+1))
+	return min + result.Int64()
 }
