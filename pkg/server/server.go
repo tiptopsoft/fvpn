@@ -64,7 +64,7 @@ func (r *RegServer) start(address string) error {
 	once.Do(func() {
 		r.cache = cache.New()
 		r.readHandler = middleware.WithMiddlewares(r.serverUdpHandler(), codec.Decode(r.cipher))
-		r.writeHandler = middleware.WithMiddlewares(r.serverUdpHandler(), codec.Encode(r.cipher))
+		r.writeHandler = middleware.WithMiddlewares(r.writeUdpHandler(), codec.Encode(r.cipher))
 	})
 	r.socket = socket
 

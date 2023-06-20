@@ -43,7 +43,7 @@ func (r *RegServer) ReadFromUdp() {
 			logger.Warnf("no data exists")
 			continue
 		}
-		err = r.h.Handle(ctx, frame)
+		err = r.readHandler.Handle(ctx, frame)
 		if err != nil {
 			logger.Errorf(err.Error())
 			continue
@@ -56,6 +56,28 @@ func (r *RegServer) WriteToUdp() {
 	logger.Infof("start a udp write loop")
 	for {
 		pkt := <-r.Outbound
+		ctx := context.Background()
+		r.writeHandler.Handle(ctx, pkt)
+	}
+}
+
+func transferUdpAddr(address unix.Sockaddr) *net.UDPAddr {
+	addr := address.(*unix.SockaddrInet4)
+	ip := net.ParseIP(fmt.Sprintf("%d.%d.%d.%d", addr.Addr[0], addr.Addr[1], addr.Addr[2], addr.Addr[3]))
+	return &net.UDPAddr{IP: ip, Port: addr.Port}
+}
+
+func transferSockAddr(address *net.UDPAddr) *unix.SockaddrInet4 {
+	addr := &unix.SockaddrInet4{
+		Port: address.Port,
+		Addr: [4]byte{},
+	}
+	copy(addr.Addr[:], address.IP.To4())
+	return addr
+}
+
+func (r *RegServer) writeUdpHandler() handler.HandlerFunc {
+	return func(ctx context.Context, pkt *packet.Frame) error {
 		frameType := pkt.FrameType
 		switch frameType {
 		case option.MsgTypePacket:
@@ -114,24 +136,10 @@ func (r *RegServer) WriteToUdp() {
 			}
 
 			r.socket.WriteToUDP(pkt.Packet, transferUdpAddr(nodeInfo.Addr))
+
 		}
-
+		return nil
 	}
-}
-
-func transferUdpAddr(address unix.Sockaddr) *net.UDPAddr {
-	addr := address.(*unix.SockaddrInet4)
-	ip := net.ParseIP(fmt.Sprintf("%d.%d.%d.%d", addr.Addr[0], addr.Addr[1], addr.Addr[2], addr.Addr[3]))
-	return &net.UDPAddr{IP: ip, Port: addr.Port}
-}
-
-func transferSockAddr(address *net.UDPAddr) *unix.SockaddrInet4 {
-	addr := &unix.SockaddrInet4{
-		Port: address.Port,
-		Addr: [4]byte{},
-	}
-	copy(addr.Addr[:], address.IP.To4())
-	return addr
 }
 
 // serverUdpHandler  core self handler
