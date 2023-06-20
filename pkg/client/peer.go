@@ -31,7 +31,7 @@ var (
 type Peer struct {
 	*option.Config
 	Protocol    option.Protocol
-	relaySocket socket.Socket
+	relaySocket *socket.Socket
 	relayAddr   *unix.SockaddrInet4
 	devices     map[string]*tuntap.Tuntap //networkId -> *Tuntap
 	cache       *cache.Cache
@@ -50,7 +50,6 @@ type Peer struct {
 func (p *Peer) Start() error {
 	runtime.GOMAXPROCS(2)
 	once.Do(func() {
-		p.relaySocket = socket.NewSocket(0)
 		p.Protocol = option.UDP
 		if err := p.conn(); err != nil {
 			logger.Errorf("failed to connect to server: %v", err)

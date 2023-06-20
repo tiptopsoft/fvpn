@@ -17,7 +17,6 @@ import (
 	"github.com/topcloudz/fvpn/pkg/packet/register/ack"
 	"github.com/topcloudz/fvpn/pkg/socket"
 	"github.com/topcloudz/fvpn/pkg/util"
-	"golang.org/x/sys/unix"
 	"net"
 	"time"
 )
@@ -63,9 +62,7 @@ func (t *Tunnel) Handle() handler.HandlerFunc {
 				}
 				node, err := c.GetNodeInfo(frame.NetworkId, info.IP.String())
 				if node == nil || err != nil {
-					sock := socket.NewSocket(6061)
 					nodeInfo := &cache.Endpoint{
-						Socket:  sock,
 						MacAddr: info.Mac,
 						IP:      info.IP,
 						Port:    info.Port,
@@ -117,36 +114,47 @@ func (t *Tunnel) handshaking(frame *packet.Frame, natIP net.IP, natPort int, des
 	//begin to punch hole
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
+	portPair := t.manager.GetNotifyPortPair(destIP)
+	logger.Debugf("===========got cached port pair, source ip: %v, source port: %v, nat ip: %v, nat port: %v", portPair.SrcIP, portPair.SrcPort, portPair.NatIP, portPair.NatPort)
+	conn, err := socket.NewSocket(fmt.Sprintf("%s:%d", net.IPv4zero.String(), portPair.SrcPort), fmt.Sprintf("%s:%d", natIP.String(), natPort))
+	if err != nil {
+		logger.Errorf("%v", err)
+		return
+	}
+
+	a := conn.LocalAddr()
+	logger.Debugf(">>>>>>>>>>>>connection : %v", a)
+	stopCh := make(chan int, 1)
 	go func() {
-		//portPair := <-Pool.ch
-		portPair := t.manager.GetNotifyPortPair(destIP)
-		logger.Debugf("===========got cached port pair, source ip: %v, source port: %v, nat ip: %v, nat port: %v", portPair.SrcIP, portPair.SrcPort, portPair.NatIP, portPair.NatPort)
-		conn := socket.NewSocket(int(portPair.SrcPort))
-		destAddr := unix.SockaddrInet4{Port: natPort}
-		copy(destAddr.Addr[:], natIP.To4())
-		conn.Connect(&destAddr)
-
-		a, _ := conn.LocalAddr()
-		logger.Debugf(">>>>>>>>>>>>connection : %v", a)
-
 		handPkt := handshake.NewPacket(frame.NetworkId)
 		buff, err := handshake.Encode(handPkt)
 		if err != nil {
-			logger.Errorf("bad handshake packet")
-			return
+			logger.Errorf("invalid handshake packet")
 		}
 
 		for {
-			_, err := conn.Write(buff)
-			if err != nil {
-				logger.Errorf("bad handshake packet")
+			select {
+			case <-stopCh:
+				logger.Debugf("=============================================")
 				return
+			default:
+				logger.Debugf("senging data to punch hole")
+				_, err := conn.Write(buff)
+				if err != nil {
+					logger.Errorf("bad handshake packet: %v", err)
+				}
+				time.Sleep(time.Second * 5)
 			}
 
+		}
+	}()
+
+	go func() {
+		for {
 			buff := make([]byte, 1024)
 			_, err = conn.Read(buff)
 			if err != nil {
-				logger.Errorf("punch hole failed. try again")
+				logger.Errorf("punch hole failed. try again: %v", err)
 				continue
 			}
 
@@ -155,8 +163,10 @@ func (t *Tunnel) handshaking(frame *packet.Frame, natIP net.IP, natPort int, des
 			p2pTunnel := NewTunnel(t.tunHandler, conn, t.devices, infra.Middlewares(true, true), t.manager)
 			t.manager.SetTunnel(destIP, p2pTunnel)
 			p2pTunnel.Start() //start this p2p tunnel to service data
+			stopCh <- 1
 			break
 		}
+
 	}()
 
 	select {

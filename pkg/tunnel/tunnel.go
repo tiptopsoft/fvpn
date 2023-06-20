@@ -24,8 +24,8 @@ var (
 // Tunnel is a manager for peer-to-peer， it used for peer to registry, registry to peer, peer-to-peer
 type Tunnel struct {
 	IsP2P         bool
-	socket        socket.Socket // underlay
-	p2pSocket     sync.Map      //p2psocket
+	socket        *socket.Socket // underlay
+	p2pSocket     sync.Map       //p2psocket
 	devices       map[string]*tuntap.Tuntap
 	Inbound       chan *packet.Frame //used from udp
 	Outbound      chan *packet.Frame //used for tun
@@ -55,7 +55,7 @@ func (t *Tunnel) Close() {
 	//close a tunnel, release all resources
 }
 
-func NewTunnel(tunHandler handler.Handler, s socket.Socket, devices map[string]*tuntap.Tuntap, m []middleware.Middleware, manager *Manager) *Tunnel {
+func NewTunnel(tunHandler handler.Handler, s *socket.Socket, devices map[string]*tuntap.Tuntap, m []middleware.Middleware, manager *Manager) *Tunnel {
 	tun := &Tunnel{
 		Inbound:       make(chan *packet.Frame, 10000), // data to write to tun
 		Outbound:      make(chan *packet.Frame, 10000), // data from tun to write to peer
