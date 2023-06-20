@@ -4,7 +4,6 @@ import (
 	"errors"
 	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/socket"
-	"golang.org/x/sys/unix"
 	"net"
 	"sync"
 )
@@ -26,7 +25,7 @@ func New() *Cache {
 type Endpoint struct {
 	Socket    socket.Socket //natip or innerip
 	NetworkId string
-	Addr      unix.Sockaddr //natip , natport
+	Addr      *net.UDPAddr //natip , natport
 	MacAddr   net.HardwareAddr
 	IP        net.IP
 	Port      uint16

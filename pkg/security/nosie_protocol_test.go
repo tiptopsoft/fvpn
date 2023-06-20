@@ -43,4 +43,15 @@ func TestCurve(t *testing.T) {
 
 func TestNewPrivateKey(t *testing.T) {
 
+	privateKey, _ := NewPrivateKey()
+	pubKey := privateKey.NewPubicKey()
+
+	privateKey2, _ := NewPrivateKey()
+	pubKey2 := privateKey2.NewPubicKey()
+
+	shareKey := privateKey.NewSharedKey(pubKey2)
+	shareKey2 := privateKey2.NewSharedKey(pubKey)
+
+	fmt.Println(shareKey)
+	fmt.Println(shareKey2)
 }

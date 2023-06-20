@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
@@ -14,8 +13,6 @@ import (
 	"github.com/topcloudz/fvpn/pkg/packet/register"
 	"github.com/topcloudz/fvpn/pkg/security"
 	"github.com/topcloudz/fvpn/pkg/util"
-	"golang.org/x/sys/unix"
-	"net"
 )
 
 func (r *RegServer) ReadFromUdp() {
@@ -33,11 +30,9 @@ func (r *RegServer) ReadFromUdp() {
 			continue
 		}
 		networkId := hex.EncodeToString(packetHeader.NetworkId[:])
-		//ctx = context.WithValue(ctx, "pkt", packetHeader)
-		ctx = context.WithValue(ctx, "flag", packetHeader.Flags)
-		ctx = context.WithValue(ctx, "networkId", networkId)
-		ctx = context.WithValue(ctx, "size", n)
-		ctx = context.WithValue(ctx, "srcAddr", transferSockAddr(addr))
+		frame.Size = n
+		frame.FrameType = packetHeader.Flags
+		frame.SrcAddr = addr
 		frame.NetworkId = networkId
 		if err != nil || n < 0 {
 			logger.Warnf("no data exists")
@@ -61,21 +56,6 @@ func (r *RegServer) WriteToUdp() {
 	}
 }
 
-func transferUdpAddr(address unix.Sockaddr) *net.UDPAddr {
-	addr := address.(*unix.SockaddrInet4)
-	ip := net.ParseIP(fmt.Sprintf("%d.%d.%d.%d", addr.Addr[0], addr.Addr[1], addr.Addr[2], addr.Addr[3]))
-	return &net.UDPAddr{IP: ip, Port: addr.Port}
-}
-
-func transferSockAddr(address *net.UDPAddr) *unix.SockaddrInet4 {
-	addr := &unix.SockaddrInet4{
-		Port: address.Port,
-		Addr: [4]byte{},
-	}
-	copy(addr.Addr[:], address.IP.To4())
-	return addr
-}
-
 func (r *RegServer) writeUdpHandler() handler.HandlerFunc {
 	return func(ctx context.Context, pkt *packet.Frame) error {
 		frameType := pkt.FrameType
@@ -91,16 +71,16 @@ func (r *RegServer) writeUdpHandler() handler.HandlerFunc {
 				logger.Debugf("could not found destitation, destIP: %s", frameHeader.DestinationIP.String())
 			} else {
 				logger.Infof("packet will relay to: %v", nodeInfo.Addr)
-				r.socket.WriteToUDP(pkt.Packet[:], transferUdpAddr(nodeInfo.Addr))
+				r.socket.WriteToUDP(pkt.Packet[:], nodeInfo.Addr)
 			}
 
 			break
 		case option.MsgTypeRegisterAck:
-			r.socket.WriteToUDP(pkt.Packet, transferUdpAddr(pkt.SrcAddr))
+			r.socket.WriteToUDP(pkt.Packet, pkt.SrcAddr)
 			break
 		case option.MsgTypeQueryPeer:
 			logger.Debugf("query nodes result: %v, write to: %v", pkt.Packet, pkt.SrcAddr)
-			_, err := r.socket.WriteToUDP(pkt.Packet, transferUdpAddr(pkt.SrcAddr))
+			_, err := r.socket.WriteToUDP(pkt.Packet, pkt.SrcAddr)
 			if err != nil {
 				logger.Errorf("write query to dest failed: %v", err)
 			}
@@ -119,7 +99,7 @@ func (r *RegServer) writeUdpHandler() handler.HandlerFunc {
 				break
 			}
 
-			r.socket.WriteToUDP(pkt.Packet, transferUdpAddr(nodeInfo.Addr))
+			r.socket.WriteToUDP(pkt.Packet, nodeInfo.Addr)
 
 		case option.MsgTypeNotifyAck:
 			//write to dest
@@ -135,7 +115,17 @@ func (r *RegServer) writeUdpHandler() handler.HandlerFunc {
 				break
 			}
 
-			r.socket.WriteToUDP(pkt.Packet, transferUdpAddr(nodeInfo.Addr))
+			r.socket.WriteToUDP(pkt.Packet, nodeInfo.Addr)
+
+		case option.HandShakeMsgType:
+			handPkt := handshake.NewPacket("")
+			handPkt.PubKey = r.PubKey
+			buff, err := handshake.Encode(handPkt)
+			if err != nil {
+				logger.Errorf("invalid handshake packet")
+				return err
+			}
+			r.socket.WriteToUDP(buff, pkt.SrcAddr)
 
 		}
 		return nil
@@ -145,15 +135,8 @@ func (r *RegServer) writeUdpHandler() handler.HandlerFunc {
 // serverUdpHandler  core self handler
 func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 	return func(ctx context.Context, frame *packet.Frame) error {
-
-		srcAddr := ctx.Value("srcAddr").(*unix.SockaddrInet4)
-		networkId := ctx.Value("networkId").(string)
-		size := ctx.Value("size").(int)
 		data := frame.Packet[:]
-
-		flag := ctx.Value("flag").(uint16)
-
-		switch flag {
+		switch frame.FrameType {
 
 		case option.MsgTypeRegisterSuper:
 			regPkt, err := register.Decode(frame.Packet)
@@ -161,15 +144,13 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 				logger.Errorf("register failed, err:%v", err)
 				return err
 			}
-			err = r.registerAck(srcAddr, regPkt.SrcMac, regPkt.SrcIP, networkId)
-			h, err := header.NewHeader(option.MsgTypeRegisterAck, networkId)
+			err = r.registerAck(frame.SrcAddr, regPkt.SrcMac, regPkt.SrcIP, frame.NetworkId)
+			h, err := header.NewHeader(option.MsgTypeRegisterAck, frame.NetworkId)
 			if err != nil {
 				logger.Errorf("build resp failed. err: %v", err)
 			}
 			f, _ := header.Encode(h)
 			frame.Packet = f
-			frame.SrcAddr = srcAddr
-			frame.FrameType = option.MsgTypeRegisterAck
 			break
 		case option.MsgTypeQueryPeer:
 			peers, size, err := getPeerInfo(r.cache.GetNodes())
@@ -178,25 +159,20 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 				logger.Errorf("get peers from server failed. err: %v", err)
 			}
 
-			f, err := peerAckBuild(peers, size, networkId)
+			f, err := peerAckBuild(peers, size, frame.NetworkId)
 			if err != nil {
 				logger.Errorf("get peer ack from server failed. err: %v", err)
 			}
 
 			frame.Packet = f
-			frame.SrcAddr = srcAddr
-			frame.FrameType = option.MsgTypeQueryPeer
 			break
 		case option.MsgTypePacket:
-			logger.Infof("server got forward packet size:%d, data: %v", size, data)
-			frame.FrameType = option.MsgTypePacket
+			logger.Infof("server got forward packet size:%d, data: %v", frame.Size, data)
 			break
 		case option.MsgTypeNotify:
 			logger.Debugf("notify frame packet: %v", frame.Packet[:])
-			frame.FrameType = option.MsgTypeNotify
 		case option.MsgTypeNotifyAck:
 			logger.Debugf("notify ack frame packet: %v", frame.Packet[:])
-			frame.FrameType = option.MsgTypeNotify
 		case option.HandShakeMsgType:
 			handPkt, err := handshake.Decode(frame.Packet)
 			if err != nil {
@@ -212,6 +188,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			r.PubKey = pubKey
 
 			r.cipher = security.NewCipher(r.PrivateKey, handPkt.PubKey)
+
 		}
 
 		return nil

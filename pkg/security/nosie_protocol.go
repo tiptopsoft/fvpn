@@ -2,6 +2,7 @@ package security
 
 import (
 	"crypto/rand"
+	"github.com/topcloudz/fvpn/pkg/log"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/curve25519"
 	"io"
@@ -9,6 +10,10 @@ import (
 
 const (
 	NoiseKeySize = 32
+)
+
+var (
+	logger = log.Log()
 )
 
 type (
@@ -24,6 +29,8 @@ type CipherFunc interface {
 
 func NewCipher(privateKey NoisePrivateKey, pubKey NoisePublicKey) CipherFunc {
 	shareKey := privateKey.NewSharedKey(pubKey)
+
+	logger.Debugf("generate shared key: %v", shareKey)
 	return &cipher{
 		key: shareKey,
 	}

@@ -3,7 +3,7 @@ package packet
 import (
 	"github.com/topcloudz/fvpn/pkg/cache"
 	"github.com/topcloudz/fvpn/pkg/option"
-	"golang.org/x/sys/unix"
+	"net"
 	"sync"
 )
 
@@ -13,7 +13,7 @@ type Frame struct {
 	Packet     []byte
 	Size       int
 	NetworkId  string
-	SrcAddr    unix.Sockaddr
+	SrcAddr    *net.UDPAddr
 	RemoteAddr string //inner ip
 	FrameType  uint16
 	Type       uint16

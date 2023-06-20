@@ -16,7 +16,6 @@ import (
 	"github.com/topcloudz/fvpn/pkg/packet/register/ack"
 	"github.com/topcloudz/fvpn/pkg/security"
 	"github.com/topcloudz/fvpn/pkg/socket"
-	"github.com/topcloudz/fvpn/pkg/util"
 	"net"
 	"time"
 )
@@ -53,8 +52,7 @@ func (t *Tunnel) Handle() handler.HandlerFunc {
 			logger.Infof("got server peers: (%v)", infos)
 
 			for _, info := range infos {
-				//logger.Debugf("got remote node: mac: %v, ip: %s,  natIP: %s, natPort: %d", info.Mac, info.IP, info.NatIp, info.NatPort)
-				address, err := util.GetAddress(info.NatIp.String(), int(info.NatPort))
+				address, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", info.NatPort, info.NatPort))
 				if err != nil {
 					return err
 				}
@@ -65,7 +63,7 @@ func (t *Tunnel) Handle() handler.HandlerFunc {
 						IP:      info.IP,
 						Port:    info.Port,
 						P2P:     false,
-						Addr:    &address,
+						Addr:    address,
 					}
 
 					//cache.Nodes[info.Mac.String()] = nodeInfo
@@ -100,15 +98,6 @@ func (t *Tunnel) Handle() handler.HandlerFunc {
 			go func() {
 				t.handshaking(frame, nck.NatIP, int(nck.NatPort), nck.SourceIP.String())
 			}()
-
-			//case option.HandShakeMsgType: //
-			//	handPkt, err := handshake.Decode(buff)
-			//	if err != nil {
-			//		logger.Errorf("invalid handshake packet: %v", err)
-			//		return err
-			//	}
-			//
-			//	t.cipher = security.NewCipher(t.PrivateKey, handPkt.PubKey)
 
 		}
 
