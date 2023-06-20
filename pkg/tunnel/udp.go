@@ -15,6 +15,7 @@ import (
 	notifyack "github.com/topcloudz/fvpn/pkg/packet/notify/ack"
 	peerack "github.com/topcloudz/fvpn/pkg/packet/peer/ack"
 	"github.com/topcloudz/fvpn/pkg/packet/register/ack"
+	"github.com/topcloudz/fvpn/pkg/security"
 	"github.com/topcloudz/fvpn/pkg/socket"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"net"
@@ -150,8 +151,16 @@ func (t *Tunnel) handshaking(frame *packet.Frame, natIP net.IP, natPort int, des
 				logger.Errorf("punch hole failed. try again: %v", err)
 				continue
 			}
-			logger.Debugf("punch hole success. will create a new tunnel")
-			p2pTunnel := NewTunnel(t.tunHandler, conn, t.devices, infra.Middlewares(true, true), t.manager)
+
+			//
+			handPkt, err := handshake.Decode(buff)
+			if err != nil {
+				logger.Errorf("invalid handshake packet: %v", err)
+				continue
+			}
+
+			cipher := security.NewCipher(handPkt.PubKey)
+			p2pTunnel := NewTunnel(t.tunHandler, conn, t.devices, infra.Middlewares(true, true), t.manager, cipher)
 			t.manager.SetTunnel(destIP, p2pTunnel)
 			p2pTunnel.Start() //start this p2p tunnel to service data
 			stopCh <- 1
@@ -162,7 +171,7 @@ func (t *Tunnel) handshaking(frame *packet.Frame, natIP net.IP, natPort int, des
 
 	select {
 	case <-ctx.Done():
-		logger.Debugf("punch hole finished.")
+		logger.Debugf("punch hole success.")
 	case <-time.After(time.Second * 30):
 		//close sending thread
 		stopCh <- 1

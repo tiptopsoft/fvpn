@@ -10,6 +10,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/notify"
 	notifyack "github.com/topcloudz/fvpn/pkg/packet/notify/ack"
+	"github.com/topcloudz/fvpn/pkg/security"
 	"github.com/topcloudz/fvpn/pkg/socket"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"github.com/topcloudz/fvpn/pkg/util"
@@ -30,6 +31,11 @@ type Tunnel struct {
 	tunHandler handler.Handler
 	udpHandler handler.Handler
 	manager    *Manager
+
+	cipher security.CipherFunc
+	//privateKey security.NoisePrivateKey
+	//publicKey  security.NoisePublicKey
+	//sharedKey  security.NoiseSharedKey
 }
 
 func (t *Tunnel) Start() {
@@ -42,7 +48,7 @@ func (t *Tunnel) Close() {
 	//close a tunnel, release all resources TODO
 }
 
-func NewTunnel(tunHandler handler.Handler, s *socket.Socket, devices map[string]*tuntap.Tuntap, m []middleware.Middleware, manager *Manager) *Tunnel {
+func NewTunnel(tunHandler handler.Handler, s *socket.Socket, devices map[string]*tuntap.Tuntap, m []middleware.Middleware, manager *Manager, cipher security.CipherFunc) *Tunnel {
 	tun := &Tunnel{
 		Inbound:    make(chan *packet.Frame, 10000), // data to write to tun
 		Outbound:   make(chan *packet.Frame, 10000), // data from tun to write to peer
@@ -50,6 +56,7 @@ func NewTunnel(tunHandler handler.Handler, s *socket.Socket, devices map[string]
 		cache:      cache.New(),
 		tunHandler: tunHandler,
 		manager:    manager,
+		cipher:     cipher,
 	}
 	tun.socket = s
 	tun.udpHandler = middleware.WithMiddlewares(tun.Handle(), m...)

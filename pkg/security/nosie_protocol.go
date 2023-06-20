@@ -3,43 +3,88 @@ package security
 import (
 	"crypto/rand"
 	"golang.org/x/crypto/chacha20poly1305"
+	"golang.org/x/crypto/curve25519"
 	"io"
 )
 
-type CipherInterface interface {
-	Encode(key, content []byte) ([]byte, error)
-	Decode(key, cipherBuff []byte) ([]byte, error)
+const (
+	NoiseKeySize = 32
+)
+
+type (
+	NoisePrivateKey [NoiseKeySize]byte
+	NoisePublicKey  [NoiseKeySize]byte
+	NoiseSharedKey  [NoiseKeySize]byte
+)
+
+type CipherFunc interface {
+	Encode(content []byte) ([]byte, error)
+	Decode(cipherBuff []byte) ([]byte, error)
 }
 
-func NewCipher() CipherInterface {
-	return &cipher{}
+func NewCipher(pubKey NoisePublicKey) CipherFunc {
+	privateKey, err := newPrivateKey()
+	if err != nil {
+		return nil
+	}
+
+	shareKey := privateKey.newSharedKey(pubKey)
+	return &cipher{
+		key: shareKey,
+	}
 }
 
 type cipher struct {
-	key string
+	key NoiseSharedKey
 }
 
-func (c *cipher) Encode(key, content []byte) ([]byte, error) {
+func (c *cipher) Encode(content []byte) ([]byte, error) {
 	nonce := make([]byte, chacha20poly1305.NonceSize)
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return nil, err
 	}
 
-	cip, _ := chacha20poly1305.New(key)
+	cip, _ := chacha20poly1305.New(c.key[:])
 
 	return cip.Seal(nil, nonce, content, nil), nil
 }
 
-func (c *cipher) Decode(key, cipherBuff []byte) ([]byte, error) {
+func (c *cipher) Decode(cipherBuff []byte) ([]byte, error) {
 	nonce := make([]byte, chacha20poly1305.NonceSize)
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return nil, err
 	}
 
-	cip, err := chacha20poly1305.New(key)
+	cip, err := chacha20poly1305.New(c.key[:])
 	if err != nil {
 		return nil, err
 	}
 
 	return cip.Open(nil, nonce, cipherBuff, nil)
+}
+
+func newPrivateKey() (npk NoisePrivateKey, err error) {
+	_, err = rand.Read(npk[:])
+	if err != nil {
+		return
+	}
+	npk[0] &= 248
+	npk[31] &= 127
+	npk[31] |= 64
+	return
+}
+
+func (npk NoisePrivateKey) newPubicKey() (npc NoisePublicKey) {
+	privateKey := (*[32]byte)(&npk)
+	pubKey := (*[32]byte)(&npc)
+	curve25519.ScalarBaseMult(pubKey, privateKey)
+	return
+}
+
+func (npk NoisePrivateKey) newSharedKey(npc NoisePublicKey) (shareKey NoiseSharedKey) {
+	sk := (*[32]byte)(&shareKey)
+	pubKey := (*[32]byte)(&npc)
+	priKey := (*[32]byte)(&npk)
+	curve25519.ScalarMult(sk, priKey, pubKey)
+	return
 }
