@@ -174,20 +174,22 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 		case option.MsgTypeNotifyAck:
 			logger.Debugf("notify ack frame packet: %v", frame.Packet[:])
 		case option.HandShakeMsgType:
-			handPkt, err := handshake.Decode(frame.Packet)
-			if err != nil {
-				logger.Errorf("invalid handshake packet: %v", err)
-				return err
-			}
-			privateKey, err := security.NewPrivateKey()
-			if err != nil {
-				return err
-			}
-			pubKey := privateKey.NewPubicKey()
-			r.PrivateKey = privateKey
-			r.PubKey = pubKey
+			if r.cipher == nil {
+				handPkt, err := handshake.Decode(frame.Packet)
+				if err != nil {
+					logger.Errorf("invalid handshake packet: %v", err)
+					return err
+				}
+				privateKey, err := security.NewPrivateKey()
+				if err != nil {
+					return err
+				}
+				pubKey := privateKey.NewPubicKey()
+				r.PrivateKey = privateKey
+				r.PubKey = pubKey
 
-			r.cipher = security.NewCipher(r.PrivateKey, handPkt.PubKey)
+				r.cipher = security.NewCipher(r.PrivateKey, handPkt.PubKey)
+			}
 
 		}
 
