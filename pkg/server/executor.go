@@ -7,10 +7,12 @@ import (
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet/handshake"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"github.com/topcloudz/fvpn/pkg/packet/notify"
 	notifyack "github.com/topcloudz/fvpn/pkg/packet/notify/ack"
 	"github.com/topcloudz/fvpn/pkg/packet/register"
+	"github.com/topcloudz/fvpn/pkg/security"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"golang.org/x/sys/unix"
 	"net"
@@ -30,13 +32,6 @@ func (r *RegServer) ReadFromUdp() {
 			logger.Errorf("get header falied. %v", err)
 			continue
 		}
-		//if packetHeader.Flags == option.MsgTypePacket {
-		//	header, err := util.GetFrameHeader(frame.Packet[12:])
-		//	if err != nil {
-		//		logger.Errorf("get invalid header..:%v", err)
-		//	}
-		//	ctx = context.WithValue(ctx, "header", header)
-		//}
 		networkId := hex.EncodeToString(packetHeader.NetworkId[:])
 		//ctx = context.WithValue(ctx, "pkt", packetHeader)
 		ctx = context.WithValue(ctx, "flag", packetHeader.Flags)
@@ -194,6 +189,21 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 		case option.MsgTypeNotifyAck:
 			logger.Debugf("notify ack frame packet: %v", frame.Packet[:])
 			frame.FrameType = option.MsgTypeNotify
+		case option.HandShakeMsgType:
+			handPkt, err := handshake.Decode(frame.Packet)
+			if err != nil {
+				logger.Errorf("invalid handshake packet: %v", err)
+				return err
+			}
+			privateKey, err := security.NewPrivateKey()
+			if err != nil {
+				return err
+			}
+			pubKey := privateKey.NewPubicKey()
+			r.PrivateKey = privateKey
+			r.PubKey = pubKey
+
+			r.cipher = security.NewCipher(r.PrivateKey, handPkt.PubKey)
 		}
 
 		return nil

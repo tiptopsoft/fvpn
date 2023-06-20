@@ -4,6 +4,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/middleware"
 	"github.com/topcloudz/fvpn/pkg/middleware/infra"
+	"github.com/topcloudz/fvpn/pkg/security"
 	"net"
 	"sync"
 
@@ -23,13 +24,16 @@ var (
 type RegServer struct {
 	*option.ServerConfig
 	//socket   socket.Interface
-	socket   *net.UDPConn
-	cache    *cache.Cache
-	packet   packet.Interface
-	ws       sync.WaitGroup
-	h        handler.Handler
-	Inbound  chan *packet.Frame //used from udp
-	Outbound chan *packet.Frame //used for tun
+	socket     *net.UDPConn
+	cache      *cache.Cache
+	packet     packet.Interface
+	ws         sync.WaitGroup
+	h          handler.Handler
+	Inbound    chan *packet.Frame //used from udp
+	Outbound   chan *packet.Frame //used for tun
+	PrivateKey security.NoisePrivateKey
+	PubKey     security.NoisePublicKey
+	cipher     security.CipherFunc
 }
 
 func (r *RegServer) Start(address string) error {

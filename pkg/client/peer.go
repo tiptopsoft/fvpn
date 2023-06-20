@@ -4,16 +4,20 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"github.com/topcloudz/fvpn/pkg/addr"
 	"github.com/topcloudz/fvpn/pkg/cache"
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/handler/device"
+	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/middleware"
 	"github.com/topcloudz/fvpn/pkg/middleware/infra"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet/handshake"
 	"github.com/topcloudz/fvpn/pkg/packet/peer"
 	"github.com/topcloudz/fvpn/pkg/packet/register"
+	"github.com/topcloudz/fvpn/pkg/security"
 	"github.com/topcloudz/fvpn/pkg/socket"
 	"github.com/topcloudz/fvpn/pkg/tunnel"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
@@ -23,6 +27,7 @@ import (
 )
 
 var (
+	logger      = log.Log()
 	once        sync.Once
 	DefaultPort = 6663
 )
@@ -41,6 +46,8 @@ type Peer struct {
 	manager     *tunnel.Manager
 	middlewares []middleware.Middleware
 	networks    map[string]string //cidr -> networkId
+	privateKey  security.NoisePrivateKey
+	pubKey      security.NoisePublicKey
 }
 
 func (p *Peer) Start() error {
@@ -57,7 +64,7 @@ func (p *Peer) Start() error {
 	p.manager = tunnel.NewManager()
 	p.middlewares = p.initMiddleware()
 	p.tunHandler = middleware.WithMiddlewares(device.Handle(), p.middlewares...)
-	p.relayTunnel = tunnel.NewTunnel(p.tunHandler, p.relaySocket, p.devices, p.middlewares, p.manager)
+	p.relayTunnel = tunnel.NewTunnel(p.tunHandler, p.relaySocket, p.devices, p.middlewares, p.manager, nil)
 	p.relayTunnel.Start()
 
 	go p.WriteToUDP()
@@ -182,4 +189,38 @@ func (p *Peer) AppId() string {
 	buf := addr.GetLocalMacAddr()
 	appId := hex.EncodeToString(buf)
 	return appId
+}
+
+func (p *Peer) conn() error {
+	var err error
+	switch p.Protocol {
+	case option.UDP:
+		if s, err := socket.NewSocket("", fmt.Sprintf("%s:%d", p.ClientCfg.Registry, addr.DefaultPort)); err != nil {
+			return err
+		} else {
+			p.relaySocket = s
+		}
+		logger.Infof("node connected to server: (%v)", p.ClientCfg.Registry)
+
+		//send a handshake
+		privateKey, err := security.NewPrivateKey()
+		if err != nil {
+			logger.Errorf("new private key failed. %v", err)
+			return err
+		}
+		pubKey := privateKey.NewPubicKey()
+		handPkt := handshake.NewPacket("")
+		handPkt.PubKey = pubKey
+		buff, err := handshake.Encode(handPkt)
+		if err != nil {
+			logger.Errorf("invalid handshake packet")
+			return err
+		}
+		p.privateKey = privateKey
+		p.pubKey = pubKey
+
+		p.relaySocket.Write(buff)
+
+	}
+	return err
 }

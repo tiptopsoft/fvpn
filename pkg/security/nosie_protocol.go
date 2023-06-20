@@ -22,13 +22,8 @@ type CipherFunc interface {
 	Decode(cipherBuff []byte) ([]byte, error)
 }
 
-func NewCipher(pubKey NoisePublicKey) CipherFunc {
-	privateKey, err := newPrivateKey()
-	if err != nil {
-		return nil
-	}
-
-	shareKey := privateKey.newSharedKey(pubKey)
+func NewCipher(privateKey NoisePrivateKey, pubKey NoisePublicKey) CipherFunc {
+	shareKey := privateKey.NewSharedKey(pubKey)
 	return &cipher{
 		key: shareKey,
 	}
@@ -63,7 +58,7 @@ func (c *cipher) Decode(cipherBuff []byte) ([]byte, error) {
 	return cip.Open(nil, nonce, cipherBuff, nil)
 }
 
-func newPrivateKey() (npk NoisePrivateKey, err error) {
+func NewPrivateKey() (npk NoisePrivateKey, err error) {
 	_, err = rand.Read(npk[:])
 	if err != nil {
 		return
@@ -74,14 +69,14 @@ func newPrivateKey() (npk NoisePrivateKey, err error) {
 	return
 }
 
-func (npk NoisePrivateKey) newPubicKey() (npc NoisePublicKey) {
+func (npk NoisePrivateKey) NewPubicKey() (npc NoisePublicKey) {
 	privateKey := (*[32]byte)(&npk)
 	pubKey := (*[32]byte)(&npc)
 	curve25519.ScalarBaseMult(pubKey, privateKey)
 	return
 }
 
-func (npk NoisePrivateKey) newSharedKey(npc NoisePublicKey) (shareKey NoiseSharedKey) {
+func (npk NoisePrivateKey) NewSharedKey(npc NoisePublicKey) (shareKey NoiseSharedKey) {
 	sk := (*[32]byte)(&shareKey)
 	pubKey := (*[32]byte)(&npc)
 	priKey := (*[32]byte)(&npk)

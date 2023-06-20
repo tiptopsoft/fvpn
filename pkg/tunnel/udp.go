@@ -27,7 +27,6 @@ func (t *Tunnel) Handle() handler.HandlerFunc {
 	return func(ctx context.Context, frame *packet.Frame) error {
 		//dest := ctx.Value("destAddr").(string)
 		buff := frame.Buff[:]
-
 		headerBuff, err := header.Decode(buff)
 		if err != nil {
 			return err
@@ -102,6 +101,16 @@ func (t *Tunnel) Handle() handler.HandlerFunc {
 			go func() {
 				t.handshaking(frame, nck.NatIP, int(nck.NatPort), nck.SourceIP.String())
 			}()
+
+		case option.HandShakeMsgType: //
+			handPkt, err := handshake.Decode(buff)
+			if err != nil {
+				logger.Errorf("invalid handshake packet: %v", err)
+				return err
+			}
+
+			t.cipher = security.NewCipher(t.PrivateKey, handPkt.PubKey)
+
 		}
 
 		return nil
@@ -119,8 +128,16 @@ func (t *Tunnel) handshaking(frame *packet.Frame, natIP net.IP, natPort int, des
 		return
 	}
 	stopCh := make(chan int, 1)
+	privateKey, err := security.NewPrivateKey()
+	if err != nil {
+		logger.Errorf("new private key failed. %v", err)
+		return
+	}
+
 	go func() {
+		pubKey := privateKey.NewPubicKey()
 		handPkt := handshake.NewPacket(frame.NetworkId)
+		handPkt.PubKey = pubKey
 		buff, err := handshake.Encode(handPkt)
 		if err != nil {
 			logger.Errorf("invalid handshake packet")
@@ -151,16 +168,14 @@ func (t *Tunnel) handshaking(frame *packet.Frame, natIP net.IP, natPort int, des
 				logger.Errorf("punch hole failed. try again: %v", err)
 				continue
 			}
-
-			//
 			handPkt, err := handshake.Decode(buff)
 			if err != nil {
 				logger.Errorf("invalid handshake packet: %v", err)
 				continue
 			}
 
-			cipher := security.NewCipher(handPkt.PubKey)
-			p2pTunnel := NewTunnel(t.tunHandler, conn, t.devices, infra.Middlewares(true, true), t.manager, cipher)
+			cipher := security.NewCipher(privateKey, handPkt.PubKey)
+			p2pTunnel := NewTunnel(t.tunHandler, conn, t.devices, infra.Middlewares(true, true), t.manager, cipher, privateKey)
 			t.manager.SetTunnel(destIP, p2pTunnel)
 			p2pTunnel.Start() //start this p2p tunnel to service data
 			stopCh <- 1
