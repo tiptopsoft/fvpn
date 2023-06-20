@@ -64,7 +64,7 @@ func (p *Peer) Start() error {
 	p.manager = tunnel.NewManager()
 	p.middlewares = p.initMiddleware()
 	p.tunHandler = middleware.WithMiddlewares(device.Handle(), p.middlewares...)
-	p.relayTunnel = tunnel.NewTunnel(p.tunHandler, p.relaySocket, p.devices, p.middlewares, p.manager, nil)
+	p.relayTunnel = tunnel.NewTunnel(p.tunHandler, p.relaySocket, p.devices, p.middlewares, p.manager, nil, p.privateKey)
 	p.relayTunnel.Start()
 
 	go p.WriteToUDP()
