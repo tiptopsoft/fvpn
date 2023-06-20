@@ -18,7 +18,6 @@ import (
 	"github.com/topcloudz/fvpn/pkg/tunnel"
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"github.com/topcloudz/fvpn/pkg/util"
-	"golang.org/x/sys/unix"
 	"runtime"
 	"sync"
 )
@@ -32,17 +31,14 @@ type Peer struct {
 	*option.Config
 	Protocol    option.Protocol
 	relaySocket *socket.Socket
-	relayAddr   *unix.SockaddrInet4
 	devices     map[string]*tuntap.Tuntap //networkId -> *Tuntap
 	cache       *cache.Cache
 	tunHandler  handler.Handler
 	udpHandler  handler.Handler
 	Outbound    chan *packet.Frame //read frame from tun
-	//Inbound     chan *packet.Frame // write frame to tun
 
 	relayTunnel *tunnel.Tunnel
 	manager     *tunnel.Manager
-	//tunnels     map[string]*tunnel.Tunnel // map addr->tunnel p2p tunnels
 	middlewares []middleware.Middleware
 	networks    map[string]string //cidr -> networkId
 }
@@ -119,49 +115,6 @@ func (p *Peer) WriteToUDP() {
 			logger.Debugf("pkt type: %v", packetHeader.Flags)
 			peerTunnel := p.getPeerTunnel(pkt.RemoteAddr)
 			peerTunnel.Outbound <- pkt
-			//if pkt.Type == option.PacketFromTap {
-			//
-			//	frameHeader, err := util.GetFrameHeader(pkt.Packet[12:]) //why 12? because packer.Header length is 12.
-			//	logger.Debugf("packet will be write to : mac: %s, ip: %s, content: %v", frameHeader.DestinationAddr, frameHeader.DestinationIP.String(), pkt.Packet)
-			//	if err != nil {
-			//		logger.Errorf("%v", err)
-			//		return
-			//	}
-			//
-			//	//target
-			//	ip := frameHeader.DestinationIP.String()
-			//	target, err := p.cache.GetNodeInfo(pkt.NetworkId, ip)
-			//	if err != nil {
-			//		//err := t.sendQueryPeer(pkt.NetworkId)
-			//		//if err != nil {
-			//		//	logger.Errorf("%v", err)
-			//		//}
-			//		return
-			//	}
-			//
-			//	if target.NatType == option.SymmetricNAT {
-			//		//use relay server
-			//		logger.Debugf("use relay server to connect to: %v", target.IP.String())
-			//		_, err := p.relaySocket.Write(pkt.Packet[:])
-			//		if err != nil {
-			//			return
-			//		}
-			//	} else if target.P2P {
-			//		logger.Debugf("use p2p to connect to: %v, remoteAddr: %v, sock: %v", target.IP, target.Addr, target.Socket)
-			//		if _, err := target.Socket.Write(pkt.Packet); err != nil {
-			//			logger.Errorf("send p2p data failed. %v", err)
-			//		}
-			//	} else {
-			//		//同时通过relay server发送数据
-			//		p.relaySocket.Write(pkt.Packet[:])
-			//
-			//		//同时进行punch hole
-			//		//go .sendNotifyMessage(pkt.NetworkId, t.relayAddr, ip, option.MsgTypeNotify)
-			//	}
-			//} else {
-			//	p.relaySocket.Write(pkt.Packet)
-			//}
-
 		default:
 
 		}

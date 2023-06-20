@@ -14,7 +14,6 @@ import (
 	"github.com/topcloudz/fvpn/pkg/tuntap"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"net"
-	"sync"
 )
 
 var (
@@ -23,26 +22,14 @@ var (
 
 // Tunnel is a manager for peer-to-peer， it used for peer to registry, registry to peer, peer-to-peer
 type Tunnel struct {
-	IsP2P         bool
-	socket        *socket.Socket // underlay
-	p2pSocket     sync.Map       //p2psocket
-	devices       map[string]*tuntap.Tuntap
-	Inbound       chan *packet.Frame //used from udp
-	Outbound      chan *packet.Frame //used for tun
-	QueryBound    chan *packet.Frame
-	RegisterBound chan *packet.Frame
-	P2PBound      chan *P2PNode
-	cache         *cache.Cache
-	tunHandler    handler.Handler
-	udpHandler    handler.Handler
-	p2pNode       sync.Map // ip target -> socket
-	manager       *Manager
-}
-
-type P2PNode struct {
-	NodeInfo *cache.Endpoint
-	Frame    *packet.Frame
-	Socket   socket.Socket
+	socket     *socket.Socket // underlay
+	devices    map[string]*tuntap.Tuntap
+	Inbound    chan *packet.Frame //used from udp
+	Outbound   chan *packet.Frame //used for tun
+	cache      *cache.Cache
+	tunHandler handler.Handler
+	udpHandler handler.Handler
+	manager    *Manager
 }
 
 func (t *Tunnel) Start() {
@@ -52,20 +39,17 @@ func (t *Tunnel) Start() {
 }
 
 func (t *Tunnel) Close() {
-	//close a tunnel, release all resources
+	//close a tunnel, release all resources TODO
 }
 
 func NewTunnel(tunHandler handler.Handler, s *socket.Socket, devices map[string]*tuntap.Tuntap, m []middleware.Middleware, manager *Manager) *Tunnel {
 	tun := &Tunnel{
-		Inbound:       make(chan *packet.Frame, 10000), // data to write to tun
-		Outbound:      make(chan *packet.Frame, 10000), // data from tun to write to peer
-		QueryBound:    make(chan *packet.Frame, 10000),
-		RegisterBound: make(chan *packet.Frame, 10000),
-		P2PBound:      make(chan *P2PNode, 10000),
-		devices:       devices,
-		cache:         cache.New(),
-		tunHandler:    tunHandler,
-		manager:       manager,
+		Inbound:    make(chan *packet.Frame, 10000), // data to write to tun
+		Outbound:   make(chan *packet.Frame, 10000), // data from tun to write to peer
+		devices:    devices,
+		cache:      cache.New(),
+		tunHandler: tunHandler,
+		manager:    manager,
 	}
 	tun.socket = s
 	tun.udpHandler = middleware.WithMiddlewares(tun.Handle(), m...)
@@ -117,22 +101,18 @@ func (t *Tunnel) WriteToUdp() {
 	for {
 		select {
 		case pkt := <-t.Outbound:
-			if t.IsP2P {
-				//here is the default relay tunnel
-				t.socket.Write(pkt.Packet)
-			} else {
-				if pkt.RemoteAddr != "" && t.manager.GetNotifyPortPair(pkt.RemoteAddr) == nil {
-					buff, err := t.buildNotifyMessage(pkt.RemoteAddr, pkt.NetworkId)
-					if err != nil {
-						logger.Errorf("send hand shake failed: %v", err)
-						continue
-					}
-
-					t.socket.Write(buff)
-
+			//will use in relay tunnel
+			if pkt.RemoteAddr != "" && t.manager.GetNotifyPortPair(pkt.RemoteAddr) == nil {
+				buff, err := t.buildNotifyMessage(pkt.RemoteAddr, pkt.NetworkId)
+				if err != nil {
+					logger.Errorf("send hand shake failed: %v", err)
+					continue
 				}
-				t.socket.Write(pkt.Packet)
+
+				t.socket.Write(buff)
+
 			}
+			t.socket.Write(pkt.Packet)
 		default:
 		}
 	}
@@ -143,7 +123,7 @@ func (t *Tunnel) buildNotifyMessage(destIP, networkId string) ([]byte, error) {
 	pkt := notify.NewPacket(networkId)
 	portPair := <-Pool.ch
 	t.manager.SetNotifyPortPair(destIP, portPair)
-	logger.Debugf("<<<<<<<<<<<<<<<cached port pair, source ip: %v, source port: %v, nat ip: %v, nat port: %v", portPair.SrcIP, portPair.SrcPort, portPair.NatIP, portPair.NatPort)
+	logger.Debugf("cached port pair, source ip: %v, source port: %v, nat ip: %v, nat port: %v", portPair.SrcIP, portPair.SrcPort, portPair.NatIP, portPair.NatPort)
 	//send handshake to remote
 	tap := t.GetTun(networkId)
 	pkt.SourceIP = tap.IP
@@ -151,7 +131,7 @@ func (t *Tunnel) buildNotifyMessage(destIP, networkId string) ([]byte, error) {
 	pkt.NatIP = portPair.NatIP
 	pkt.NatPort = portPair.NatPort
 	pkt.DestAddr = net.ParseIP(destIP)
-	logger.Debugf(">>>>>> build a notify: source ip: %v, source port: %v, natip: %v, natport: %v", pkt.SourceIP, pkt.Port, pkt.NatIP, pkt.NatPort)
+	logger.Debugf("build a notify: source ip: %v, source port: %v, natip: %v, natport: %v", pkt.SourceIP, pkt.Port, pkt.NatIP, pkt.NatPort)
 	return notify.Encode(pkt)
 }
 
@@ -160,7 +140,7 @@ func (t *Tunnel) buildNotifyMessageAck(destIP, networkId string) ([]byte, error)
 	pkt := notifyack.NewPacket(networkId)
 	portPair := <-Pool.ch
 	t.manager.SetNotifyPortPair(destIP, portPair)
-	logger.Debugf("<<<<<<<<<<<<<<<cached port pair, source ip: %v, source port: %v, nat ip: %v, nat port: %v", portPair.SrcIP, portPair.SrcPort, portPair.NatIP, portPair.NatPort)
+	logger.Debugf("cached port pair, source ip: %v, source port: %v, nat ip: %v, nat port: %v", portPair.SrcIP, portPair.SrcPort, portPair.NatIP, portPair.NatPort)
 	//send handshake to remote
 	tap := t.GetTun(networkId)
 	pkt.SourceIP = tap.IP
@@ -168,23 +148,8 @@ func (t *Tunnel) buildNotifyMessageAck(destIP, networkId string) ([]byte, error)
 	pkt.NatIP = portPair.NatIP
 	pkt.NatPort = portPair.NatPort
 	pkt.DestAddr = net.ParseIP(destIP)
-	logger.Debugf(">>>>>> build a notify ack: source ip: %v, source port: %v, natip: %v, natport: %v", pkt.SourceIP, pkt.Port, pkt.NatIP, pkt.NatPort)
+	logger.Debugf("build a notify ack: source ip: %v, source port: %v, natip: %v, natport: %v", pkt.SourceIP, pkt.Port, pkt.NatIP, pkt.NatPort)
 	return notifyack.Encode(pkt)
-}
-
-var m sync.Mutex
-
-func (t *Tunnel) GetSocket(targetIP string) socket.Socket {
-	v, b := t.p2pSocket.Load(targetIP)
-	if !b {
-		return socket.Socket{}
-	}
-
-	return v.(socket.Socket)
-}
-
-func (t *Tunnel) SaveSocket(target string, s socket.Socket) {
-	t.p2pSocket.Store(target, s)
 }
 
 // ReadFromUDP read data from remote peer， write back or write to tun
@@ -208,8 +173,5 @@ func (t *Tunnel) ReadFromUDP() {
 		if err != nil {
 			logger.Errorf("Read from udp failed: %v", err)
 		}
-
-		//
-
 	}
 }

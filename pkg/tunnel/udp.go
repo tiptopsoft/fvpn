@@ -23,7 +23,6 @@ import (
 
 // Handle union udp handler
 func (t *Tunnel) Handle() handler.HandlerFunc {
-
 	return func(ctx context.Context, frame *packet.Frame) error {
 		//dest := ctx.Value("destAddr").(string)
 		buff := frame.Buff[:]
@@ -89,9 +88,7 @@ func (t *Tunnel) Handle() handler.HandlerFunc {
 			if err != nil {
 				return err
 			}
-
 			t.socket.Write(buff)
-			// write back notify
 			go func() {
 				t.handshaking(frame, np.NatIP, int(np.NatPort), np.SourceIP.String())
 			}()
@@ -111,32 +108,28 @@ func (t *Tunnel) Handle() handler.HandlerFunc {
 }
 
 func (t *Tunnel) handshaking(frame *packet.Frame, natIP net.IP, natPort int, destIP string) {
-	//begin to punch hole
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 	portPair := t.manager.GetNotifyPortPair(destIP)
-	logger.Debugf("===========got cached port pair, source ip: %v, source port: %v, nat ip: %v, nat port: %v", portPair.SrcIP, portPair.SrcPort, portPair.NatIP, portPair.NatPort)
+	logger.Debugf("got cached port pair, source ip: %v, source port: %v, nat ip: %v, nat port: %v", portPair.SrcIP, portPair.SrcPort, portPair.NatIP, portPair.NatPort)
 	conn, err := socket.NewSocket(fmt.Sprintf("%s:%d", net.IPv4zero.String(), portPair.SrcPort), fmt.Sprintf("%s:%d", natIP.String(), natPort))
 	if err != nil {
 		logger.Errorf("%v", err)
 		return
 	}
-
-	a := conn.LocalAddr()
-	logger.Debugf(">>>>>>>>>>>>connection : %v", a)
 	stopCh := make(chan int, 1)
 	go func() {
 		handPkt := handshake.NewPacket(frame.NetworkId)
 		buff, err := handshake.Encode(handPkt)
 		if err != nil {
 			logger.Errorf("invalid handshake packet")
+			return
 		}
 
 		for {
 			select {
 			case <-stopCh:
-				logger.Debugf("=============================================")
-				return
+				return //exit
 			default:
 				logger.Debugf("senging data to punch hole")
 				_, err := conn.Write(buff)
@@ -157,8 +150,6 @@ func (t *Tunnel) handshaking(frame *packet.Frame, natIP net.IP, natPort int, des
 				logger.Errorf("punch hole failed. try again: %v", err)
 				continue
 			}
-
-			//success
 			logger.Debugf("punch hole success. will create a new tunnel")
 			p2pTunnel := NewTunnel(t.tunHandler, conn, t.devices, infra.Middlewares(true, true), t.manager)
 			t.manager.SetTunnel(destIP, p2pTunnel)
@@ -173,6 +164,8 @@ func (t *Tunnel) handshaking(frame *packet.Frame, natIP net.IP, natPort int, des
 	case <-ctx.Done():
 		logger.Debugf("punch hole finished.")
 	case <-time.After(time.Second * 30):
-		fmt.Println("timeout!!!")
+		//close sending thread
+		stopCh <- 1
+		logger.Debugf("timeout for punch hole, will use relay tunnel instead!")
 	}
 }

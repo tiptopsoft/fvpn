@@ -16,13 +16,11 @@ func (p *Peer) conn() error {
 	var err error
 	switch p.Protocol {
 	case option.UDP:
-		//remoteAddr, err := util.GetAddress(p.ClientCfg.Registry, addr.DefaultPort)
 		if s, err := socket.NewSocket("", fmt.Sprintf("%s:%d", p.ClientCfg.Registry, addr.DefaultPort)); err != nil {
 			return err
 		} else {
 			p.relaySocket = s
 		}
-
 		logger.Infof("node connected to server: (%v)", p.ClientCfg.Registry)
 	}
 	return err

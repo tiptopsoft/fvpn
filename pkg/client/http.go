@@ -72,8 +72,6 @@ func (p *Peer) runHttpServer() error {
 			p.devices[req.NetworkId] = tap
 			go p.ReadFromTun(tap, req.NetworkId)
 			p.SendRegister(tap)
-			//give a timer
-
 			go util.AddJob(req.NetworkId, p.sendQueryPeer)
 
 			w.WriteHeader(200)
