@@ -27,3 +27,8 @@ func NewFrame() *Frame {
 		Packet: make([]byte, option.FVPN_PKT_BUFF_SIZE),
 	}
 }
+
+func (f *Frame) Clear() {
+	buf := make([]byte, option.FVPN_PKT_BUFF_SIZE)
+	copy(f.Packet, buf)
+}

@@ -11,7 +11,8 @@ import (
 	"github.com/topcloudz/fvpn/pkg/handler/device"
 	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/middleware"
-	"github.com/topcloudz/fvpn/pkg/middleware/infra"
+	"github.com/topcloudz/fvpn/pkg/middleware/auth"
+	"github.com/topcloudz/fvpn/pkg/middleware/codec"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/handshake"
@@ -48,6 +49,7 @@ type Peer struct {
 	networks    map[string]string //cidr -> networkId
 	privateKey  security.NoisePrivateKey
 	pubKey      security.NoisePublicKey
+	cipher      security.CipherFunc
 }
 
 func (p *Peer) Start() error {
@@ -62,18 +64,12 @@ func (p *Peer) Start() error {
 	})
 
 	p.manager = tunnel.NewManager()
-	p.middlewares = p.initMiddleware()
-	p.tunHandler = middleware.WithMiddlewares(device.Handle(), p.middlewares...)
-	p.relayTunnel = tunnel.NewTunnel(p.tunHandler, p.relaySocket, p.devices, p.middlewares, p.manager, nil, p.privateKey)
+	p.tunHandler = middleware.WithMiddlewares(device.Handle(), auth.Middleware(), codec.Encode(p.cipher))
+	p.relayTunnel = tunnel.NewTunnel(p.tunHandler, p.relaySocket, p.devices, p.middlewares, p.manager, p.cipher)
 	p.relayTunnel.Start()
 
 	go p.WriteToUDP()
 	return p.runHttpServer()
-}
-
-// initMiddleware TODO add impl
-func (p *Peer) initMiddleware() []middleware.Middleware {
-	return infra.Middlewares(p.OpenAuth, p.OpenEncrypt)
 }
 
 // ReadFromTun every tap will start a loop read from tap,and write to remote
@@ -220,6 +216,20 @@ func (p *Peer) conn() error {
 		p.pubKey = pubKey
 
 		p.relaySocket.Write(buff)
+
+		newBuff := make([]byte, 1024)
+		_, err = p.relaySocket.Read(newBuff)
+		if err != nil {
+			return err
+		}
+
+		handPkt1, err := handshake.Decode(newBuff)
+		if err != nil {
+			logger.Errorf("invalid handshake packet: %v", err)
+			return err
+		}
+
+		p.cipher = security.NewCipher(p.privateKey, handPkt1.PubKey)
 
 	}
 	return err

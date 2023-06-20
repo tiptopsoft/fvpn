@@ -3,7 +3,7 @@ package server
 import (
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/middleware"
-	"github.com/topcloudz/fvpn/pkg/middleware/infra"
+	"github.com/topcloudz/fvpn/pkg/middleware/codec"
 	"github.com/topcloudz/fvpn/pkg/security"
 	"net"
 	"sync"
@@ -12,7 +12,6 @@ import (
 	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
-	"golang.org/x/sys/unix"
 )
 
 var (
@@ -24,16 +23,17 @@ var (
 type RegServer struct {
 	*option.ServerConfig
 	//socket   socket.Interface
-	socket     *net.UDPConn
-	cache      *cache.Cache
-	packet     packet.Interface
-	ws         sync.WaitGroup
-	h          handler.Handler
-	Inbound    chan *packet.Frame //used from udp
-	Outbound   chan *packet.Frame //used for tun
-	PrivateKey security.NoisePrivateKey
-	PubKey     security.NoisePublicKey
-	cipher     security.CipherFunc
+	socket       *net.UDPConn
+	cache        *cache.Cache
+	packet       packet.Interface
+	ws           sync.WaitGroup
+	readHandler  handler.Handler
+	writeHandler handler.Handler
+	Inbound      chan *packet.Frame //used from udp
+	Outbound     chan *packet.Frame //used for tun
+	PrivateKey   security.NoisePrivateKey
+	PubKey       security.NoisePublicKey
+	cipher       security.CipherFunc
 }
 
 func (r *RegServer) Start(address string) error {
@@ -63,32 +63,12 @@ func (r *RegServer) start(address string) error {
 		IP: net.IPv4zero, Port: 4000})
 	once.Do(func() {
 		r.cache = cache.New()
-		r.h = middleware.WithMiddlewares(r.serverUdpHandler(), infra.Middlewares(false, false)...)
+		r.readHandler = middleware.WithMiddlewares(r.serverUdpHandler(), codec.Decode(r.cipher))
+		r.writeHandler = middleware.WithMiddlewares(r.serverUdpHandler(), codec.Encode(r.cipher))
 	})
 	r.socket = socket
 
 	logger.Debugf("server start at: %s", address)
 
 	return nil
-}
-
-func (r *RegServer) initHandler() {
-	r.h = middleware.WithMiddlewares(r.serverUdpHandler(), infra.Middlewares()...)
-}
-
-func ResolveAddr(address string) (unix.Sockaddr, error) {
-	addr, err := net.ResolveUDPAddr("udp", address)
-	if err != nil {
-		return nil, err
-	}
-
-	ip := [4]byte{}
-	copy(ip[:], addr.IP.To4())
-
-	result := &unix.SockaddrInet4{
-		Port: addr.Port,
-		Addr: ip,
-	}
-
-	return result, nil
 }

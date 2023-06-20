@@ -7,6 +7,8 @@ import (
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/middleware"
+	"github.com/topcloudz/fvpn/pkg/middleware/auth"
+	"github.com/topcloudz/fvpn/pkg/middleware/codec"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/notify"
 	notifyack "github.com/topcloudz/fvpn/pkg/packet/notify/ack"
@@ -23,14 +25,15 @@ var (
 
 // Tunnel is a manager for peer-to-peer， it used for peer to registry, registry to peer, peer-to-peer
 type Tunnel struct {
-	socket     *socket.Socket // underlay
-	devices    map[string]*tuntap.Tuntap
-	Inbound    chan *packet.Frame //used from udp
-	Outbound   chan *packet.Frame //used for tun
-	cache      *cache.Cache
-	tunHandler handler.Handler
-	udpHandler handler.Handler
-	manager    *Manager
+	socket       *socket.Socket // underlay
+	devices      map[string]*tuntap.Tuntap
+	Inbound      chan *packet.Frame //used from udp
+	Outbound     chan *packet.Frame //used for tun
+	encryptBound chan *packet.Frame
+	cache        *cache.Cache
+	tunHandler   handler.Handler
+	udpHandler   handler.Handler
+	manager      *Manager
 
 	cipher     security.CipherFunc
 	PrivateKey security.NoisePrivateKey
@@ -48,16 +51,17 @@ func (t *Tunnel) Close() {
 	//close a tunnel, release all resources TODO
 }
 
-func NewTunnel(tunHandler handler.Handler, s *socket.Socket, devices map[string]*tuntap.Tuntap, m []middleware.Middleware, manager *Manager, cipher security.CipherFunc, privateKey security.NoisePrivateKey) *Tunnel {
+func NewTunnel(tunHandler handler.Handler, s *socket.Socket, devices map[string]*tuntap.Tuntap, m []middleware.Middleware, manager *Manager, cipher security.CipherFunc) *Tunnel {
 	tun := &Tunnel{
-		Inbound:    make(chan *packet.Frame, 10000), // data to write to tun
-		Outbound:   make(chan *packet.Frame, 10000), // data from tun to write to peer
-		devices:    devices,
-		cache:      cache.New(),
-		tunHandler: tunHandler,
-		manager:    manager,
-		cipher:     cipher,
-		PrivateKey: privateKey,
+		Inbound:      make(chan *packet.Frame, 10000), // data to write to tun
+		Outbound:     make(chan *packet.Frame, 10000), // data from tun to write to peer
+		encryptBound: make(chan *packet.Frame, 10000),
+		devices:      devices,
+		cache:        cache.New(),
+		tunHandler:   tunHandler,
+		manager:      manager,
+		cipher:       cipher,
+		//PrivateKey:   privateKey,
 	}
 	tun.socket = s
 	tun.udpHandler = middleware.WithMiddlewares(tun.Handle(), m...)
@@ -69,6 +73,15 @@ func (t *Tunnel) CacheDevice(networkId string, device *tuntap.Tuntap) {
 	if t.devices[networkId] == nil {
 		t.devices[networkId] = device
 	}
+}
+
+// initMiddleware TODO add impl
+func InitMiddleware(cipher security.CipherFunc) []middleware.Middleware {
+	var result []middleware.Middleware
+	result = append(result, auth.Middleware())
+	result = append(result, codec.Decode(cipher))
+	return result
+
 }
 
 // GetSelf get self node from cache
@@ -183,3 +196,22 @@ func (t *Tunnel) ReadFromUDP() {
 		}
 	}
 }
+
+//func (t *Tunnel) AddEncryptQueue() {
+//	for {
+//		select {
+//		case pkt := <-t.Outbound:
+//			frame := packet.NewFrame()
+//			newPkt, err := t.cipher.Encode(pkt.Packet)
+//			if err != nil {
+//				logger.Errorf("encrypt failed. %v", err)
+//				continue
+//			}
+//
+//			copy(frame.Packet, newPkt)
+//			t.encryptBound <- frame
+//		default:
+//
+//		}
+//	}
+//}

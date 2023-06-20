@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/topcloudz/fvpn/pkg/cache"
 	"github.com/topcloudz/fvpn/pkg/handler"
-	"github.com/topcloudz/fvpn/pkg/middleware/infra"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/handshake"
@@ -102,14 +101,14 @@ func (t *Tunnel) Handle() handler.HandlerFunc {
 				t.handshaking(frame, nck.NatIP, int(nck.NatPort), nck.SourceIP.String())
 			}()
 
-		case option.HandShakeMsgType: //
-			handPkt, err := handshake.Decode(buff)
-			if err != nil {
-				logger.Errorf("invalid handshake packet: %v", err)
-				return err
-			}
-
-			t.cipher = security.NewCipher(t.PrivateKey, handPkt.PubKey)
+			//case option.HandShakeMsgType: //
+			//	handPkt, err := handshake.Decode(buff)
+			//	if err != nil {
+			//		logger.Errorf("invalid handshake packet: %v", err)
+			//		return err
+			//	}
+			//
+			//	t.cipher = security.NewCipher(t.PrivateKey, handPkt.PubKey)
 
 		}
 
@@ -175,7 +174,7 @@ func (t *Tunnel) handshaking(frame *packet.Frame, natIP net.IP, natPort int, des
 			}
 
 			cipher := security.NewCipher(privateKey, handPkt.PubKey)
-			p2pTunnel := NewTunnel(t.tunHandler, conn, t.devices, infra.Middlewares(true, true), t.manager, cipher, privateKey)
+			p2pTunnel := NewTunnel(t.tunHandler, conn, t.devices, InitMiddleware(cipher), t.manager, cipher)
 			t.manager.SetTunnel(destIP, p2pTunnel)
 			p2pTunnel.Start() //start this p2p tunnel to service data
 			stopCh <- 1
