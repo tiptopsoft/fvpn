@@ -22,6 +22,7 @@ type Header struct {
 	TTL       uint8   //1
 	Flags     uint16  //2
 	NetworkId [8]byte //8
+	//AppId     [16]byte
 }
 
 func NewHeader(msgType uint16, networkId string) (Header, error) {
@@ -29,12 +30,19 @@ func NewHeader(msgType uint16, networkId string) (Header, error) {
 	if err != nil {
 		return Header{}, errors.New("invalid networkId")
 	}
+
+	//appIdData, err := hex.DecodeString(util.AppId())
+	//if err != nil {
+	//	return Header{}, errors.New("invalid networkId")
+	//}
+
 	h := Header{
 		Version: Version,
 		TTL:     DefaultTTL,
 		Flags:   msgType,
 	}
 	copy(h.NetworkId[:], bs)
+	//copy(h.AppId[:], appIdData)
 	return h, nil
 }
 
@@ -45,16 +53,21 @@ func Encode(h Header) ([]byte, error) {
 	idx = packet.EncodeUint8(b, h.TTL, idx)
 	idx = packet.EncodeUint16(b, h.Flags, idx)
 	idx = packet.EncodeBytes(b, h.NetworkId[:], idx)
+	//idx = packet.EncodeBytes(b, h.AppId[:], idx)
 	return b, nil
 }
 
-func Decode(udpByte []byte) (h Header, err error) {
+func Decode(buff []byte) (h Header, err error) {
 	idx := 0
-	idx = packet.DecodeUint8(&h.Version, udpByte, idx)
-	idx = packet.DecodeUint8(&h.TTL, udpByte, idx)
-	idx = packet.DecodeUint16(&h.Flags, udpByte, idx)
+	idx = packet.DecodeUint8(&h.Version, buff, idx)
+	idx = packet.DecodeUint8(&h.TTL, buff, idx)
+	idx = packet.DecodeUint16(&h.Flags, buff, idx)
 	b := make([]byte, 8)
-	idx = packet.DecodeBytes(&b, udpByte, idx)
+	idx = packet.DecodeBytes(&b, buff, idx)
 	copy(h.NetworkId[:], b)
+
+	//appId := make([]byte, 16)
+	//idx = packet.DecodeBytes(&appId, buff, idx)
+	//copy(h.AppId[:], appId)
 	return
 }

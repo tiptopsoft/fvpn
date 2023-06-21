@@ -15,19 +15,20 @@ type NodeKey struct {
 	PubKey     security.NoisePublicKey
 	SharedKey  security.NoiseSharedKey
 	Cipher     security.CipherFunc
+	AppId      string
 }
 
-func (k KeyManager) GetKey(ip string) *NodeKey {
-	nodeKey := k.NodeKeys[ip]
+func (k KeyManager) GetKey(appId string) *NodeKey {
+	nodeKey := k.NodeKeys[appId]
 	if nodeKey != nil {
-		return k.NodeKeys[ip]
+		return k.NodeKeys[appId]
 	}
 
 	return nil
 }
 
-func (k KeyManager) SetKey(ip string, key *NodeKey) {
+func (k KeyManager) SetKey(appId string, key *NodeKey) {
 	k.lock.Lock()
 	defer k.lock.Unlock()
-	k.NodeKeys[ip] = key
+	k.NodeKeys[appId] = key
 }

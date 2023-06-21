@@ -16,6 +16,7 @@ func Handle() handler.HandlerFunc {
 		if err != nil {
 			return err
 		}
+
 		idx := 0
 		newPacket := make([]byte, 2048)
 		idx = packet.EncodeBytes(newPacket, headerBuff, idx)

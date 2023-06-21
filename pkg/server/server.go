@@ -34,14 +34,15 @@ type RegServer struct {
 
 	//every node has it's own key
 	manager *util.KeyManager
+	appIds  map[string]string
 }
 
 func (r *RegServer) Start(address string) error {
+	r.manager = &util.KeyManager{NodeKeys: make(map[string]*util.NodeKey, 1)}
 	err := r.start(address)
 	if err != nil {
 		return err
 	}
-	r.manager = &util.KeyManager{NodeKeys: make(map[string]*util.NodeKey, 1)}
 
 	//启动udp处理goroutine
 	go r.ReadFromUdp()

@@ -29,12 +29,11 @@ func (r *RegServer) ReadFromUdp() {
 			logger.Errorf("get header falied. %v", err)
 			continue
 		}
-		h, err := util.GetFrameHeader(frame.Packet)
 		networkId := hex.EncodeToString(packetHeader.NetworkId[:])
 		frame.Size = n
 		frame.FrameType = packetHeader.Flags
 		frame.SrcAddr = addr
-		frame.SrcInnerIP = h.SourceIP.String()
+		//frame.AppId = hex.EncodeToString(packetHeader.AppId[:])
 		frame.NetworkId = networkId
 		if err != nil || n < 0 {
 			logger.Warnf("no data exists")
@@ -171,19 +170,20 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			break
 		case option.MsgTypePacket:
 			logger.Infof("server got forward packet size:%d, data: %v", frame.Size, data)
-			break
 		case option.MsgTypeNotify:
 			logger.Debugf("notify frame packet: %v", frame.Packet[:])
 		case option.MsgTypeNotifyAck:
 			logger.Debugf("notify ack frame packet: %v", frame.Packet[:])
 		case option.HandShakeMsgType:
-			key := r.manager.GetKey(frame.SrcInnerIP)
+			handPkt, err := handshake.Decode(frame.Packet)
+			if err != nil {
+				logger.Errorf("invalid handshake packet: %v", err)
+				return err
+			}
+			//frame.AppId = hex.EncodeToString(handPkt.AppId[:])
+			key := r.manager.GetKey(frame.SrcAddr.IP.String())
 			if key == nil {
-				handPkt, err := handshake.Decode(frame.Packet)
-				if err != nil {
-					logger.Errorf("invalid handshake packet: %v", err)
-					return err
-				}
+
 				privateKey, err := security.NewPrivateKey()
 				if err != nil {
 					return err
@@ -194,7 +194,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 					PubKey:     pubKey,
 				}
 				nodeKey.Cipher = security.NewCipher(privateKey, handPkt.PubKey)
-				r.manager.SetKey(frame.SrcInnerIP, nodeKey)
+				r.manager.SetKey(frame.SrcAddr.IP.String(), nodeKey)
 			}
 		}
 

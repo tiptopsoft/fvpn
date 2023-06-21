@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/topcloudz/fvpn/pkg/addr"
@@ -87,7 +86,6 @@ func (p *Peer) ReadFromTun(tun *tuntap.Tuntap, networkId string) {
 		frame.Size = n
 		logger.Debugf("origin packet size: %d, data: %v", n, frame.Packet[:n])
 		h, err := util.GetFrameHeader(frame.Packet)
-
 		dest := h.DestinationIP.String()
 		frame.RemoteAddr = dest
 		if err != nil {
@@ -182,12 +180,6 @@ func (p *Peer) getPeerTunnel(dest string) *tunnel.Tunnel {
 	return p.relayTunnel
 }
 
-func (p *Peer) AppId() string {
-	buf := addr.GetLocalMacAddr()
-	appId := hex.EncodeToString(buf)
-	return appId
-}
-
 func (p *Peer) conn() error {
 	var err error
 	switch p.Protocol {
@@ -231,16 +223,6 @@ func (p *Peer) conn() error {
 		}
 
 		p.cipher = security.NewCipher(p.privateKey, handPkt1.PubKey)
-		//km := util.KeyManager{
-		//	NodeKeys: make(map[string]*util.NodeKey, 1),
-		//}
-		//
-		//nodeKey := util.NodeKey{
-		//	PrivateKey: privateKey,
-		//	PubKey:     pubKey,
-		//	SharedKey:  security.NoiseSharedKey{},
-		//	Cipher:     p.cipher,
-		//}
 
 	}
 	return err

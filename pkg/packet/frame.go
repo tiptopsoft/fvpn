@@ -9,11 +9,11 @@ import (
 
 type Frame struct {
 	sync.Mutex
-	Buff       []byte //max length 2000
-	Packet     []byte
-	Size       int
-	NetworkId  string
-	SrcInnerIP string
+	Buff      []byte //max length 2000
+	Packet    []byte
+	Size      int
+	NetworkId string
+	//AppId      string
 	SrcAddr    *net.UDPAddr
 	RemoteAddr string //inner ip
 	FrameType  uint16

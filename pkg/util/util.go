@@ -2,9 +2,11 @@ package util
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/topcloudz/fvpn/pkg/addr"
 	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
@@ -17,6 +19,7 @@ import (
 )
 
 var (
+	APPID  = AppId()
 	logger = log.Log()
 )
 
@@ -122,4 +125,10 @@ func TransferAppId(appId string) (net.HardwareAddr, error) {
 	value := fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", s[0:2], s[2:4], s[4:6], s[6:8], s[8:10], s[10:12])
 	mac, err := net.ParseMAC(value)
 	return mac, err
+}
+
+func AppId() string {
+	buf := addr.GetLocalMacAddr()
+	appId := hex.EncodeToString(buf)
+	return appId
 }
