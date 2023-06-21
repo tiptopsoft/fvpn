@@ -5,13 +5,13 @@ import (
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
-	"github.com/topcloudz/fvpn/pkg/security"
+	"github.com/topcloudz/fvpn/pkg/util"
 )
 
-func Decode(cipher security.CipherFunc) func(handler.Handler) handler.Handler {
+func Decode(manager *util.KeyManager) func(handler.Handler) handler.Handler {
 	return func(next handler.Handler) handler.Handler {
 		return handler.HandlerFunc(func(ctx context.Context, frame *packet.Frame) error {
-
+			cipher := manager.GetKey(frame.SrcAddr.IP.String())
 			if frame.FrameType == option.MsgTypePacket {
 				newBuff, err := cipher.Decode(frame.Packet[12:])
 				if err != nil {
@@ -25,9 +25,10 @@ func Decode(cipher security.CipherFunc) func(handler.Handler) handler.Handler {
 }
 
 // Middleware Encrypt use exchangeKey
-func Encode(cipher security.CipherFunc) func(handler.Handler) handler.Handler {
+func Encode(manager *util.KeyManager) func(handler.Handler) handler.Handler {
 	return func(next handler.Handler) handler.Handler {
 		return handler.HandlerFunc(func(ctx context.Context, frame *packet.Frame) error {
+			cipher := manager.GetKey(frame.SrcAddr.IP.String())
 			if frame.FrameType == option.MsgTypePacket {
 				newBuff, err := cipher.Encode(frame.Packet)
 				if err != nil {

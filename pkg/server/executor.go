@@ -118,8 +118,9 @@ func (r *RegServer) writeUdpHandler() handler.HandlerFunc {
 			r.socket.WriteToUDP(pkt.Packet, nodeInfo.Addr)
 
 		case option.HandShakeMsgType:
+			key := r.manager.GetKey(pkt.SrcAddr.IP.String())
 			handPkt := handshake.NewPacket("")
-			handPkt.PubKey = r.PubKey
+			handPkt.PubKey = key.PubKey
 			buff, err := handshake.Encode(handPkt)
 			if err != nil {
 				logger.Errorf("invalid handshake packet")
@@ -174,7 +175,8 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 		case option.MsgTypeNotifyAck:
 			logger.Debugf("notify ack frame packet: %v", frame.Packet[:])
 		case option.HandShakeMsgType:
-			if r.cipher == nil {
+			key := r.manager.GetKey(frame.SrcAddr.IP.String())
+			if key == nil {
 				handPkt, err := handshake.Decode(frame.Packet)
 				if err != nil {
 					logger.Errorf("invalid handshake packet: %v", err)
@@ -185,12 +187,13 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 					return err
 				}
 				pubKey := privateKey.NewPubicKey()
-				r.PrivateKey = privateKey
-				r.PubKey = pubKey
-
-				r.cipher = security.NewCipher(r.PrivateKey, handPkt.PubKey)
+				nodeKey := &util.NodeKey{
+					PrivateKey: privateKey,
+					PubKey:     pubKey,
+				}
+				nodeKey.Cipher = security.NewCipher(privateKey, handPkt.PubKey)
+				r.manager.SetKey(frame.SrcAddr.IP.String(), nodeKey)
 			}
-
 		}
 
 		return nil

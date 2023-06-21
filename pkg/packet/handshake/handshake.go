@@ -11,6 +11,7 @@ import (
 type HandShakePacket struct {
 	header header.Header //12
 	PubKey [32]byte      //dh public key, generate from curve25519
+	AppId  [16]byte
 }
 
 func NewPacket(networkId string) HandShakePacket {
@@ -29,6 +30,7 @@ func Encode(np HandShakePacket) ([]byte, error) {
 	idx := 0
 	idx = packet.EncodeBytes(b, headerBuff, idx)
 	idx = packet.EncodeBytes(b, np.PubKey[:], idx)
+	idx = packet.EncodeBytes(b, np.AppId[:], idx)
 
 	return b, nil
 }
@@ -45,5 +47,10 @@ func Decode(buff []byte) (HandShakePacket, error) {
 	pubKey := make([]byte, 32)
 	idx = packet.DecodeBytes(&pubKey, buff, idx)
 	copy(res.PubKey[:], pubKey[:])
+
+	appId := make([]byte, 16)
+	idx = packet.DecodeBytes(&appId, buff, idx)
+	copy(res.AppId[:], appId)
+
 	return res, nil
 }

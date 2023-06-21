@@ -4,7 +4,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/middleware"
 	"github.com/topcloudz/fvpn/pkg/middleware/codec"
-	"github.com/topcloudz/fvpn/pkg/security"
+	"github.com/topcloudz/fvpn/pkg/util"
 	"net"
 	"sync"
 
@@ -31,9 +31,9 @@ type RegServer struct {
 	writeHandler handler.Handler
 	Inbound      chan *packet.Frame //used from udp
 	Outbound     chan *packet.Frame //used for tun
-	PrivateKey   security.NoisePrivateKey
-	PubKey       security.NoisePublicKey
-	cipher       security.CipherFunc
+
+	//every node has it's own key
+	manager *util.KeyManager
 }
 
 func (r *RegServer) Start(address string) error {
@@ -63,8 +63,8 @@ func (r *RegServer) start(address string) error {
 		IP: net.IPv4zero, Port: 4000})
 	once.Do(func() {
 		r.cache = cache.New()
-		r.readHandler = middleware.WithMiddlewares(r.serverUdpHandler(), codec.Decode(r.cipher))
-		r.writeHandler = middleware.WithMiddlewares(r.writeUdpHandler(), codec.Encode(r.cipher))
+		r.readHandler = middleware.WithMiddlewares(r.serverUdpHandler(), codec.Decode(r.manager))
+		r.writeHandler = middleware.WithMiddlewares(r.writeUdpHandler(), codec.Encode(r.manager))
 	})
 	r.socket = socket
 
