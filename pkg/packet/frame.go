@@ -13,6 +13,7 @@ type Frame struct {
 	Packet     []byte
 	Size       int
 	NetworkId  string
+	SrcInnerIP string
 	SrcAddr    *net.UDPAddr
 	RemoteAddr string //inner ip
 	FrameType  uint16

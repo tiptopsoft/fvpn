@@ -29,10 +29,12 @@ func (r *RegServer) ReadFromUdp() {
 			logger.Errorf("get header falied. %v", err)
 			continue
 		}
+		h, err := util.GetFrameHeader(frame.Packet)
 		networkId := hex.EncodeToString(packetHeader.NetworkId[:])
 		frame.Size = n
 		frame.FrameType = packetHeader.Flags
 		frame.SrcAddr = addr
+		frame.SrcInnerIP = h.SourceIP.String()
 		frame.NetworkId = networkId
 		if err != nil || n < 0 {
 			logger.Warnf("no data exists")
@@ -175,7 +177,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 		case option.MsgTypeNotifyAck:
 			logger.Debugf("notify ack frame packet: %v", frame.Packet[:])
 		case option.HandShakeMsgType:
-			key := r.manager.GetKey(frame.SrcAddr.IP.String())
+			key := r.manager.GetKey(frame.SrcInnerIP)
 			if key == nil {
 				handPkt, err := handshake.Decode(frame.Packet)
 				if err != nil {
@@ -192,7 +194,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 					PubKey:     pubKey,
 				}
 				nodeKey.Cipher = security.NewCipher(privateKey, handPkt.PubKey)
-				r.manager.SetKey(frame.SrcAddr.IP.String(), nodeKey)
+				r.manager.SetKey(frame.SrcInnerIP, nodeKey)
 			}
 		}
 
