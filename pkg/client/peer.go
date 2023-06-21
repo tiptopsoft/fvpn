@@ -45,6 +45,7 @@ type Peer struct {
 
 	relayTunnel *tunnel.Tunnel
 	manager     *tunnel.Manager
+	keyManager  *util.KeyManager
 	middlewares []middleware.Middleware
 	networks    map[string]string //cidr -> networkId
 	privateKey  security.NoisePrivateKey
@@ -64,7 +65,7 @@ func (p *Peer) Start() error {
 	})
 
 	p.manager = tunnel.NewManager()
-	p.tunHandler = middleware.WithMiddlewares(device.Handle(), auth.Middleware(), codec.Encode(p.cipher))
+	p.tunHandler = middleware.WithMiddlewares(device.Handle(), auth.Middleware(), codec.PeerEncode(p.cipher))
 	p.relayTunnel = tunnel.NewTunnel(p.tunHandler, p.relaySocket, p.devices, p.middlewares, p.manager, p.cipher)
 	p.relayTunnel.Start()
 
@@ -230,6 +231,16 @@ func (p *Peer) conn() error {
 		}
 
 		p.cipher = security.NewCipher(p.privateKey, handPkt1.PubKey)
+		//km := util.KeyManager{
+		//	NodeKeys: make(map[string]*util.NodeKey, 1),
+		//}
+		//
+		//nodeKey := util.NodeKey{
+		//	PrivateKey: privateKey,
+		//	PubKey:     pubKey,
+		//	SharedKey:  security.NoiseSharedKey{},
+		//	Cipher:     p.cipher,
+		//}
 
 	}
 	return err

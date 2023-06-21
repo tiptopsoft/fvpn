@@ -79,7 +79,7 @@ func (t *Tunnel) CacheDevice(networkId string, device *tuntap.Tuntap) {
 func InitMiddleware(cipher security.CipherFunc) []middleware.Middleware {
 	var result []middleware.Middleware
 	result = append(result, auth.Middleware())
-	result = append(result, codec.Decode(cipher))
+	result = append(result, codec.PeerDecode(cipher))
 	return result
 
 }
