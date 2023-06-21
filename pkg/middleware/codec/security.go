@@ -51,8 +51,8 @@ func PeerEncode(cipher security.CipherFunc) func(handler.Handler) handler.Handle
 func Decode(manager *util.KeyManager) func(handler.Handler) handler.Handler {
 	return func(next handler.Handler) handler.Handler {
 		return handler.HandlerFunc(func(ctx context.Context, frame *packet.Frame) error {
-			key := manager.GetKey(frame.SrcAddr.IP.String())
 			if frame.FrameType == option.MsgTypePacket {
+				key := manager.GetKey(frame.SrcAddr.IP.String())
 				logger.Debugf("executing decode buff.")
 				newBuff, err := key.Cipher.Decode(frame.Packet[12:])
 				if err != nil {
@@ -69,8 +69,8 @@ func Decode(manager *util.KeyManager) func(handler.Handler) handler.Handler {
 func Encode(manager *util.KeyManager) func(handler.Handler) handler.Handler {
 	return func(next handler.Handler) handler.Handler {
 		return handler.HandlerFunc(func(ctx context.Context, frame *packet.Frame) error {
-			key := manager.GetKey(frame.SrcAddr.IP.String())
 			if frame.FrameType == option.MsgTypePacket {
+				key := manager.GetKey(frame.SrcAddr.IP.String())
 				logger.Debugf("executing eecode buff.")
 				newBuff, err := key.Cipher.Encode(frame.Packet)
 				if err != nil {

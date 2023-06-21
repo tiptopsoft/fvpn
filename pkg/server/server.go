@@ -41,6 +41,7 @@ func (r *RegServer) Start(address string) error {
 	if err != nil {
 		return err
 	}
+	r.manager = &util.KeyManager{NodeKeys: make(map[string]*util.NodeKey, 1)}
 
 	//启动udp处理goroutine
 	go r.ReadFromUdp()
