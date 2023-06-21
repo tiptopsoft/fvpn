@@ -11,9 +11,9 @@ import (
 func Decode(manager *util.KeyManager) func(handler.Handler) handler.Handler {
 	return func(next handler.Handler) handler.Handler {
 		return handler.HandlerFunc(func(ctx context.Context, frame *packet.Frame) error {
-			cipher := manager.GetKey(frame.SrcAddr.IP.String())
+			key := manager.GetKey(frame.SrcAddr.IP.String())
 			if frame.FrameType == option.MsgTypePacket {
-				newBuff, err := cipher.Decode(frame.Packet[12:])
+				newBuff, err := key.Cipher.Decode(frame.Packet[12:])
 				if err != nil {
 					return err
 				}
@@ -28,9 +28,9 @@ func Decode(manager *util.KeyManager) func(handler.Handler) handler.Handler {
 func Encode(manager *util.KeyManager) func(handler.Handler) handler.Handler {
 	return func(next handler.Handler) handler.Handler {
 		return handler.HandlerFunc(func(ctx context.Context, frame *packet.Frame) error {
-			cipher := manager.GetKey(frame.SrcAddr.IP.String())
+			key := manager.GetKey(frame.SrcAddr.IP.String())
 			if frame.FrameType == option.MsgTypePacket {
-				newBuff, err := cipher.Encode(frame.Packet)
+				newBuff, err := key.Cipher.Encode(frame.Packet)
 				if err != nil {
 					return err
 				}
