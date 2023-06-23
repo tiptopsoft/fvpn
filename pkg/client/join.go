@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	userUrl  = "https://www.efvpn.com"
-	localUrl = "http://localhost:6663"
+	userUrl  = "http://211.159.225.186"
+	localUrl = "http://127.0.0.1:6663"
 )
 
 func (p *Peer) RunJoinNetwork(netId string) error {

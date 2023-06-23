@@ -3,6 +3,9 @@ package security
 import (
 	"crypto/rand"
 	"fmt"
+	"github.com/topcloudz/fvpn/pkg/option"
+	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"golang.org/x/crypto/curve25519"
 	"io"
 	"testing"
@@ -38,6 +41,32 @@ func TestCurve(t *testing.T) {
 	curve25519.ScalarMult(&shared2, &privateKey2, &pubKey)
 
 	fmt.Println(shared2)
+
+	cip := NewCipher(privateKey, pubKey2)
+
+	s := "hello, myworld"
+	sBuff := []byte(s)
+	frame := packet.NewFrame()
+	h, _ := header.NewHeader(option.MsgTypePacket, "123456")
+	headerBuff, _ := header.Encode(h)
+	copy(frame.Packet, headerBuff)
+	copy(frame.Packet[12:], sBuff)
+
+	fmt.Println("before encoded: ", frame.Packet[:])
+
+	encodedBuff, err := cip.Encode(frame.Packet[:])
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("After encoded: ", encodedBuff)
+
+	decodedBuff, err := cip.Decode(encodedBuff)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("after decode: ", decodedBuff)
 
 }
 

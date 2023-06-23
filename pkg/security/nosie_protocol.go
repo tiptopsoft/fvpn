@@ -31,38 +31,34 @@ func NewCipher(privateKey NoisePrivateKey, pubKey NoisePublicKey) CipherFunc {
 	shareKey := privateKey.NewSharedKey(pubKey)
 
 	logger.Debugf("generate shared key: %v", shareKey)
+	nonce := make([]byte, chacha20poly1305.NonceSize)
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return nil
+	}
 	return &cipher{
-		key: shareKey,
+		key:   shareKey,
+		nonce: nonce,
 	}
 }
 
 type cipher struct {
-	key NoiseSharedKey
+	key   NoiseSharedKey
+	nonce []byte
 }
 
 func (c *cipher) Encode(content []byte) ([]byte, error) {
-	nonce := make([]byte, chacha20poly1305.NonceSize)
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		return nil, err
-	}
-
 	cip, _ := chacha20poly1305.New(c.key[:])
 
-	return cip.Seal(nil, nonce, content, nil), nil
+	return cip.Seal(nil, c.nonce, content, nil), nil
 }
 
 func (c *cipher) Decode(cipherBuff []byte) ([]byte, error) {
-	nonce := make([]byte, chacha20poly1305.NonceSize)
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		return nil, err
-	}
-
 	cip, err := chacha20poly1305.New(c.key[:])
 	if err != nil {
 		return nil, err
 	}
 
-	return cip.Open(nil, nonce, cipherBuff, nil)
+	return cip.Open(nil, c.nonce, cipherBuff, nil)
 }
 
 func NewPrivateKey() (npk NoisePrivateKey, err error) {

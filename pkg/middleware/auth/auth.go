@@ -30,7 +30,7 @@ func Middleware() func(handler handler.Handler) handler.Handler {
 				return err
 			}
 
-			client := http.New("https://www.efvpn.com")
+			client := http.New("http://211.159.225.186:443")
 			req := new(http.LoginRequest)
 			req.Username = username
 			req.Password = password
