@@ -5,7 +5,6 @@ import (
 	"github.com/topcloudz/fvpn/pkg/log"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/curve25519"
-	"io"
 )
 
 const (
@@ -32,9 +31,11 @@ func NewCipher(privateKey NoisePrivateKey, pubKey NoisePublicKey) CipherFunc {
 
 	logger.Debugf("generate shared key: %v", shareKey)
 	nonce := make([]byte, chacha20poly1305.NonceSize)
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		return nil
-	}
+
+	//if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+	//	return nil
+	//}
+	copy(nonce, shareKey[:chacha20poly1305.NonceSize])
 	return &cipher{
 		key:   shareKey,
 		nonce: nonce,
