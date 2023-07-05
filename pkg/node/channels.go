@@ -11,12 +11,12 @@ const (
 	QueueHandshakeBoundSize = 1024
 )
 
-type outBoundQueue struct {
+type OutBoundQueue struct {
 	c  chan *packet.Frame
 	wg sync.WaitGroup
 }
 
-type inBoundQueue struct {
+type InBoundQueue struct {
 	c  chan *packet.Frame
 	wg sync.WaitGroup
 }
@@ -26,8 +26,8 @@ type handshakeBound struct {
 	wg sync.WaitGroup
 }
 
-func newOutBoundQueue() *outBoundQueue {
-	q := &outBoundQueue{
+func NewOutBoundQueue() *OutBoundQueue {
+	q := &OutBoundQueue{
 		c: make(chan *packet.Frame, QueueInboundSize),
 	}
 	q.wg.Add(1)
@@ -39,8 +39,28 @@ func newOutBoundQueue() *outBoundQueue {
 	return q
 }
 
-func newInBoundQueue() *inBoundQueue {
-	q := &inBoundQueue{
+func (o *OutBoundQueue) PutPktToOutbound(pkt *packet.Frame) {
+	pkt.Lock()
+	defer pkt.Unlock()
+	o.c <- pkt
+}
+
+func (o *OutBoundQueue) GetPktFromOutbound() chan *packet.Frame {
+	return o.c
+}
+
+func (o *InBoundQueue) PutPktToInbound(pkt *packet.Frame) {
+	pkt.Lock()
+	defer pkt.Unlock()
+	o.c <- pkt
+}
+
+func (o *InBoundQueue) GetPktFromInbound() chan *packet.Frame {
+	return o.c
+}
+
+func NewInBoundQueue() *InBoundQueue {
+	q := &InBoundQueue{
 		c: make(chan *packet.Frame, QueueOutboundSize),
 	}
 	q.wg.Add(1)

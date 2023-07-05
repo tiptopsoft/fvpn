@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"encoding/hex"
+	. "github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
 	peerack "github.com/topcloudz/fvpn/pkg/packet/peer/ack"
@@ -10,21 +11,11 @@ import (
 	"github.com/topcloudz/fvpn/pkg/util"
 )
 
-type Handler interface {
-	Handle(ctx context.Context, frame *packet.Frame) error
-}
-
-type HandlerFunc func(context.Context, *packet.Frame) error
-
-func (f HandlerFunc) Handle(ctx context.Context, frame *packet.Frame) error {
-	return f(ctx, frame)
-}
-
 func tunHandler() HandlerFunc {
 	return func(ctx context.Context, frame *packet.Frame) error {
 		networkId := ctx.Value("networkId").(string)
 		h, _ := header.NewHeader(util.MsgTypePacket, networkId)
-		copy(h.UserId[:], frame.UserId)
+		frame.UserId = h.UserId
 		headerBuff, err := header.Encode(h)
 		if err != nil {
 			return err

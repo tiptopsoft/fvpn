@@ -2,18 +2,26 @@ package node
 
 import (
 	"context"
+	. "github.com/topcloudz/fvpn/pkg/handler"
+	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/nets"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/register"
+	"github.com/topcloudz/fvpn/pkg/security"
 	"github.com/topcloudz/fvpn/pkg/tun"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"sync"
 )
 
+var (
+	logger = log.Log()
+)
+
 // Node is a dev in any os.
 type Node struct {
-	privateKey NoisePrivateKey
-	pubKey     NoisePublicKey
+	cfg        *util.Config
+	privateKey security.NoisePrivateKey
+	pubKey     security.NoisePublicKey
 	device     tun.Device
 	net        struct {
 		bind nets.Bind
@@ -22,12 +30,12 @@ type Node struct {
 	//peers is all peers releated to this device
 	peers struct {
 		lock  sync.Mutex
-		peers map[NoisePublicKey]*Peer //dst
+		peers map[security.NoisePublicKey]*Peer //dst
 	}
 
 	queue struct {
-		outBound *outBoundQueue //after encrypt
-		inBound  *inBoundQueue  //after decrypt
+		outBound *OutBoundQueue //after encrypt
+		inBound  *InBoundQueue  //after decrypt
 	}
 
 	netManager NetManagerFn
@@ -35,7 +43,7 @@ type Node struct {
 	udpHandler Handler
 	relay      *Peer
 	wg         sync.WaitGroup
-	userId     []byte
+	userId     [8]byte
 	cache      CacheFunc
 }
 
@@ -45,35 +53,42 @@ func NewDevice(iface tun.Device, bind nets.Bind) (*Node, error) {
 		net:    struct{ bind nets.Bind }{bind: bind},
 		cache:  NewCache(),
 	}
-	n.queue.outBound = newOutBoundQueue()
-	n.queue.inBound = newInBoundQueue()
+	privateKey, err := security.NewPrivateKey()
+	if err != nil {
+		return nil, err
+	}
+	n.privateKey = privateKey
+	n.pubKey = n.privateKey.NewPubicKey()
+	n.queue.outBound = NewOutBoundQueue()
+	n.queue.inBound = NewInBoundQueue()
 	//n.queue.handshakeBound = newHandshakeQueue()
 
-	n.tunHandler = WithMiddlewares(tunHandler(), checkAuth(), PeerEncode())
-	n.udpHandler = WithMiddlewares(udpHandler(), checkAuth(), PeerDecode())
+	n.tunHandler = WithMiddlewares(tunHandler(), AuthCheck(), Encode())
+	n.udpHandler = WithMiddlewares(udpHandler(), AuthCheck(), Decode())
 	n.wg.Add(1)
 
 	return n, nil
 }
 
 func (n *Node) initRelay() {
-	n.relay = n.NewPeer(NoisePublicKey{})
-	n.relay.endpoint = nets.NewEndpoint("211.125.159.186:4000")
+	n.relay = n.NewPeer(security.NoisePublicKey{})
+	n.relay.node = n
+	n.relay.endpoint = nets.NewEndpoint(n.cfg.ClientCfg.Registry)
+	n.relay.start()
 }
 
-func (n *Node) NewPeer(pk NoisePublicKey) *Peer {
+func (n *Node) NewPeer(pk security.NoisePublicKey) *Peer {
 	p := new(Peer)
 	p.PubKey = pk
-	p.queue.outBound = newOutBoundQueue()
-	p.queue.inBound = newInBoundQueue()
+	p.queue.outBound = NewOutBoundQueue()
+	p.queue.inBound = NewInBoundQueue()
 	p.node = n
-	p.start()
 	return p
 }
 
 func (n *Node) nodeRegister() error {
 	rPkt := register.NewPacket()
-	copy(rPkt.UserId[:], n.userId)
+	n.userId = rPkt.UserId
 	copy(rPkt.PubKey[:], n.pubKey[:])
 	buff, err := register.Encode(rPkt)
 	if err != nil {
@@ -87,13 +102,14 @@ func (n *Node) nodeRegister() error {
 	return nil
 }
 
-func Start() error {
+func Start(cfg *util.Config) error {
 	iface, err := tun.New()
 	if err != nil {
 		return err
 	}
 
 	d, err := NewDevice(iface, nets.NewStdBind())
+	d.cfg = cfg
 	if err != nil {
 		return err
 	}

@@ -1,4 +1,4 @@
-package node
+package security
 
 import (
 	"crypto/rand"

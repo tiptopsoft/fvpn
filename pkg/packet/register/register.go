@@ -14,7 +14,7 @@ type RegPacket struct { //48
 	header header.Header //12
 	SrcIP  net.IP
 	PubKey [16]byte
-	UserId [10]byte
+	UserId [8]byte
 }
 
 func NewPacket() RegPacket {
@@ -41,7 +41,7 @@ func Encode(regPacket RegPacket) ([]byte, error) {
 func Decode(buff []byte) (RegPacket, error) {
 	res := NewPacket()
 
-	h, err := header.Decode(buff[:12])
+	h, err := header.Decode(buff[:packet.HeaderBuffSize])
 	if err != nil {
 		return RegPacket{}, err
 	}

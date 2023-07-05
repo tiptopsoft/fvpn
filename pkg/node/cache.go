@@ -1,6 +1,9 @@
 package node
 
-import "sync"
+import (
+	"github.com/topcloudz/fvpn/pkg/handler"
+	"sync"
+)
 
 type CacheFunc interface {
 	SetPeer(userId, ip string, peer *Peer) error
@@ -8,39 +11,40 @@ type CacheFunc interface {
 }
 
 type cache struct {
-	lock     sync.Mutex
-	networks map[string]string         //key: userId value: cidr or ip
-	keys     map[string]NoisePublicKey //key: ip or cidr value: NoisePublicKey
-	peers    map[NoisePublicKey]*Peer  //key: NoisePublicKey value: peer
+	lock  sync.Mutex
+	peers map[string]PeerMap //userId: map[ip]*Peer
 }
 
 var (
 	_ CacheFunc = (*cache)(nil)
 )
 
+type PeerMap map[string]*Peer
+
 func NewCache() CacheFunc {
 	return &cache{
-		networks: make(map[string]string, 1),
-		keys:     make(map[string]NoisePublicKey, 1),
-		peers:    make(map[NoisePublicKey]*Peer),
+		peers: make(map[string]PeerMap, 1),
 	}
 }
 
 func (c *cache) SetPeer(userId, ip string, peer *Peer) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	c.networks[userId] = ip
-	c.keys[ip] = peer.PubKey
-	c.peers[peer.PubKey] = peer
+	peerMap := c.peers[userId]
+	if peerMap == nil {
+		peerMap = make(PeerMap, 1)
+		c.peers[userId] = peerMap
+	}
+	peerMap[ip] = peer
 	return nil
 }
 
 func (c *cache) GetPeer(userId, ip string) (*Peer, error) {
 	if userId == "" {
-		userId = UCTL.UserId
+		userId = handler.UCTL.UserId
 	}
 
-	key := c.keys[ip]
-	peer := c.peers[key]
+	peerMap := c.peers[userId]
+	peer := peerMap[ip]
 	return peer, nil
 }

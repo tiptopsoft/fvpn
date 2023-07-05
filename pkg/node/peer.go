@@ -4,18 +4,19 @@ import (
 	"github.com/topcloudz/fvpn/pkg/nets"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/handshake"
+	"github.com/topcloudz/fvpn/pkg/security"
 )
 
 // Peer a destination will have a peer in fvpn, can connect to each other.
 // a RegServer also is a peer
 type Peer struct {
-	PubKey   NoisePublicKey
+	PubKey   security.NoisePublicKey
 	node     *Node
 	endpoint nets.Endpoint //
 
 	queue struct {
-		outBound *outBoundQueue // data to write to dst peer
-		inBound  *inBoundQueue  // data write to tun
+		outBound *OutBoundQueue // data to write to dst peer
+		inBound  *InBoundQueue  // data write to tun
 	}
 }
 
@@ -23,6 +24,10 @@ func (p *Peer) start() {
 	go p.SendPackets()
 	go p.WriteToDevice()
 	p.handshake()
+}
+
+func (p *Peer) SetEndpoint(ep nets.Endpoint) {
+	p.endpoint = ep
 }
 
 func (p *Peer) handshake() {
@@ -56,9 +61,10 @@ func (p *Peer) SendPackets() {
 		case pkt := <-p.queue.outBound.c:
 			send, err := p.node.net.bind.Send(pkt.Packet[:pkt.Size], p.endpoint)
 			if err != nil {
+				logger.Error(err)
 				continue
 			}
-			logger.Debugf("peer %v has send %d packets to %s", p, send, p.endpoint.DstToString())
+			logger.Debugf("peer %v has send %d packets to %s, buff: %v", p, send, p.endpoint.DstToString(), pkt.Packet[:pkt.Size])
 		default:
 
 		}

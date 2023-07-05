@@ -15,8 +15,8 @@ type HandShakePacketAck struct {
 	//PubKey  [16]byte
 }
 
-func NewPacket(networkId string) HandShakePacketAck {
-	headerPacket, _ := header.NewHeader(util.HandShakeMsgType, networkId)
+func NewPacket() HandShakePacketAck {
+	headerPacket, _ := header.NewHeader(util.HandShakeMsgType, "")
 	return HandShakePacketAck{
 		header: headerPacket,
 	}
@@ -38,7 +38,7 @@ func Encode(np HandShakePacketAck) ([]byte, error) {
 }
 
 func Decode(buff []byte) (HandShakePacketAck, error) {
-	res := NewPacket("")
+	res := NewPacket()
 	h, err := header.Decode(buff)
 	if err != nil {
 		return HandShakePacketAck{}, errors.New("decode common packet failed")

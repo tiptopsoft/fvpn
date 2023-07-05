@@ -2,22 +2,20 @@ package peer
 
 import (
 	"errors"
-	"fmt"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"github.com/topcloudz/fvpn/pkg/util"
-	"net"
 	"unsafe"
 )
 
 type PeerPacket struct {
 	header header.Header
-	SrcMac net.HardwareAddr
 }
 
 func (pkt PeerPacket) String() string {
-	value := fmt.Sprintf("type: %d, srcMac: %s", pkt.header.Flags, pkt.SrcMac.String())
-	return value
+	//value := fmt.Sprintf("type: %d, srcMac: %s", pkt.header.Flags, pkt.SrcMac.String())
+	//return value
+	return ""
 }
 
 func NewPacket(networkId string) PeerPacket {
@@ -35,7 +33,7 @@ func Encode(p PeerPacket) ([]byte, error) {
 	}
 	idx := 0
 	idx = packet.EncodeBytes(b, headerBuff, idx)
-	idx = packet.EncodeBytes(b, p.SrcMac[:], idx)
+	//idx = packet.EncodeBytes(b, p.SrcMac[:], idx)
 	return b, nil
 }
 
@@ -49,9 +47,9 @@ func (p PeerPacket) Decode(udpBytes []byte) (PeerPacket, error) {
 	idx := 0
 	res.header = h
 	idx += int(unsafe.Sizeof(header.Header{}))
-	var mac = make([]byte, 6)
-	packet.DecodeBytes(&mac, udpBytes, idx)
-	res.SrcMac = mac
+	//var mac = make([]byte, 6)
+	//packet.DecodeBytes(&mac, udpBytes, idx)
+	//res.SrcMac = mac
 	return res, nil
 }
 
@@ -60,8 +58,8 @@ func DecodeWithCommonPacket(udpBytes []byte, cp header.Header) (PeerPacket, erro
 	idx := 0
 	res.header = cp
 	idx += int(unsafe.Sizeof(header.Header{}))
-	var mac = make([]byte, 6)
-	packet.DecodeBytes(&mac, udpBytes, idx)
-	res.SrcMac = mac
+	//var mac = make([]byte, 6)
+	//packet.DecodeBytes(&mac, udpBytes, idx)
+	//res.SrcMac = mac
 	return res, nil
 }
