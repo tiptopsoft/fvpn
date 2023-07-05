@@ -6,9 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/topcloudz/fvpn/pkg/addr"
 	"github.com/topcloudz/fvpn/pkg/log"
-	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"golang.org/x/sys/unix"
 	"net"
@@ -103,7 +101,7 @@ func GetUserInfo() (string, string, error) {
 
 	decoder := json.NewDecoder(file)
 
-	var resp option.Login
+	var resp Login
 	err = decoder.Decode(&resp)
 	if err != nil {
 		return "", "", err
@@ -128,7 +126,7 @@ func TransferAppId(appId string) (net.HardwareAddr, error) {
 }
 
 func AppId() string {
-	buf := addr.GetLocalMacAddr()
+	buf := GetLocalMacAddr()
 	appId := hex.EncodeToString(buf)
 	return appId
 }

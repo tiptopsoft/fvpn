@@ -2,9 +2,9 @@ package ping
 
 import (
 	"errors"
-	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
+	"github.com/topcloudz/fvpn/pkg/util"
 	"net"
 	"unsafe"
 )
@@ -16,7 +16,7 @@ type PingPacket struct {
 }
 
 func NewPacket() PingPacket {
-	h, _ := header.NewHeader(option.MsgTypePing, "")
+	h, _ := header.NewHeader(util.MsgTypePing, "")
 	return PingPacket{
 		header: h,
 	}

@@ -2,8 +2,8 @@ package client
 
 import (
 	"errors"
-	"github.com/topcloudz/fvpn/pkg/addr"
 	"github.com/topcloudz/fvpn/pkg/http"
+	"github.com/topcloudz/fvpn/pkg/util"
 )
 
 const (
@@ -14,7 +14,7 @@ const (
 func (p *Peer) RunJoinNetwork(netId string) error {
 	logger.Infof("start to join %s", netId)
 	req := new(http.JoinRequest)
-	mac, err := addr.GetHostMac()
+	mac, err := util.GetHostMac()
 	if err != nil {
 		return errors.New("can not found default host mac")
 	}

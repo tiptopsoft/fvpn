@@ -2,36 +2,27 @@ package register
 
 import (
 	"errors"
-	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
+	"github.com/topcloudz/fvpn/pkg/util"
 	"net"
 	"unsafe"
 )
 
 // RegPacket server a client to server
 type RegPacket struct { //48
-	header header.Header    //12
-	SrcMac net.HardwareAddr //6
-	SrcIP  net.IP           // 4 byte是ipv4, 16 byte是ipv6
+	header header.Header //12
+	SrcIP  net.IP
+	PubKey [16]byte
+	UserId [10]byte
 }
 
-func NewPacket(networkId string, srcMac net.HardwareAddr, srcIP net.IP) RegPacket {
-	cmPacket, _ := header.NewHeader(option.MsgTypeRegisterSuper, networkId)
+func NewPacket() RegPacket {
+	cmPacket, _ := header.NewHeader(util.MsgTypeRegisterSuper, "")
 	reg := RegPacket{
 		header: cmPacket,
-		SrcIP:  srcIP,
-		SrcMac: srcMac,
 	}
-
 	return reg
-}
-
-func NewUnregisterPacket(networkId string) RegPacket {
-	cmPacket, _ := header.NewHeader(option.MsgTypeUnregisterSuper, networkId)
-	return RegPacket{
-		header: cmPacket,
-	}
 }
 
 func Encode(regPacket RegPacket) ([]byte, error) {
@@ -42,13 +33,13 @@ func Encode(regPacket RegPacket) ([]byte, error) {
 	}
 	idx := 0
 	idx = packet.EncodeBytes(b, headerBuff, idx)
-	idx = packet.EncodeBytes(b, regPacket.SrcMac[:], idx)
-	idx = packet.EncodeBytes(b, regPacket.SrcIP[:], idx)
+	idx = packet.EncodeBytes(b, regPacket.PubKey[:], idx)
+	idx = packet.EncodeBytes(b, regPacket.SrcIP, idx)
 	return b, nil
 }
 
 func Decode(buff []byte) (RegPacket, error) {
-	res := NewPacket("", net.HardwareAddr{}, net.IP{})
+	res := NewPacket()
 
 	h, err := header.Decode(buff[:12])
 	if err != nil {
@@ -57,11 +48,11 @@ func Decode(buff []byte) (RegPacket, error) {
 	res.header = h
 	idx := 0
 	idx += int(unsafe.Sizeof(header.Header{}))
-	var mac = make([]byte, 6)
-	idx = packet.DecodeBytes(&mac, buff, idx)
-	res.SrcMac = mac
+	var appId = make([]byte, 16)
+	idx = packet.DecodeBytes(&appId, buff, idx)
+	copy(res.PubKey[:], appId)
 	var ip = make([]byte, 16)
 	idx = packet.DecodeBytes(&ip, buff, idx)
-	res.SrcIP = ip
+	copy(res.SrcIP[:], ip)
 	return res, nil
 }

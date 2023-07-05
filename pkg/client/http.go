@@ -5,13 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 	nativehttp "github.com/topcloudz/fvpn/pkg/http"
-	"github.com/topcloudz/fvpn/pkg/option"
-	"github.com/topcloudz/fvpn/pkg/tuntap"
-	"github.com/topcloudz/fvpn/pkg/util"
+	"github.com/topcloudz/fvpn/pkg/log"
 	"io"
-	"net"
 	"net/http"
 )
+
+var (
+	logger      = log.Log()
+	DefaultPort = 6663
+)
+
+type Peer struct {
+	Config interface{}
+}
 
 func (p *Peer) runHttpServer() error {
 	s := nativehttp.NewServer()
@@ -45,14 +51,14 @@ func (p *Peer) runHttpServer() error {
 
 			logger.Infof("request network is: %s", req.NetworkId)
 
-			tap, err := tuntap.New(tuntap.TAP, req.NetworkId)
+			//tap, err := tuntap.New(tuntap.TUN, req.NetworkId)
 			if err != nil {
 				w.WriteHeader(500)
 				return
 			}
-			if p.devices == nil {
-				p.devices[req.NetworkId] = tap
-			}
+			//if p.devices == nil {
+			//	p.devices[req.NetworkId] = tap
+			//}
 
 			if err := json.NewEncoder(w).Encode(req); err != nil {
 				w.WriteHeader(500)
@@ -62,17 +68,17 @@ func (p *Peer) runHttpServer() error {
 			logger.Infof("get result ip: %s, mask: %s", req.Ip, req.Mask)
 
 			//get dev
-			if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", tap.Name, req.Ip, req.Mask, 1420)); err != nil {
-				w.WriteHeader(500)
-				return
-			}
+			//if err = option.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s mtu %d up", tap.name, req.Ip, req.Mask, 1420)); err != nil {
+			//	w.WriteHeader(500)
+			//	return
+			//}
 
 			// start tap
-			tap.IP = net.ParseIP(req.Ip)
-			p.devices[req.NetworkId] = tap
-			go p.ReadFromTun(tap, req.NetworkId)
-			p.SendRegister(tap)
-			go util.AddJob(req.NetworkId, p.sendQueryPeer)
+			//tap.IP = net.ParseIP(req.Ip)
+			//p.devices[req.NetworkId] = tap
+			//go p.ReadFromTun(tap, req.NetworkId)
+			//p.SendRegister(tap)
+			//go util.AddJob(req.NetworkId, p.sendQueryPeer)
 
 			w.WriteHeader(200)
 			logger.Infof("join network %s success", req.NetworkId)

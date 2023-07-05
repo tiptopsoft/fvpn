@@ -1,9 +1,9 @@
 package ack
 
 import (
-	"github.com/topcloudz/fvpn/pkg/option"
 	packet "github.com/topcloudz/fvpn/pkg/packet"
 	header "github.com/topcloudz/fvpn/pkg/packet/header"
+	"github.com/topcloudz/fvpn/pkg/util"
 	"net"
 	"unsafe"
 )
@@ -16,7 +16,7 @@ type RegPacketAck struct {
 }
 
 func NewPacket() RegPacketAck {
-	cmPacket, _ := header.NewHeader(option.MsgTypeRegisterAck, "")
+	cmPacket, _ := header.NewHeader(util.MsgTypeRegisterAck, "")
 	return RegPacketAck{
 		header: cmPacket,
 	}

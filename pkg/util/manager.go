@@ -1,7 +1,6 @@
 package util
 
 import (
-	"github.com/topcloudz/fvpn/pkg/security"
 	"sync"
 )
 
@@ -11,11 +10,7 @@ type KeyManager struct {
 }
 
 type NodeKey struct {
-	PrivateKey security.NoisePrivateKey
-	PubKey     security.NoisePublicKey
-	SharedKey  security.NoiseSharedKey
-	Cipher     security.CipherFunc
-	AppId      string
+	AppId string
 }
 
 func (k KeyManager) GetKey(appId string) *NodeKey {

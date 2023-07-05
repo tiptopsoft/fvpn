@@ -4,13 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/dghubble/sling"
-	"github.com/topcloudz/fvpn/pkg/cache"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"net/http"
 )
 
 type Interface interface {
-	ListNodes(userId string) []cache.Endpoint
+	ListNodes(userId string)
 }
 
 type Client struct {

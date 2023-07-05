@@ -6,7 +6,7 @@ require (
 	github.com/ccding/go-stun v0.1.4
 	github.com/dghubble/sling v1.4.1
 	github.com/gamexg/gotool v0.0.0-20161209101727-87a979f7b949
-	github.com/gogf/greuse v1.1.0
+	github.com/google/martian v2.1.0+incompatible
 	github.com/libp2p/go-reuseport v0.3.0
 	github.com/spf13/cobra v1.6.0
 	github.com/spf13/viper v1.13.0

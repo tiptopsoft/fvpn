@@ -3,9 +3,9 @@ package peer
 import (
 	"errors"
 	"fmt"
-	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
+	"github.com/topcloudz/fvpn/pkg/util"
 	"net"
 	"unsafe"
 )
@@ -21,7 +21,7 @@ func (pkt PeerPacket) String() string {
 }
 
 func NewPacket(networkId string) PeerPacket {
-	cmPacket, _ := header.NewHeader(option.MsgTypeQueryPeer, networkId)
+	cmPacket, _ := header.NewHeader(util.MsgTypeQueryPeer, networkId)
 	return PeerPacket{
 		header: cmPacket,
 	}

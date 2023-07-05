@@ -2,14 +2,12 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/topcloudz/fvpn/pkg/client"
-	"github.com/topcloudz/fvpn/pkg/middleware/auth"
-	option2 "github.com/topcloudz/fvpn/pkg/option"
+	"github.com/topcloudz/fvpn/pkg/node"
+	option2 "github.com/topcloudz/fvpn/pkg/util"
 )
 
 type upOptions struct {
 	*option2.ClientConfig
-	auth.StarAuth
 	StarConfigFilePath string
 }
 
@@ -38,13 +36,10 @@ func EdgeCmd() *cobra.Command {
 
 // runEdge run a client up
 func runNode(opts *upOptions) error {
-	config, err := option2.InitConfig()
-	if err != nil {
-		return err
-	}
+	//config, err := option2.InitConfig()
+	//if err != nil {
+	//	return err
+	//}
 
-	s := &client.Peer{
-		Config: config,
-	}
-	return s.Start()
+	return node.Start()
 }

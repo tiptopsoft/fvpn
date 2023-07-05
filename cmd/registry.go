@@ -2,9 +2,6 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/topcloudz/fvpn/pkg/option"
-	"github.com/topcloudz/fvpn/pkg/packet"
-	"github.com/topcloudz/fvpn/pkg/server"
 )
 
 type RegStarOptions struct {
@@ -33,14 +30,14 @@ func RegCmd() *cobra.Command {
 
 func runSuper(opts *RegStarOptions) error {
 
-	config, err := option.InitConfig()
-	if err != nil {
-		return err
-	}
-	s := server.RegServer{
-		ServerConfig: config.ServerCfg,
-		Outbound:     make(chan *packet.Frame, 15000),
-	}
+	//config, err := util.InitConfig()
+	//if err != nil {
+	//	return err
+	//}
+	//s := server.RegServer{
+	//	ServerConfig: config.ServerCfg,
+	//	Outbound:     make(chan *packet.Frame, 15000),
+	//}
 
-	return s.Start(config.ServerCfg.Listen)
+	return nil
 }

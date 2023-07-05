@@ -1,9 +1,9 @@
 package ack
 
 import (
-	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
+	"github.com/topcloudz/fvpn/pkg/util"
 	"net"
 	"unsafe"
 )
@@ -26,7 +26,7 @@ type EdgePacketAck struct {
 }
 
 func NewPacket(networkId string) EdgePacketAck {
-	cmPacket, _ := header.NewHeader(option.MsgTypeQueryPeer, networkId)
+	cmPacket, _ := header.NewHeader(util.MsgTypeQueryPeer, networkId)
 	return EdgePacketAck{
 		header: cmPacket,
 	}

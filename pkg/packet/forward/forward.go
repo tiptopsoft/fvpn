@@ -2,9 +2,9 @@ package forward
 
 import (
 	"errors"
-	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
+	"github.com/topcloudz/fvpn/pkg/util"
 	"net"
 	"unsafe"
 )
@@ -21,7 +21,7 @@ type body struct {
 }
 
 func NewPacket(networkId string) ForwardPacket {
-	header, _ := header.NewHeader(option.MsgTypePacket, networkId)
+	header, _ := header.NewHeader(util.MsgTypePacket, networkId)
 	return ForwardPacket{
 		header: header,
 	}

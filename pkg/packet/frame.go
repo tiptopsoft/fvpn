@@ -1,10 +1,12 @@
 package packet
 
 import (
-	"github.com/topcloudz/fvpn/pkg/cache"
-	"github.com/topcloudz/fvpn/pkg/option"
 	"net"
 	"sync"
+)
+
+const (
+	FvpnPktBuffSize = 2048
 )
 
 type Frame struct {
@@ -13,23 +15,21 @@ type Frame struct {
 	Packet    []byte
 	Size      int
 	NetworkId string
-	//AppId      string
+	UserId    []byte
+	//PubKey      string
 	SrcAddr    *net.UDPAddr
 	RemoteAddr string //inner ip
 	FrameType  uint16
-	Type       uint16
-	Self       *cache.Endpoint
-	Target     *cache.Endpoint
 }
 
 func NewFrame() *Frame {
 	return &Frame{
-		Buff:   make([]byte, option.FVPN_PKT_BUFF_SIZE),
-		Packet: make([]byte, option.FVPN_PKT_BUFF_SIZE),
+		Buff:   make([]byte, FvpnPktBuffSize),
+		Packet: make([]byte, FvpnPktBuffSize),
 	}
 }
 
 func (f *Frame) Clear() {
-	buf := make([]byte, option.FVPN_PKT_BUFF_SIZE)
+	buf := make([]byte, FvpnPktBuffSize)
 	copy(f.Packet, buf)
 }

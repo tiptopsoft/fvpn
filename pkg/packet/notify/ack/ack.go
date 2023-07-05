@@ -2,9 +2,9 @@ package ack
 
 import (
 	"errors"
-	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
+	"github.com/topcloudz/fvpn/pkg/util"
 	"net"
 	"unsafe"
 )
@@ -21,7 +21,7 @@ type NotifyPacketAck struct {
 }
 
 func NewPacket(networkId string) NotifyPacketAck {
-	headerPacket, _ := header.NewHeader(option.MsgTypeNotifyAck, networkId)
+	headerPacket, _ := header.NewHeader(util.MsgTypeNotifyAck, networkId)
 	return NotifyPacketAck{
 		header: headerPacket,
 	}

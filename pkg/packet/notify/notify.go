@@ -2,9 +2,9 @@ package notify
 
 import (
 	"errors"
-	"github.com/topcloudz/fvpn/pkg/option"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
+	"github.com/topcloudz/fvpn/pkg/util"
 	"net"
 	"unsafe"
 )
@@ -21,7 +21,7 @@ type NotifyPacket struct {
 }
 
 func NewPacket(networkId string) NotifyPacket {
-	headerPacket, _ := header.NewHeader(option.MsgTypeNotify, networkId)
+	headerPacket, _ := header.NewHeader(util.MsgTypeNotify, networkId)
 	return NotifyPacket{
 		header: headerPacket,
 	}

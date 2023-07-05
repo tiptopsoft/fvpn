@@ -1,4 +1,4 @@
-package handshake
+package ack
 
 import (
 	"errors"
@@ -8,22 +8,22 @@ import (
 	"unsafe"
 )
 
-type HandShakePacket struct {
+type HandShakePacketAck struct {
 	header header.Header //12
 	PubKey [32]byte      //dh public key, generate from curve25519
 	//SrcIP  net.IP
 	//PubKey  [16]byte
 }
 
-func NewPacket(networkId string) HandShakePacket {
+func NewPacket(networkId string) HandShakePacketAck {
 	headerPacket, _ := header.NewHeader(util.HandShakeMsgType, networkId)
-	return HandShakePacket{
+	return HandShakePacketAck{
 		header: headerPacket,
 	}
 }
 
-func Encode(np HandShakePacket) ([]byte, error) {
-	b := make([]byte, unsafe.Sizeof(HandShakePacket{}))
+func Encode(np HandShakePacketAck) ([]byte, error) {
+	b := make([]byte, unsafe.Sizeof(HandShakePacketAck{}))
 	headerBuff, err := header.Encode(np.header)
 	if err != nil {
 		return nil, errors.New("encode common packet failed")
@@ -37,11 +37,11 @@ func Encode(np HandShakePacket) ([]byte, error) {
 	return b, nil
 }
 
-func Decode(buff []byte) (HandShakePacket, error) {
+func Decode(buff []byte) (HandShakePacketAck, error) {
 	res := NewPacket("")
 	h, err := header.Decode(buff)
 	if err != nil {
-		return HandShakePacket{}, errors.New("decode common packet failed")
+		return HandShakePacketAck{}, errors.New("decode common packet failed")
 	}
 	idx := 0
 	res.header = h
