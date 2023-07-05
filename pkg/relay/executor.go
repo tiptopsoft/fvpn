@@ -98,11 +98,11 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 				return err
 			}
 
-			f := packet.NewFrame()
-			frame.Size = len(buff)
-			frame.TargetAddr = frame.SrcAddr
-			copy(f.Packet[:frame.Size], buff)
-			r.PutPktToOutbound(f)
+			newFrame := packet.NewFrame()
+			newFrame.Size = len(buff)
+			newFrame.TargetAddr = frame.SrcAddr
+			copy(newFrame.Packet[:newFrame.Size], buff)
+			r.PutPktToOutbound(newFrame)
 		}
 
 		return nil

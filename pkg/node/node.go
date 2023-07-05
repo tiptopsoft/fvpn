@@ -169,7 +169,7 @@ func (n *Node) ReadFromUdp() {
 		if err != nil {
 			continue
 		}
-		logger.Debugf("udp receive %d byte from %s, data: %v", size, remoteAddr.IP, f.Buff)
+		logger.Debugf("udp receive %d byte from %s, data: %v", size, remoteAddr.IP, f.Buff[:size])
 	}
 }
 
