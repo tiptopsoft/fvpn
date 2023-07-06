@@ -87,6 +87,20 @@ func New() (Device, error) {
 	return tun, nil
 }
 
+// Read is a hack to work around the first 4 bytes "packet
+// information" because there doesn't seem to be an IFF_NO_PI for darwin.
+func (tun *NativeTun) Read(buff []byte) (n int, err error) {
+	size := len(buff) + 4
+	buf := make([]byte, size)
+	n, err = tun.file.Read(buf)
+	//
+	if n <= 0 {
+		return 0, err
+	}
+	copy(buff[:], buf[4:size])
+	return n - 4, err
+}
+
 func socketCloexec(family, sotype, proto int) (fd int, err error) {
 	syscall.ForkLock.Lock()
 	defer syscall.ForkLock.Unlock()

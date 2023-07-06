@@ -14,11 +14,13 @@ import (
 )
 
 var (
-	logger = log.Log()
+	logger    = log.Log()
+	relayPeer *Peer
 )
 
 // Node is a dev in any os.
 type Node struct {
+	mode       int
 	cfg        *util.Config
 	privateKey security.NoisePrivateKey
 	pubKey     security.NoisePublicKey
@@ -56,6 +58,7 @@ func NewDevice(iface tun.Device, bind nets.Bind) (*Node, error) {
 		device: iface,
 		net:    struct{ bind nets.Bind }{bind: bind},
 		cache:  NewCache(),
+		mode:   1,
 	}
 	privateKey, err := security.NewPrivateKey()
 	if err != nil {
@@ -79,6 +82,11 @@ func (n *Node) initRelay() {
 	n.relay.node = n
 	n.relay.endpoint = nets.NewEndpoint(n.cfg.ClientCfg.Registry)
 	n.relay.start()
+	relayPeer = n.relay
+	err := n.cache.SetPeer(UCTL.UserId, n.relay.endpoint.DstIP().IP.String(), n.relay)
+	if err != nil {
+		return
+	}
 }
 
 func (n *Node) NewPeer(pk security.NoisePublicKey) *Peer {
@@ -150,13 +158,15 @@ func (n *Node) ReadFromTun() {
 		frame := packet.NewFrame()
 		ctx = context.WithValue(ctx, "cache", n.cache)
 		frame.UserId = n.userId
+		frame.FrameType = util.MsgTypePacket
 		size, err := n.device.Read(frame.Buff[:])
 		if err != nil {
 			continue
 		}
+		frame.Size = size
 		logger.Debugf("node %s receive %d byte", n.device.Name(), size)
 
-		ipHeader, err := util.GetIPFrameHeader(frame.Packet[:])
+		ipHeader, err := util.GetIPFrameHeader(frame.Buff[:])
 		if err != nil {
 			continue
 		}
@@ -179,6 +189,8 @@ func (n *Node) ReadFromUdp() {
 		if err != nil {
 			continue
 		}
+		f.Size = size
+		f.RemoteAddr = remoteAddr
 
 		hpkt, err := util.GetPacketHeader(f.Buff[:])
 		if err != nil {
@@ -207,7 +219,7 @@ func (n *Node) WriteToUDP() {
 			if pkt.FrameType == util.MsgTypePacket {
 				ip := pkt.DstIP
 				peer, err := n.cache.GetPeer(pkt.UidString(), ip.String())
-				if err != nil {
+				if err != nil || peer == nil {
 					peer = n.relay
 				}
 				peer.queue.outBound.c <- pkt

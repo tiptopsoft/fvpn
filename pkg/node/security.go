@@ -18,11 +18,14 @@ func Decode() func(handler.Handler) handler.Handler {
 					return errors.New("peer not found")
 				}
 
+				logger.Debugf("data before decode: %v", frame.Buff[:frame.Size])
 				frame.Packet, err = peer.GetCodec().Decode(frame.Buff[:])
+				logger.Debugf("data after decode: %v", frame.Packet[:frame.Size])
 				if err != nil {
 					return err
 				}
 			}
+			frame.Packet = frame.Buff[:frame.Size]
 			return next.Handle(ctx, frame)
 		})
 	}
@@ -39,7 +42,15 @@ func Encode() func(handler.Handler) handler.Handler {
 					return errors.New("peer not found")
 				}
 
-				frame.Packet, err = peer.GetCodec().Encode(frame.Buff[:])
+				logger.Debugf("data before encode: %v", frame.Buff[:frame.Size])
+				encoded, err := peer.GetCodec().Encode(frame.Buff[:frame.Size])
+				if err != nil {
+					return err
+				}
+				frame.Clear()
+				copy(frame.Packet, encoded)
+				frame.Size = len(encoded)
+				logger.Debugf("data after encode: %v", frame.Packet[:frame.Size])
 				if err != nil {
 					return err
 				}

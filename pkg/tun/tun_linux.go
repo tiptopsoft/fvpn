@@ -60,3 +60,10 @@ func New() (*NativeTun, error) {
 		Fd:   fd,
 	}, nil
 }
+
+// Read is a hack to work around the first 4 bytes "packet
+// information" because there doesn't seem to be an IFF_NO_PI for darwin.
+func (tun *NativeTun) Read(buff []byte) (n int, err error) {
+	n, err = tun.file.Read(buff)
+	return n, err
+}

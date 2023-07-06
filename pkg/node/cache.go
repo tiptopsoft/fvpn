@@ -48,6 +48,11 @@ func (c *cache) GetPeer(userId, ip string) (*Peer, error) {
 
 	peerMap := c.peers[userId]
 	peer := peerMap[ip]
+
+	// if peer not exists use relay
+	if peer == nil {
+		return relayPeer, nil
+	}
 	return peer, nil
 }
 

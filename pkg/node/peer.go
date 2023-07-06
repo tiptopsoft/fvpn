@@ -7,11 +7,14 @@ import (
 	"github.com/topcloudz/fvpn/pkg/packet/handshake"
 	"github.com/topcloudz/fvpn/pkg/security"
 	"github.com/topcloudz/fvpn/pkg/util"
+	"sync"
 )
 
 // Peer a destination will have a peer in fvpn, can connect to each other.
 // a RegServer also is a peer
 type Peer struct {
+	lock     sync.Mutex
+	status   bool
 	PubKey   security.NoisePublicKey
 	node     *Node
 	endpoint nets.Endpoint //
@@ -28,11 +31,18 @@ func (p *Peer) GetCodec() security.CipherFunc {
 }
 
 func (p *Peer) start() {
-	go p.SendPackets()
-	go p.WriteToDevice()
-
-	//cache peer
-	p.handshake()
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	if p.status == true {
+		return
+	}
+	p.status = true
+	if p.node != nil && p.node.mode == 1 {
+		go p.SendPackets()
+		go p.WriteToDevice()
+		//cache peer
+		p.handshake()
+	}
 }
 
 func (p *Peer) SetEndpoint(ep nets.Endpoint) {

@@ -81,9 +81,11 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 				return err
 			}
 			//build handshake resp
-			hPktack := handshake.NewPacket(util.HandShakeMsgTypeAck, "")
-			hPktack.PubKey = r.key.privateKey.NewPubicKey()
-			buff, err := handshake.Encode(hPktack)
+			hpkt := handshake.NewPacket(util.HandShakeMsgTypeAck, frame.UidString())
+			hpkt.Header.SrcIP = frame.DstIP
+			hpkt.Header.DstIP = frame.SrcIP
+			hpkt.PubKey = r.key.privateKey.NewPubicKey()
+			buff, err := handshake.Encode(hpkt)
 			if err != nil {
 				return err
 			}

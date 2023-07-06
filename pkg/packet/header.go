@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"net"
-	"unsafe"
 )
 
 const (
@@ -39,7 +38,7 @@ func NewHeader(msgType uint16, userId string) (Header, error) {
 
 func Encode(h Header) ([]byte, error) {
 	idx := 0
-	b := make([]byte, unsafe.Sizeof(Header{}))
+	b := make([]byte, HeaderBuffSize)
 	idx = EncodeUint8(b, h.Version, idx)
 	idx = EncodeUint8(b, h.TTL, idx)
 	idx = EncodeUint16(b, h.Flags, idx)
