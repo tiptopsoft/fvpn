@@ -5,7 +5,6 @@ import (
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/util"
-	"unsafe"
 )
 
 type HandShakePacket struct {
@@ -21,7 +20,7 @@ func NewPacket(msgType uint16, userId string) HandShakePacket {
 }
 
 func Encode(np HandShakePacket) ([]byte, error) {
-	b := make([]byte, unsafe.Sizeof(HandShakePacket{}))
+	b := make([]byte, packet.HandshakeBuffSize)
 	headerBuff, err := packet.Encode(np.Header)
 	if err != nil {
 		return nil, errors.New("encode common packet failed")
@@ -41,7 +40,7 @@ func Decode(buff []byte) (HandShakePacket, error) {
 	}
 	idx := 0
 	res.Header = h
-	idx += int(unsafe.Sizeof(packet.Header{}))
+	idx += packet.HeaderBuffSize
 
 	pubKey := make([]byte, 32)
 	idx = packet.DecodeBytes(&pubKey, buff, idx)

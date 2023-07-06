@@ -14,8 +14,8 @@ import (
 
 func (n *Node) tunInHandler() HandlerFunc {
 	return func(ctx context.Context, frame *packet.Frame) error {
-
-		h, _ := packet.NewHeader(util.MsgTypePacket, "")
+		defer frame.Unlock()
+		h, _ := packet.NewHeader(util.MsgTypePacket, UCTL.UserId)
 		frame.UserId = h.UserId
 		h.SrcIP = frame.SrcIP
 		h.DstIP = frame.DstIP
@@ -24,12 +24,19 @@ func (n *Node) tunInHandler() HandlerFunc {
 			return err
 		}
 
-		idx := 0
-		idx = packet.EncodeBytes(frame.Packet, headerBuff, idx)
-		idx = packet.EncodeBytes(frame.Packet, frame.Packet[:frame.Size], idx)
+		newFrame := packet.NewFrame()
+		size := packet.HeaderBuffSize + frame.Size
+		newFrame.Size = size
+		newFrame.SrcIP = frame.SrcIP
+		newFrame.DstIP = frame.DstIP
+		newFrame.UserId = frame.UserId
 
-		frame.FrameType = util.MsgTypePacket
-		n.PutPktToOutbound(frame)
+		idx := 0
+		idx = packet.EncodeBytes(newFrame.Packet, headerBuff, idx)
+		idx = packet.EncodeBytes(newFrame.Packet, frame.Packet[:frame.Size], idx)
+
+		newFrame.FrameType = util.MsgTypePacket
+		n.PutPktToOutbound(newFrame)
 
 		return nil
 

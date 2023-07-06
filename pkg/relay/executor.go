@@ -22,10 +22,9 @@ func (r *RegServer) ReadFromUdp() {
 			logger.Error("no data exists")
 			continue
 		}
-		frame.Packet = frame.Buff[:n]
-		logger.Debugf("Read from udp %d byte, data: %v", n, frame.Packet)
+		logger.Debugf("Read from udp %d byte, data: %v", n, frame.Buff)
 
-		packetHeader, err := util.GetPacketHeader(frame.Packet[:])
+		packetHeader, err := util.GetPacketHeader(frame.Buff[:])
 		if err != nil {
 			logger.Errorf("get header falied. %v", err)
 			continue
@@ -35,7 +34,6 @@ func (r *RegServer) ReadFromUdp() {
 		frame.RemoteAddr = addr
 		frame.SrcIP = packetHeader.SrcIP
 		frame.DstIP = packetHeader.DstIP
-		//frame.PubKey = hex.EncodeToString(packetHeader.PubKey[:])
 		frame.UserId = packetHeader.UserId
 
 		r.PutPktToInbound(frame)

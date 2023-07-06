@@ -156,6 +156,7 @@ func (n *Node) ReadFromTun() {
 	for {
 		ctx := context.Background()
 		frame := packet.NewFrame()
+		frame.Lock()
 		ctx = context.WithValue(ctx, "cache", n.cache)
 		frame.UserId = n.userId
 		frame.FrameType = util.MsgTypePacket

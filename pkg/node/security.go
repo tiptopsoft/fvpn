@@ -12,18 +12,23 @@ func Decode() func(handler.Handler) handler.Handler {
 	return func(next handler.Handler) handler.Handler {
 		return handler.HandlerFunc(func(ctx context.Context, frame *packet.Frame) error {
 			if frame.FrameType == util.MsgTypePacket {
+				start := packet.HeaderBuffSize
 				cache := ctx.Value("cache").(CacheFunc)
-				peer, err := cache.GetPeer(handler.UCTL.UserId, frame.DstIP.String())
+				peer, err := cache.GetPeer(handler.UCTL.UserId, frame.SrcIP.String())
 				if err != nil {
 					return errors.New("peer not found")
 				}
 
-				logger.Debugf("data before decode: %v", frame.Buff[:frame.Size])
-				frame.Packet, err = peer.GetCodec().Decode(frame.Buff[:])
-				logger.Debugf("data after decode: %v", frame.Packet[:frame.Size])
+				logger.Debugf("data before decode: %v", frame.Buff[start:frame.Size])
+				decoded, err := peer.GetCodec().Decode(frame.Buff[start:])
 				if err != nil {
 					return err
 				}
+				frame.Clear()
+				copy(frame.Packet[0:start], frame.Buff[0:start])
+				copy(frame.Packet[start:], decoded)
+				frame.Size = len(decoded) + packet.HeaderBuffSize
+				logger.Debugf("data after decode: %v", frame.Packet[:frame.Size])
 			}
 			frame.Packet = frame.Buff[:frame.Size]
 			return next.Handle(ctx, frame)

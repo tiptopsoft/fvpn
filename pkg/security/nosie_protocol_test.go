@@ -49,7 +49,7 @@ func TestCurve(t *testing.T) {
 	h, _ := packet.NewHeader(util.MsgTypePacket, "123456")
 	headerBuff, _ := packet.Encode(h)
 	copy(frame.Packet, headerBuff)
-	copy(frame.Packet[12:], sBuff)
+	copy(frame.Packet[44:], sBuff)
 
 	fmt.Println("before encoded: ", frame.Packet[:])
 
