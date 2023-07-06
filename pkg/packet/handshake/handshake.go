@@ -4,35 +4,30 @@ import (
 	"errors"
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/packet"
-	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"github.com/topcloudz/fvpn/pkg/util"
-	"net"
 	"unsafe"
 )
 
 type HandShakePacket struct {
-	header header.Header //20
-	SrcIP  net.IP
+	Header packet.Header
 	PubKey [32]byte //dh public key, generate from curve25519
 }
 
 func NewPacket(msgType uint16, userId string) HandShakePacket {
-	headerPacket, _ := header.NewHeader(msgType, userId)
+	headerPacket, _ := packet.NewHeader(msgType, userId)
 	return HandShakePacket{
-		header: headerPacket,
-		SrcIP:  net.IP{},
+		Header: headerPacket,
 	}
 }
 
 func Encode(np HandShakePacket) ([]byte, error) {
 	b := make([]byte, unsafe.Sizeof(HandShakePacket{}))
-	headerBuff, err := header.Encode(np.header)
+	headerBuff, err := packet.Encode(np.Header)
 	if err != nil {
 		return nil, errors.New("encode common packet failed")
 	}
 	idx := 0
 	idx = packet.EncodeBytes(b, headerBuff, idx)
-	idx = packet.EncodeBytes(b, np.SrcIP[:], idx)
 	idx = packet.EncodeBytes(b, np.PubKey[:], idx)
 
 	return b, nil
@@ -40,17 +35,13 @@ func Encode(np HandShakePacket) ([]byte, error) {
 
 func Decode(buff []byte) (HandShakePacket, error) {
 	res := NewPacket(util.HandShakeMsgType, handler.UCTL.UserId)
-	h, err := header.Decode(buff)
+	h, err := packet.Decode(buff)
 	if err != nil {
 		return HandShakePacket{}, errors.New("decode common packet failed")
 	}
 	idx := 0
-	res.header = h
-	idx += int(unsafe.Sizeof(header.Header{}))
-
-	srcIP := make([]byte, 16)
-	idx = packet.DecodeBytes(&srcIP, buff, idx)
-	copy(res.SrcIP[:], srcIP)
+	res.Header = h
+	idx += int(unsafe.Sizeof(packet.Header{}))
 
 	pubKey := make([]byte, 32)
 	idx = packet.DecodeBytes(&pubKey, buff, idx)

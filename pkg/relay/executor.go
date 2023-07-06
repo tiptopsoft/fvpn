@@ -2,12 +2,11 @@ package relay
 
 import (
 	"context"
-	"encoding/hex"
+	"fmt"
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/node"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/handshake"
-	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"github.com/topcloudz/fvpn/pkg/util"
 )
 
@@ -15,9 +14,14 @@ func (r *RegServer) ReadFromUdp() {
 	logger.Infof("start a udp loop")
 	for {
 		ctx := context.Background()
+		ctx = context.WithValue(ctx, "cache", r.cache)
 		frame := packet.NewFrame()
 		frame.Ctx = ctx
 		n, addr, err := r.conn.ReadFromUDP(frame.Buff[:])
+		if err != nil || n < 0 {
+			logger.Error("no data exists")
+			continue
+		}
 		frame.Packet = frame.Buff[:n]
 		logger.Debugf("Read from udp %d byte, data: %v", n, frame.Packet)
 
@@ -26,17 +30,13 @@ func (r *RegServer) ReadFromUdp() {
 			logger.Errorf("get header falied. %v", err)
 			continue
 		}
-		networkId := hex.EncodeToString(packetHeader.NetworkId[:])
 		frame.Size = n
 		frame.FrameType = packetHeader.Flags
-		frame.SrcAddr = addr
+		frame.RemoteAddr = addr
+		frame.SrcIP = packetHeader.SrcIP
+		frame.DstIP = packetHeader.DstIP
 		//frame.PubKey = hex.EncodeToString(packetHeader.PubKey[:])
-		frame.NetworkId = networkId
 		frame.UserId = packetHeader.UserId
-		if err != nil || n < 0 {
-			logger.Warnf("no data exists")
-			continue
-		}
 
 		r.PutPktToInbound(frame)
 	}
@@ -44,11 +44,11 @@ func (r *RegServer) ReadFromUdp() {
 
 func (r *RegServer) writeUdpHandler() handler.HandlerFunc {
 	return func(ctx context.Context, pkt *packet.Frame) error {
-		n, err := r.conn.WriteToUDP(pkt.Packet[:pkt.Size], pkt.TargetAddr)
+		n, err := r.conn.WriteToUDP(pkt.Packet[:pkt.Size], pkt.RemoteAddr)
 		if err != nil {
 			return err
 		}
-		logger.Debugf("registry write %d size to %v", n, pkt.TargetAddr)
+		logger.Debugf("registry write %d size to %v", n, pkt.RemoteAddr)
 		return nil
 	}
 }
@@ -61,18 +61,23 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 		switch frame.FrameType {
 		case util.MsgTypeRegisterSuper:
 			err := r.register(frame)
-			h, err := header.NewHeader(util.MsgTypeRegisterAck, frame.NetworkId)
+			h, err := packet.NewHeader(util.MsgTypeRegisterAck, frame.NetworkId)
 			if err != nil {
 				logger.Errorf("build resp failed. err: %v", err)
 			}
-			f, _ := header.Encode(h)
+			f, _ := packet.Encode(h)
 			frame.Packet = f
-			frame.TargetAddr = frame.SrcAddr
 			break
 		case util.MsgTypePacket:
 			logger.Infof("server got forward packet size:%d, data: %v", frame.Size, data)
+			peer, err := r.cache.GetPeer(frame.UidString(), frame.DstIP.String())
+			if err != nil {
+				return fmt.Errorf("peer %v is not found", frame.DstIP.String())
+			}
+
+			frame.RemoteAddr = peer.GetEndpoint().DstIP()
 		case util.HandShakeMsgType:
-			if err := node.CachePeerToLocal(frame, r.cache); err != nil {
+			if err := node.CachePeerToLocal(r.key.privateKey, frame, r.cache); err != nil {
 				return err
 			}
 			//build handshake resp
@@ -85,7 +90,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 
 			newFrame := packet.NewFrame()
 			newFrame.Size = len(buff)
-			newFrame.TargetAddr = frame.SrcAddr
+			newFrame.RemoteAddr = frame.RemoteAddr
 			copy(newFrame.Packet[:newFrame.Size], buff)
 			r.PutPktToOutbound(newFrame)
 		}
@@ -96,6 +101,6 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 
 func (r *RegServer) register(frame *packet.Frame) (err error) {
 	p := new(node.Peer)
-	err = r.cache.SetPeer(frame.UidString(), frame.SrcIP(), p)
+	err = r.cache.SetPeer(frame.UidString(), frame.SrcIP.String(), p)
 	return
 }

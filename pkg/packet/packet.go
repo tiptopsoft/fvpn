@@ -47,7 +47,7 @@ Now , we just impl ipv4, and have only one group.
 const (
 	MAC_SIZE       = 6
 	IP_SIZE        = 16
-	HeaderBuffSize = 20
+	HeaderBuffSize = 44
 	IPBuffSize     = 20
 )
 

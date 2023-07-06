@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"fmt"
 	"github.com/topcloudz/fvpn/pkg/packet"
-	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"golang.org/x/crypto/curve25519"
 	"io"
@@ -47,8 +46,8 @@ func TestCurve(t *testing.T) {
 	s := "hello, myworld"
 	sBuff := []byte(s)
 	frame := packet.NewFrame()
-	h, _ := header.NewHeader(util.MsgTypePacket, "123456")
-	headerBuff, _ := header.Encode(h)
+	h, _ := packet.NewHeader(util.MsgTypePacket, "123456")
+	headerBuff, _ := packet.Encode(h)
 	copy(frame.Packet, headerBuff)
 	copy(frame.Packet[12:], sBuff)
 

@@ -50,8 +50,8 @@ func (r *RegServer) Start(address string) error {
 		return err
 	}
 
-	r.readHandler = handler.WithMiddlewares(r.serverUdpHandler(), handler.Decode())
-	r.writeHandler = handler.WithMiddlewares(r.writeUdpHandler(), handler.Encode())
+	r.readHandler = handler.WithMiddlewares(r.serverUdpHandler(), node.Decode())
+	r.writeHandler = handler.WithMiddlewares(r.writeUdpHandler(), node.Encode())
 	r.cache = node.NewCache()
 	r.ws.Wait()
 	return nil

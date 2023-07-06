@@ -3,7 +3,6 @@ package register
 import (
 	"errors"
 	"github.com/topcloudz/fvpn/pkg/packet"
-	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"net"
 	"unsafe"
@@ -11,14 +10,14 @@ import (
 
 // RegPacket server a client to server
 type RegPacket struct { //48
-	header header.Header //12
+	header packet.Header //12
 	SrcIP  net.IP
 	PubKey [16]byte
 	UserId [8]byte
 }
 
 func NewPacket() RegPacket {
-	cmPacket, _ := header.NewHeader(util.MsgTypeRegisterSuper, "")
+	cmPacket, _ := packet.NewHeader(util.MsgTypeRegisterSuper, "")
 	reg := RegPacket{
 		header: cmPacket,
 	}
@@ -27,7 +26,7 @@ func NewPacket() RegPacket {
 
 func Encode(regPacket RegPacket) ([]byte, error) {
 	b := make([]byte, 48)
-	headerBuff, err := header.Encode(regPacket.header)
+	headerBuff, err := packet.Encode(regPacket.header)
 	if err != nil {
 		return nil, errors.New("encode Header failed")
 	}
@@ -41,13 +40,13 @@ func Encode(regPacket RegPacket) ([]byte, error) {
 func Decode(buff []byte) (RegPacket, error) {
 	res := NewPacket()
 
-	h, err := header.Decode(buff[:packet.HeaderBuffSize])
+	h, err := packet.Decode(buff[:packet.HeaderBuffSize])
 	if err != nil {
 		return RegPacket{}, err
 	}
 	res.header = h
 	idx := 0
-	idx += int(unsafe.Sizeof(header.Header{}))
+	idx += int(unsafe.Sizeof(packet.Header{}))
 	var appId = make([]byte, 16)
 	idx = packet.DecodeBytes(&appId, buff, idx)
 	copy(res.PubKey[:], appId)

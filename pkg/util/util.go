@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/topcloudz/fvpn/pkg/packet"
-	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"net"
 	"os"
 	"path/filepath"
@@ -28,13 +27,13 @@ func GetIPFrameHeader(buff []byte) (*IPHeader, error) {
 	return h, nil
 }
 
-func GetPacketHeader(buff []byte) (header.Header, error) {
+func GetPacketHeader(buff []byte) (packet.Header, error) {
 	if len(buff) < packet.HeaderBuffSize {
-		return header.Header{}, errors.New("not invalid packer")
+		return packet.Header{}, errors.New("not invalid packer")
 	}
-	h, err := header.Decode(buff[:packet.HeaderBuffSize])
+	h, err := packet.Decode(buff[:packet.HeaderBuffSize])
 	if err != nil {
-		return header.Header{}, err
+		return packet.Header{}, err
 	}
 	return h, nil
 }

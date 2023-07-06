@@ -2,21 +2,20 @@ package ack
 
 import (
 	packet "github.com/topcloudz/fvpn/pkg/packet"
-	header "github.com/topcloudz/fvpn/pkg/packet/header"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"net"
 	"unsafe"
 )
 
 type RegPacketAck struct {
-	header header.Header    //8 byte
+	header packet.Header    //8 byte
 	RegMac net.HardwareAddr //6 byte
 	AutoIP net.IP           //4byte
 	Mask   net.IP
 }
 
 func NewPacket() RegPacketAck {
-	cmPacket, _ := header.NewHeader(util.MsgTypeRegisterAck, "")
+	cmPacket, _ := packet.NewHeader(util.MsgTypeRegisterAck, "")
 	return RegPacketAck{
 		header: cmPacket,
 	}
@@ -24,7 +23,7 @@ func NewPacket() RegPacketAck {
 
 func Encode(ack RegPacketAck) ([]byte, error) {
 	b := make([]byte, unsafe.Sizeof(RegPacketAck{}))
-	headerBuff, err := header.Encode(ack.header)
+	headerBuff, err := packet.Encode(ack.header)
 	if err != nil {
 		return nil, err
 	}
@@ -37,9 +36,9 @@ func Encode(ack RegPacketAck) ([]byte, error) {
 }
 
 func Decode(udpBytes []byte) (RegPacketAck, error) {
-	size := unsafe.Sizeof(header.Header{})
+	size := unsafe.Sizeof(packet.Header{})
 	res := RegPacketAck{}
-	h, err := header.Decode(udpBytes[:size])
+	h, err := packet.Decode(udpBytes[:size])
 	if err != nil {
 		return RegPacketAck{}, err
 	}

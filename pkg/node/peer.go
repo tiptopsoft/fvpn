@@ -20,6 +20,11 @@ type Peer struct {
 		outBound *OutBoundQueue // data to write to dst peer
 		inBound  *InBoundQueue  // data write to tun
 	}
+	cipher security.CipherFunc
+}
+
+func (p *Peer) GetCodec() security.CipherFunc {
+	return p.cipher
 }
 
 func (p *Peer) start() {
@@ -34,10 +39,15 @@ func (p *Peer) SetEndpoint(ep nets.Endpoint) {
 	p.endpoint = ep
 }
 
+func (p *Peer) GetEndpoint() nets.Endpoint {
+	return p.endpoint
+}
+
 func (p *Peer) handshake() {
 	hpkt := handshake.NewPacket(util.HandShakeMsgType, handler.UCTL.UserId)
+	hpkt.Header.SrcIP = p.node.device.Addr()
+	hpkt.Header.DstIP = p.endpoint.DstIP().IP
 	hpkt.PubKey = p.node.pubKey
-	hpkt.SrcIP = p.node.device.Addr()
 	buff, err := handshake.Encode(hpkt)
 	if err != nil {
 		return

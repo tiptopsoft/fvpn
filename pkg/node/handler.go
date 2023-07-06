@@ -2,34 +2,33 @@ package node
 
 import (
 	"context"
-	"encoding/hex"
 	. "github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/nets"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/handshake"
-	"github.com/topcloudz/fvpn/pkg/packet/header"
 	peerack "github.com/topcloudz/fvpn/pkg/packet/peer/ack"
 	"github.com/topcloudz/fvpn/pkg/packet/register/ack"
+	"github.com/topcloudz/fvpn/pkg/security"
 	"github.com/topcloudz/fvpn/pkg/util"
 )
 
 func (n *Node) tunInHandler() HandlerFunc {
 	return func(ctx context.Context, frame *packet.Frame) error {
-		networkId := ctx.Value("networkId").(string)
-		h, _ := header.NewHeader(util.MsgTypePacket, networkId)
+
+		h, _ := packet.NewHeader(util.MsgTypePacket, "")
 		frame.UserId = h.UserId
-		headerBuff, err := header.Encode(h)
+		headerBuff, err := packet.Encode(h)
 		if err != nil {
 			return err
 		}
 
 		idx := 0
-		newPacket := make([]byte, 2048)
-		idx = packet.EncodeBytes(newPacket, headerBuff, idx)
-		idx = packet.EncodeBytes(newPacket, frame.Buff[:frame.Size], idx)
+		idx = packet.EncodeBytes(frame.Packet, headerBuff, idx)
+		idx = packet.EncodeBytes(frame.Packet, frame.Buff[:frame.Size], idx)
 
-		frame.Packet = newPacket[:idx]
+		frame.Size = idx
 		frame.FrameType = util.MsgTypePacket
+		n.PutPktToOutbound(frame)
 
 		return nil
 
@@ -41,13 +40,10 @@ func (n *Node) udpInHandler() HandlerFunc {
 	return func(ctx context.Context, frame *packet.Frame) error {
 		//dest := ctx.Value("destAddr").(string)
 		buff := frame.Buff[:]
-		headerBuff, err := header.Decode(buff)
+		headerBuff, err := packet.Decode(buff)
 		if err != nil {
 			return err
 		}
-
-		frame.NetworkId = hex.EncodeToString(headerBuff.NetworkId[:])
-		frame.RemoteAddr = hex.EncodeToString(headerBuff.UserId[:])
 
 		//frame.FrameType = headerBuff.Flags
 		switch headerBuff.Flags {
@@ -72,7 +68,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 			frame.Packet = buff[:]
 		case util.HandShakeMsgType:
 			//cache dst peer when receive a handshake
-			err = CachePeerToLocal(frame, n.cache)
+			err = CachePeerToLocal(n.privateKey, frame, n.cache)
 			if err != nil {
 				return err
 			}
@@ -82,7 +78,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 	}
 }
 
-func CachePeerToLocal(frame *packet.Frame, cache CacheFunc) error {
+func CachePeerToLocal(privateKey security.NoisePrivateKey, frame *packet.Frame, cache CacheFunc) error {
 	hpkt, err := handshake.Decode(frame.Packet)
 	if err != nil {
 		logger.Errorf("invalid handshake packet: %v", err)
@@ -91,9 +87,11 @@ func CachePeerToLocal(frame *packet.Frame, cache CacheFunc) error {
 
 	peer := new(Peer)
 	peer.PubKey = hpkt.PubKey
-	ep := nets.NewEndpoint(frame.SrcIP())
+	ep := nets.NewEndpoint(frame.SrcIP.String())
 	peer.SetEndpoint(ep)
-	err = cache.SetPeer(frame.UidString(), hpkt.SrcIP.String(), peer)
+	err = cache.SetPeer(frame.UidString(), frame.SrcIP.String(), peer)
+	peer.cipher = security.NewCipher(privateKey, peer.PubKey)
+	peer.start()
 	if err != nil {
 		return err
 	}

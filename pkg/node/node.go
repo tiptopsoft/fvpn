@@ -47,6 +47,10 @@ type Node struct {
 	cache      CacheFunc
 }
 
+func (n *Node) PutPktToOutbound(pkt *packet.Frame) {
+	n.queue.outBound.c <- pkt
+}
+
 func NewDevice(iface tun.Device, bind nets.Bind) (*Node, error) {
 	n := &Node{
 		device: iface,
@@ -63,7 +67,7 @@ func NewDevice(iface tun.Device, bind nets.Bind) (*Node, error) {
 	n.queue.inBound = NewInBoundQueue()
 	//n.queue.handshakeBound = newHandshakeQueue()
 
-	n.tunHandler = WithMiddlewares(n.tunInHandler(), AuthCheck(), Encode())
+	n.tunHandler = WithMiddlewares(n.tunInHandler(), Encode(), AuthCheck())
 	n.udpHandler = WithMiddlewares(n.udpInHandler(), AuthCheck(), Decode())
 	n.wg.Add(1)
 
@@ -128,6 +132,7 @@ func (n *Node) up() error {
 
 	go n.ReadFromUdp()
 	go n.ReadFromTun()
+	go n.WriteToUDP()
 
 	n.initRelay()
 	n.wg.Wait()
@@ -142,18 +147,27 @@ func (n *Node) Close() error {
 func (n *Node) ReadFromTun() {
 	for {
 		ctx := context.Background()
-		f := packet.NewFrame()
-		f.UserId = n.userId
-		size, err := n.device.Read(f.Buff[:])
+		frame := packet.NewFrame()
+		ctx = context.WithValue(ctx, "cache", n.cache)
+		frame.UserId = n.userId
+		size, err := n.device.Read(frame.Buff[:])
 		if err != nil {
 			continue
 		}
-		logger.Debugf("node %s receive %n byte", n.device.Name(), size)
-		err = n.tunHandler.Handle(ctx, f)
+		logger.Debugf("node %s receive %d byte", n.device.Name(), size)
+
+		ipHeader, err := util.GetIPFrameHeader(frame.Packet[:])
+		if err != nil {
+			continue
+		}
+		frame.SrcIP = ipHeader.SrcIP
+		frame.DstIP = ipHeader.DstIP
+		err = n.tunHandler.Handle(ctx, frame)
 
 		if err != nil {
 			continue
 		}
+
 	}
 }
 
@@ -165,6 +179,17 @@ func (n *Node) ReadFromUdp() {
 		if err != nil {
 			continue
 		}
+
+		hpkt, err := util.GetPacketHeader(f.Buff[:])
+		if err != nil {
+			logger.Error(err)
+			continue
+		}
+
+		f.SrcIP = hpkt.SrcIP
+		f.DstIP = hpkt.DstIP
+		f.UserId = hpkt.UserId
+		f.FrameType = hpkt.Flags
 
 		err = n.udpHandler.Handle(ctx, f)
 		if err != nil {
@@ -180,7 +205,11 @@ func (n *Node) WriteToUDP() {
 		case pkt := <-n.queue.outBound.c:
 			//only packet will find peer, other type will send to regServer
 			if pkt.FrameType == util.MsgTypePacket {
-				var peer *Peer
+				ip := pkt.DstIP
+				peer, err := n.cache.GetPeer(pkt.UidString(), ip.String())
+				if err != nil {
+					peer = n.relay
+				}
 				peer.queue.outBound.c <- pkt
 			}
 		default:
