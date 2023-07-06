@@ -1,10 +1,12 @@
 package node
 
 import (
+	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/nets"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/handshake"
 	"github.com/topcloudz/fvpn/pkg/security"
+	"github.com/topcloudz/fvpn/pkg/util"
 )
 
 // Peer a destination will have a peer in fvpn, can connect to each other.
@@ -23,6 +25,8 @@ type Peer struct {
 func (p *Peer) start() {
 	go p.SendPackets()
 	go p.WriteToDevice()
+
+	//cache peer
 	p.handshake()
 }
 
@@ -31,8 +35,9 @@ func (p *Peer) SetEndpoint(ep nets.Endpoint) {
 }
 
 func (p *Peer) handshake() {
-	hpkt := handshake.NewPacket("")
+	hpkt := handshake.NewPacket(util.HandShakeMsgType, handler.UCTL.UserId)
 	hpkt.PubKey = p.node.pubKey
+	hpkt.SrcIP = p.node.device.Addr()
 	buff, err := handshake.Encode(hpkt)
 	if err != nil {
 		return

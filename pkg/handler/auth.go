@@ -26,7 +26,9 @@ func NewUser() UserFunc {
 
 var (
 	_    UserFunc = (*user)(nil)
-	UCTL          = user{}
+	UCTL          = user{
+		UserId: "123456789abcdef0",
+	}
 )
 
 func (u *user) GetUserId() ([]byte, error) {

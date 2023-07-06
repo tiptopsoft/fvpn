@@ -36,6 +36,8 @@ func (c *cache) SetPeer(userId, ip string, peer *Peer) error {
 		c.peers[userId] = peerMap
 	}
 	peerMap[ip] = peer
+	//every add a peer will print current peers in cache
+	c.ListPeers()
 	return nil
 }
 
@@ -47,4 +49,17 @@ func (c *cache) GetPeer(userId, ip string) (*Peer, error) {
 	peerMap := c.peers[userId]
 	peer := peerMap[ip]
 	return peer, nil
+}
+
+func (c *cache) ListPeers() []*Peer {
+	var result []*Peer
+	for userId, peers := range c.peers {
+		logger.Debugf("user: %s, peers: %v", userId, peers)
+		for ip, peer := range peers {
+			logger.Debugf("ip: %s, peer: %v", ip, peer)
+			result = append(result, peer)
+		}
+	}
+
+	return result
 }

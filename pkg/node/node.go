@@ -63,8 +63,8 @@ func NewDevice(iface tun.Device, bind nets.Bind) (*Node, error) {
 	n.queue.inBound = NewInBoundQueue()
 	//n.queue.handshakeBound = newHandshakeQueue()
 
-	n.tunHandler = WithMiddlewares(tunHandler(), AuthCheck(), Encode())
-	n.udpHandler = WithMiddlewares(udpHandler(), AuthCheck(), Decode())
+	n.tunHandler = WithMiddlewares(n.tunInHandler(), AuthCheck(), Encode())
+	n.udpHandler = WithMiddlewares(n.udpInHandler(), AuthCheck(), Decode())
 	n.wg.Add(1)
 
 	return n, nil
@@ -109,6 +109,7 @@ func Start(cfg *util.Config) error {
 	}
 
 	d, err := NewDevice(iface, nets.NewStdBind())
+	logger.Debugf("device name: %s, ip: %s", d.device.Name(), d.device.IPToString())
 	d.cfg = cfg
 	if err != nil {
 		return err

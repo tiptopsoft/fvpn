@@ -25,8 +25,8 @@ type Header struct {
 	UserId    [8]byte
 }
 
-func NewHeader(msgType uint16, networkId string) (Header, error) {
-	bs, err := hex.DecodeString(networkId)
+func NewHeader(msgType uint16, userId string) (Header, error) {
+	bs, err := hex.DecodeString(userId)
 	if err != nil {
 		return Header{}, errors.New("invalid networkId")
 	}
@@ -36,7 +36,7 @@ func NewHeader(msgType uint16, networkId string) (Header, error) {
 		TTL:     DefaultTTL,
 		Flags:   msgType,
 	}
-	copy(h.NetworkId[:], bs)
+	copy(h.UserId[:], bs)
 	//copy(h.PubKey[:], appIdData)
 	return h, nil
 }

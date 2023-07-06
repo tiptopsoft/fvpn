@@ -6,6 +6,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"golang.org/x/sys/unix"
+	"net"
 	"os"
 	"syscall"
 )
@@ -18,7 +19,7 @@ const (
 var (
 	logger      = log.Log()
 	FakeGateway = "5.244.24.141/15"
-	FakeIP      = "5.244.24.141"
+	FakeIP      = net.ParseIP("5.244.24.141")
 )
 
 func New() (Device, error) {
@@ -70,7 +71,7 @@ func New() (Device, error) {
 	}
 
 	//set ip
-	if err = util.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s %s", name, FakeGateway, FakeIP)); err != nil {
+	if err = util.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s %s", name, FakeGateway, FakeIP.String())); err != nil {
 		return nil, err
 	}
 
@@ -79,7 +80,7 @@ func New() (Device, error) {
 		Fd:        0,
 		name:      name,
 		NetworkId: "",
-		IP:        nil,
+		IP:        FakeIP,
 	}
 
 	logger.Debugf("create tun %s success", name)

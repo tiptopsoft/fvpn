@@ -4,14 +4,16 @@ import (
 	"context"
 	"encoding/hex"
 	. "github.com/topcloudz/fvpn/pkg/handler"
+	"github.com/topcloudz/fvpn/pkg/nets"
 	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet/handshake"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
 	peerack "github.com/topcloudz/fvpn/pkg/packet/peer/ack"
 	"github.com/topcloudz/fvpn/pkg/packet/register/ack"
 	"github.com/topcloudz/fvpn/pkg/util"
 )
 
-func tunHandler() HandlerFunc {
+func (n *Node) tunInHandler() HandlerFunc {
 	return func(ctx context.Context, frame *packet.Frame) error {
 		networkId := ctx.Value("networkId").(string)
 		h, _ := header.NewHeader(util.MsgTypePacket, networkId)
@@ -35,7 +37,7 @@ func tunHandler() HandlerFunc {
 }
 
 // Handle union udp handler
-func udpHandler() HandlerFunc {
+func (n *Node) udpInHandler() HandlerFunc {
 	return func(ctx context.Context, frame *packet.Frame) error {
 		//dest := ctx.Value("destAddr").(string)
 		buff := frame.Buff[:]
@@ -45,6 +47,7 @@ func udpHandler() HandlerFunc {
 		}
 
 		frame.NetworkId = hex.EncodeToString(headerBuff.NetworkId[:])
+		frame.RemoteAddr = hex.EncodeToString(headerBuff.UserId[:])
 
 		//frame.FrameType = headerBuff.Flags
 		switch headerBuff.Flags {
@@ -67,10 +70,32 @@ func udpHandler() HandlerFunc {
 			break
 		case util.MsgTypePacket:
 			frame.Packet = buff[:]
-		case util.HandShakeMsgTypeAck:
-
+		case util.HandShakeMsgType:
+			//cache dst peer when receive a handshake
+			err = CachePeerToLocal(frame, n.cache)
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
 	}
+}
+
+func CachePeerToLocal(frame *packet.Frame, cache CacheFunc) error {
+	hpkt, err := handshake.Decode(frame.Packet)
+	if err != nil {
+		logger.Errorf("invalid handshake packet: %v", err)
+		return err
+	}
+
+	peer := new(Peer)
+	peer.PubKey = hpkt.PubKey
+	ep := nets.NewEndpoint(frame.SrcIP())
+	peer.SetEndpoint(ep)
+	err = cache.SetPeer(frame.UidString(), hpkt.SrcIP.String(), peer)
+	if err != nil {
+		return err
+	}
+	return nil
 }

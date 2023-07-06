@@ -24,7 +24,7 @@ func Test(t *testing.T) {
 	//}
 	//
 
-	iface, err := net.InterfaceByName("utun8")
+	iface, err := net.InterfaceByName("utun3")
 	if err != nil {
 		panic(err)
 	}

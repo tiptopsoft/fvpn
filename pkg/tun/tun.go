@@ -29,6 +29,8 @@ type Device interface {
 	Name() string
 	Read(buff []byte) (int, error)
 	Write(buff []byte) (int, error)
+	IPToString() string
+	Addr() net.IP
 }
 
 var (
@@ -67,6 +69,14 @@ func (tun *NativeTun) Write(buff []byte) (int, error) {
 	defer tun.lock.Unlock()
 	n, err := tun.file.Write(buff[4:])
 	return n - 4, err
+}
+
+func (tun *NativeTun) IPToString() string {
+	return tun.IP.String()
+}
+
+func (tun *NativeTun) Addr() net.IP {
+	return tun.IP
 }
 
 // Close close the device

@@ -4,11 +4,9 @@ import (
 	"context"
 	"encoding/hex"
 	"github.com/topcloudz/fvpn/pkg/handler"
-	"github.com/topcloudz/fvpn/pkg/nets"
 	"github.com/topcloudz/fvpn/pkg/node"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/handshake"
-	handack "github.com/topcloudz/fvpn/pkg/packet/handshake/ack"
 	"github.com/topcloudz/fvpn/pkg/packet/header"
 	"github.com/topcloudz/fvpn/pkg/util"
 )
@@ -74,26 +72,13 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 		case util.MsgTypePacket:
 			logger.Infof("server got forward packet size:%d, data: %v", frame.Size, data)
 		case util.HandShakeMsgType:
-			handPkt, err := handshake.Decode(frame.Packet)
-			if err != nil {
-				logger.Errorf("invalid handshake packet: %v", err)
+			if err := node.CachePeerToLocal(frame, r.cache); err != nil {
 				return err
 			}
-
-			peer := new(node.Peer)
-			peer.PubKey = handPkt.PubKey
-			ep := nets.NewEndpoint(frame.SrcIP())
-			peer.SetEndpoint(ep)
-			err = r.cache.SetPeer(frame.UidString(), frame.SrcIP(), peer)
-			if err != nil {
-				return err
-			}
-
-			//build handshake ack
-
-			hPktack := handack.NewPacket()
+			//build handshake resp
+			hPktack := handshake.NewPacket(util.HandShakeMsgTypeAck, "")
 			hPktack.PubKey = r.key.privateKey.NewPubicKey()
-			buff, err := handack.Encode(hPktack)
+			buff, err := handshake.Encode(hPktack)
 			if err != nil {
 				return err
 			}
