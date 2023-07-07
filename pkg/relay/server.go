@@ -59,8 +59,11 @@ func (r *RegServer) Start(address string) error {
 
 // Peer register cache for net, and for user create client
 func (r *RegServer) start(address string) error {
-	conn, _ := net.ListenUDP("udp", &net.UDPAddr{
+	conn, err := net.ListenUDP("udp", &net.UDPAddr{
 		IP: net.IPv4zero, Port: 4000})
+	if err != nil {
+		return err
+	}
 	r.conn = conn
 	logger.Debugf("server start at: %s", address)
 
