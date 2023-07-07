@@ -169,6 +169,7 @@ func (n *Node) ReadFromTun() {
 			logger.Error(err)
 			continue
 		}
+		logger.Debugf("node %s receive %d byte", n.device.Name(), size)
 
 		h, _ := packet.NewHeader(util.MsgTypePacket, UCTL.UserId)
 		frame.UserId = h.UserId
@@ -183,8 +184,6 @@ func (n *Node) ReadFromTun() {
 		copy(frame.Packet[:packet.HeaderBuffSize], headerBuff)
 		copy(frame.Packet[packet.HeaderBuffSize:], frame.Buff[:])
 		frame.Size = size + packet.HeaderBuffSize
-		frame.Size = size
-		logger.Debugf("node %s receive %d byte", n.device.Name(), size)
 
 		ipHeader, err := util.GetIPFrameHeader(frame.Buff[:])
 		if err != nil {
