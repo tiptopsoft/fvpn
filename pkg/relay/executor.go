@@ -77,6 +77,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			}
 
 			frame.RemoteAddr = peer.GetEndpoint().DstIP()
+			r.PutPktToOutbound(frame)
 		case util.HandShakeMsgType:
 			if err := node.CachePeerToLocal(r.key.privateKey, frame, r.cache); err != nil {
 				return err
