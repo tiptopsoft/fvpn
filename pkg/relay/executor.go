@@ -23,7 +23,7 @@ func (r *RegServer) ReadFromUdp() {
 			continue
 		}
 		logger.Debugf("Read from udp %d byte, data: %v", n, frame.Buff[:n])
-
+		copy(frame.Packet, frame.Buff)
 		packetHeader, err := util.GetPacketHeader(frame.Buff[:])
 		if err != nil {
 			logger.Errorf("get header falied. %v", err)
