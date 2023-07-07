@@ -96,6 +96,9 @@ func (r *RegServer) RoutineInBound(id int) {
 	for {
 		select {
 		case pkt := <-r.queue.inBound.GetPktFromInbound():
+			defer func() {
+				logger.Debugf("handing packet success in %d routine finished", id)
+			}()
 			pkt.Lock()
 			defer pkt.Unlock()
 			err := r.readHandler.Handle(pkt.Context(), pkt)
