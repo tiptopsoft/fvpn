@@ -16,7 +16,11 @@ func NewStdBind() Bind {
 }
 
 func (s *StdNetBind) Open(port uint16) (uint16, *net.UDPConn, error) {
-	conn, err := net.ListenUDP("udp", nil)
+	listen := &net.UDPAddr{
+		IP:   net.IPv4zero,
+		Port: 0,
+	}
+	conn, err := net.ListenUDP("udp", listen)
 	if err != nil {
 		return 0, nil, nil
 	}

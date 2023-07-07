@@ -187,6 +187,7 @@ func (n *Node) ReadFromUdp() {
 		ctx := context.Background()
 		f := packet.NewFrame()
 		size, remoteAddr, err := n.net.bind.Conn().ReadFromUDP(f.Buff[:])
+		logger.Debugf("udp receive %d byte from %s, data: %v", size, remoteAddr.IP, f.Buff[:size])
 		if err != nil {
 			continue
 		}
@@ -208,7 +209,7 @@ func (n *Node) ReadFromUdp() {
 		if err != nil {
 			continue
 		}
-		logger.Debugf("udp receive %d byte from %s, data: %v", size, remoteAddr.IP, f.Buff[:size])
+
 	}
 }
 
