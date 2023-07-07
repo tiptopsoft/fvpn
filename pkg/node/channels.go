@@ -40,8 +40,6 @@ func NewOutBoundQueue() *OutBoundQueue {
 }
 
 func (o *OutBoundQueue) PutPktToOutbound(pkt *packet.Frame) {
-	pkt.Lock()
-	defer pkt.Unlock()
 	o.c <- pkt
 }
 
@@ -50,8 +48,6 @@ func (o *OutBoundQueue) GetPktFromOutbound() chan *packet.Frame {
 }
 
 func (o *InBoundQueue) PutPktToInbound(pkt *packet.Frame) {
-	pkt.Lock()
-	defer pkt.Unlock()
 	o.c <- pkt
 }
 
