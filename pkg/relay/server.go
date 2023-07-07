@@ -96,16 +96,7 @@ func (r *RegServer) RoutineInBound(id int) {
 	for {
 		select {
 		case pkt := <-r.queue.inBound.GetPktFromInbound():
-			defer func() {
-				logger.Debugf("handing packet success in %d routine finished", id)
-			}()
-			pkt.Lock()
-			defer pkt.Unlock()
-			err := r.readHandler.Handle(pkt.Context(), pkt)
-			if err != nil {
-				logger.Error(err)
-				continue
-			}
+			r.handleInPackets(pkt, id)
 		default:
 
 		}
@@ -113,14 +104,40 @@ func (r *RegServer) RoutineInBound(id int) {
 	}
 }
 
+func (r *RegServer) handleInPackets(pkt *packet.Frame, id int) {
+	pkt.Lock()
+	defer func() {
+		logger.Debugf("handing in packet success in %d routine finished", id)
+		defer pkt.Unlock()
+	}()
+
+	err := r.readHandler.Handle(pkt.Context(), pkt)
+	if err != nil {
+		logger.Error(err)
+	}
+}
+
 func (r *RegServer) RoutineOutBound(id int) {
 	logger.Debugf("start route %d to handle outgoing udp packets", id)
 	for {
-		pkt := <-r.queue.outBound.GetPktFromOutbound()
-		err := r.writeHandler.Handle(pkt.Context(), pkt)
-		if err != nil {
-			logger.Error(err)
-			continue
+		select {
+		case pkt := <-r.queue.outBound.GetPktFromOutbound():
+			r.handleOutPackets(pkt, id)
+		default:
+
 		}
+	}
+}
+
+func (r *RegServer) handleOutPackets(pkt *packet.Frame, id int) {
+	pkt.Lock()
+	defer func() {
+		logger.Debugf("handing out packet success in %d routine finished", id)
+		defer pkt.Unlock()
+	}()
+
+	err := r.writeHandler.Handle(pkt.Context(), pkt)
+	if err != nil {
+		logger.Error(err)
 	}
 }
