@@ -76,6 +76,8 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 				return fmt.Errorf("remote ep %v not on line", frame.DstIP.String())
 			}
 
+			logger.Debugf("write packet to peer %v: ", peer)
+
 			frame.RemoteAddr = peer.GetEndpoint().DstIP()
 			r.PutPktToOutbound(frame)
 		case util.HandShakeMsgType:
