@@ -8,11 +8,12 @@ import (
 	"github.com/topcloudz/fvpn/pkg/util"
 )
 
-func Decode(offset int) func(handler.Handler) handler.Handler {
+func Decode() func(handler.Handler) handler.Handler {
 	return func(next handler.Handler) handler.Handler {
 		return handler.HandlerFunc(func(ctx context.Context, frame *packet.Frame) error {
 			if frame.FrameType == util.MsgTypePacket {
-				buff := frame.Buff[offset:frame.Size]
+				offset := packet.HeaderBuffSize
+				buff := frame.Packet[offset:frame.Size]
 				cache := ctx.Value("cache").(CacheFunc)
 				peer, err := cache.GetPeer(handler.UCTL.UserId, frame.SrcIP.String())
 				if err != nil {
@@ -24,23 +25,24 @@ func Decode(offset int) func(handler.Handler) handler.Handler {
 				if err != nil {
 					return err
 				}
+				frame.Clear()
 				copy(frame.Packet[0:offset], frame.Buff[0:offset])
 				copy(frame.Packet[offset:], decoded)
 				frame.Size = len(decoded) + offset
 				logger.Debugf("data after decode: %v", frame.Packet[:frame.Size])
 			}
-			frame.Packet = frame.Buff[:frame.Size]
 			return next.Handle(ctx, frame)
 		})
 	}
 }
 
 // Encode Middleware Encrypt use exchangeKey
-func Encode(offset int) func(handler.Handler) handler.Handler {
+func Encode() func(handler.Handler) handler.Handler {
 	return func(next handler.Handler) handler.Handler {
 		return handler.HandlerFunc(func(ctx context.Context, frame *packet.Frame) error {
 			if frame.FrameType == util.MsgTypePacket {
-				buff := frame.Buff[offset:frame.Size]
+				offset := packet.HeaderBuffSize
+				buff := frame.Packet[offset:frame.Size]
 				cache := ctx.Value("cache").(CacheFunc)
 				peer, err := cache.GetPeer(handler.UCTL.UserId, frame.DstIP.String())
 				if err != nil {
@@ -52,7 +54,6 @@ func Encode(offset int) func(handler.Handler) handler.Handler {
 				if err != nil {
 					return err
 				}
-				copy(frame.Packet[0:offset], frame.Buff[0:offset])
 				copy(frame.Packet[offset:], encoded)
 				frame.Size = offset + len(encoded)
 				logger.Debugf("data after encode: %v", frame.Packet[:frame.Size])

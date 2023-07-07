@@ -74,8 +74,8 @@ func NewDevice(iface tun.Device, bind nets.Bind) (*Node, error) {
 	n.queue.inBound = NewInBoundQueue()
 	//n.queue.handshakeBound = newHandshakeQueue()
 
-	n.tunHandler = WithMiddlewares(n.tunInHandler(), Encode(0), AuthCheck())
-	n.udpHandler = WithMiddlewares(n.udpInHandler(), AuthCheck(), Decode(0))
+	n.tunHandler = WithMiddlewares(n.tunInHandler(), Encode(), AuthCheck())
+	n.udpHandler = WithMiddlewares(n.udpInHandler(), AuthCheck(), Decode())
 	n.wg.Add(1)
 
 	return n, nil
@@ -166,8 +166,23 @@ func (n *Node) ReadFromTun() {
 		frame.FrameType = util.MsgTypePacket
 		size, err := n.device.Read(frame.Buff[:])
 		if err != nil {
+			logger.Error(err)
 			continue
 		}
+
+		h, _ := packet.NewHeader(util.MsgTypePacket, UCTL.UserId)
+		frame.UserId = h.UserId
+		h.SrcIP = frame.SrcIP
+		h.DstIP = frame.DstIP
+		headerBuff, err := packet.Encode(h)
+		if err != nil {
+			logger.Error(err)
+			continue
+		}
+
+		copy(frame.Packet[:packet.HeaderBuffSize], headerBuff)
+		copy(frame.Packet[packet.HeaderBuffSize:], frame.Buff[:])
+		frame.Size = size + packet.HeaderBuffSize
 		frame.Size = size
 		logger.Debugf("node %s receive %d byte", n.device.Name(), size)
 
@@ -189,6 +204,7 @@ func (n *Node) ReadFromTun() {
 func (n *Node) ReadFromUdp() {
 	for {
 		ctx := context.Background()
+		ctx = context.WithValue(ctx, "cache", n.cache)
 		f := packet.NewFrame()
 		size, remoteAddr, err := n.net.bind.Conn().ReadFromUDP(f.Buff[:])
 		logger.Debugf("udp receive %d byte from %s, data: %v", size, remoteAddr.IP, f.Buff[:size])
