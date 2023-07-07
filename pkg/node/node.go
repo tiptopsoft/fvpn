@@ -211,6 +211,7 @@ func (n *Node) ReadFromUdp() {
 
 		err = n.udpHandler.Handle(ctx, f)
 		if err != nil {
+			logger.Error(err)
 			continue
 		}
 
