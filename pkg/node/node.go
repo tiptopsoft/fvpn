@@ -74,8 +74,8 @@ func NewDevice(iface tun.Device, bind nets.Bind) (*Node, error) {
 	n.queue.inBound = NewInBoundQueue()
 	//n.queue.handshakeBound = newHandshakeQueue()
 
-	n.tunHandler = WithMiddlewares(n.tunInHandler(), Encode(), AuthCheck())
-	n.udpHandler = WithMiddlewares(n.udpInHandler(), AuthCheck(), Decode())
+	n.tunHandler = WithMiddlewares(n.tunInHandler(), Encode(0), AuthCheck())
+	n.udpHandler = WithMiddlewares(n.udpInHandler(), AuthCheck(), Decode(0))
 	n.wg.Add(1)
 
 	return n, nil
