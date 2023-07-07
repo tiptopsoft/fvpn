@@ -53,6 +53,10 @@ func (n *Node) PutPktToOutbound(pkt *packet.Frame) {
 	n.queue.outBound.c <- pkt
 }
 
+func (n *Node) PutPktToInbound(pkt *packet.Frame) {
+	n.queue.inBound.c <- pkt
+}
+
 func NewDevice(iface tun.Device, bind nets.Bind) (*Node, error) {
 	n := &Node{
 		device: iface,
@@ -228,6 +232,23 @@ func (n *Node) WriteToUDP() {
 			}
 		default:
 
+		}
+	}
+}
+
+func (n *Node) WriteToDevice() {
+	for {
+		select {
+		case pkt := <-n.queue.inBound.c:
+			if pkt.FrameType == util.MsgTypePacket {
+				ip := pkt.DstIP
+				peer, err := n.cache.GetPeer(pkt.UidString(), ip.String())
+				if err != nil || peer == nil {
+					peer = n.relay
+				}
+
+				peer.queue.inBound.c <- pkt
+			}
 		}
 	}
 }

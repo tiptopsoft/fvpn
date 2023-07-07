@@ -18,7 +18,7 @@ const (
 
 var (
 	logger      = log.Log()
-	FakeGateway = "5.244.24.141/15"
+	FakeGateway = "5.244.24.141/24"
 	FakeIP      = net.ParseIP("5.244.24.141")
 )
 
