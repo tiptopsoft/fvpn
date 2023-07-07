@@ -20,7 +20,7 @@ func Decode() func(handler.Handler) handler.Handler {
 				}
 
 				logger.Debugf("data before decode: %v", frame.Buff[start:frame.Size])
-				decoded, err := peer.GetCodec().Decode(frame.Buff[start:])
+				decoded, err := peer.GetCodec().Decode(frame.Buff[start:frame.Size])
 				if err != nil {
 					return err
 				}

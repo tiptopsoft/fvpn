@@ -94,9 +94,9 @@ func (r *RegServer) RoutineInBound(id int) {
 		select {
 		case pkt := <-r.queue.inBound.GetPktFromInbound():
 			pkt.Lock()
+			defer pkt.Unlock()
 			err := r.readHandler.Handle(pkt.Context(), pkt)
 			if err != nil {
-				pkt.Unlock()
 				logger.Error(err)
 				continue
 			}

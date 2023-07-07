@@ -41,7 +41,8 @@ func TestCurve(t *testing.T) {
 
 	fmt.Println(shared2)
 
-	cip := NewCipher(privateKey, pubKey2)
+	cip1 := NewCipher(privateKey, pubKey2)
+	cip2 := NewCipher(privateKey2, pubKey)
 
 	s := "hello, myworld"
 	sBuff := []byte(s)
@@ -50,17 +51,18 @@ func TestCurve(t *testing.T) {
 	headerBuff, _ := packet.Encode(h)
 	copy(frame.Packet, headerBuff)
 	copy(frame.Packet[44:], sBuff)
+	size := len(headerBuff) + len(sBuff)
 
-	fmt.Println("before encoded: ", frame.Packet[:])
+	fmt.Println("before encoded: ", frame.Packet[:size])
 
-	encodedBuff, err := cip.Encode(frame.Packet[:])
+	encodedBuff, err := cip1.Encode(frame.Packet[:size])
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println("After encoded: ", encodedBuff)
+	fmt.Println("After encoded: ", encodedBuff[:len(encodedBuff)])
 
-	decodedBuff, err := cip.Decode(encodedBuff)
+	decodedBuff, err := cip2.Decode(encodedBuff)
 	if err != nil {
 		panic(err)
 	}

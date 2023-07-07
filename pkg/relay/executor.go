@@ -22,7 +22,7 @@ func (r *RegServer) ReadFromUdp() {
 			logger.Error("no data exists")
 			continue
 		}
-		logger.Debugf("Read from udp %d byte, data: %v", n, frame.Buff)
+		logger.Debugf("Read from udp %d byte, data: %v", n, frame.Buff[:n])
 
 		packetHeader, err := util.GetPacketHeader(frame.Buff[:])
 		if err != nil {
@@ -54,7 +54,6 @@ func (r *RegServer) writeUdpHandler() handler.HandlerFunc {
 // serverUdpHandler  core self handler
 func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 	return func(ctx context.Context, frame *packet.Frame) error {
-		defer frame.Unlock()
 		data := frame.Packet[:frame.Size]
 		switch frame.FrameType {
 		case util.MsgTypeRegisterSuper:
@@ -71,6 +70,10 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			peer, err := r.cache.GetPeer(frame.UidString(), frame.DstIP.String())
 			if err != nil {
 				return fmt.Errorf("peer %v is not found", frame.DstIP.String())
+			}
+
+			if peer == nil {
+				return fmt.Errorf("remote ep %v not on line", frame.DstIP.String())
 			}
 
 			frame.RemoteAddr = peer.GetEndpoint().DstIP()

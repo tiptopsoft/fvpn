@@ -48,18 +48,27 @@ type cipher struct {
 }
 
 func (c *cipher) Encode(content []byte) ([]byte, error) {
-	cip, _ := chacha20poly1305.New(c.key[:])
-
-	return cip.Seal(nil, c.nonce, content, nil), nil
-}
-
-func (c *cipher) Decode(cipherBuff []byte) ([]byte, error) {
+	logger.Debugf(">>>>>>==before encode: %v, key: %v", content, c.key)
 	cip, err := chacha20poly1305.New(c.key[:])
 	if err != nil {
 		return nil, err
 	}
 
-	return cip.Open(nil, c.nonce, cipherBuff, nil)
+	encoded := cip.Seal(nil, c.nonce, content, nil)
+	logger.Debugf(">>>>>>==after encode: %v", encoded)
+	return encoded, nil
+}
+
+func (c *cipher) Decode(cipherBuff []byte) ([]byte, error) {
+	logger.Debugf(">>>>>before decode: %v, key: %v", cipherBuff, c.key)
+	cip, err := chacha20poly1305.New(c.key[:])
+	if err != nil {
+		return nil, err
+	}
+
+	decoded, err := cip.Open(nil, c.nonce, cipherBuff, nil)
+	logger.Debugf(">>>>after decode: %v", decoded)
+	return decoded, err
 }
 
 func NewPrivateKey() (npk NoisePrivateKey, err error) {
