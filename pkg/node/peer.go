@@ -43,21 +43,22 @@ func (p *Peer) start() {
 		go p.WriteToDevice()
 		//cache peer
 		p.handshake()
+
+		go func() {
+			timer := time.NewTimer(time.Second * 10)
+			defer timer.Stop()
+			for {
+				select {
+				case <-timer.C:
+					logger.Debugf("sending keepalive....")
+					p.keepalive()
+					timer.Reset(time.Second * 10)
+				}
+
+			}
+		}()
 	}
 
-	go func() {
-		timer := time.NewTimer(time.Second * 10)
-		defer timer.Stop()
-		for {
-			select {
-			case <-timer.C:
-				logger.Debugf("sending keepalive....")
-				p.keepalive()
-				timer.Reset(time.Second * 10)
-			}
-
-		}
-	}()
 }
 
 func (p *Peer) SetEndpoint(ep nets.Endpoint) {
