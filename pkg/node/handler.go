@@ -83,7 +83,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 }
 
 func CachePeerToLocal(privateKey security.NoisePrivateKey, frame *packet.Frame, cache CacheFunc) error {
-	hpkt, err := handshake.Decode(frame.Packet)
+	hpkt, err := handshake.Decode(frame.Buff)
 	if err != nil {
 		logger.Errorf("invalid handshake packet: %v", err)
 		return err
