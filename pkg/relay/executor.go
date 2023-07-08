@@ -46,7 +46,7 @@ func (r *RegServer) writeUdpHandler() handler.HandlerFunc {
 		if err != nil {
 			return err
 		}
-		logger.Debugf("registry write %d size to %v", n, pkt.RemoteAddr)
+		logger.Debugf("registry write %d size to %v, data: %v", n, pkt.RemoteAddr, pkt.Packet[:pkt.Size])
 		return nil
 	}
 }
