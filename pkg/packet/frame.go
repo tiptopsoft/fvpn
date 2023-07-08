@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 	"net"
-	"sync"
 )
 
 const (
@@ -13,7 +12,7 @@ const (
 
 type Frame struct {
 	Ctx context.Context
-	sync.Mutex
+	//sync.Mutex
 	Buff       []byte
 	Packet     []byte
 	Size       int

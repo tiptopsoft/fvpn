@@ -75,8 +75,8 @@ func (p *Peer) handshake() {
 }
 
 func (p *Peer) PutPktToOutbound(pkt *packet.Frame) {
-	pkt.Lock()
-	defer pkt.Unlock()
+	//pkt.Lock()
+	//defer pkt.Unlock()
 	p.queue.outBound.c <- pkt
 }
 
@@ -100,7 +100,7 @@ func (p *Peer) WriteToDevice() {
 	for {
 		select {
 		case pkt := <-p.queue.inBound.c:
-			write, err := p.node.device.Write(pkt.Packet[:pkt.Size])
+			write, err := p.node.device.Write(pkt.Packet[packet.HeaderBuffSize:pkt.Size])
 			if err != nil {
 				return
 			}

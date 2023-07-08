@@ -34,7 +34,10 @@ func (s *StdNetBind) Open(port uint16) (uint16, *net.UDPConn, error) {
 		return 0, nil, err
 	}
 
-	s.v4conn = conn
+	s.v4conn, _ = net.ListenUDP("udp", &net.UDPAddr{
+		IP:   net.IPv4zero,
+		Port: 7776,
+	})
 	s.v6conn = conn
 	return uint16(listenAddr.Port), conn, nil
 }

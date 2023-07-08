@@ -145,6 +145,7 @@ func (n *Node) up() error {
 	go n.ReadFromUdp()
 	go n.ReadFromTun()
 	go n.WriteToUDP()
+	go n.WriteToDevice()
 
 	n.initRelay()
 	n.wg.Wait()
@@ -160,7 +161,7 @@ func (n *Node) ReadFromTun() {
 	for {
 		ctx := context.Background()
 		frame := packet.NewFrame()
-		frame.Lock()
+		//frame.Lock()
 		ctx = context.WithValue(ctx, "cache", n.cache)
 		frame.UserId = n.userId
 		frame.FrameType = util.MsgTypePacket

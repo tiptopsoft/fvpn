@@ -7,7 +7,6 @@ import (
 	"github.com/topcloudz/fvpn/pkg/security"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"net"
-	"runtime"
 	"sync"
 
 	"github.com/topcloudz/fvpn/pkg/log"
@@ -67,12 +66,12 @@ func (r *RegServer) start(address string) error {
 	r.conn = conn
 	logger.Debugf("server start at: %s", address)
 
-	nums := runtime.NumCPU()
-	for i := 0; i < nums/2; i++ {
-		r.ws.Add(1)
-		go r.RoutineInBound(i + 1)
-		go r.RoutineOutBound(i + 1)
-	}
+	//nums := runtime.NumCPU()
+	//for i := 0; i < nums/2; i++ {
+	r.ws.Add(1)
+	go r.RoutineInBound(1)
+	go r.RoutineOutBound(2)
+	//}
 
 	go r.ReadFromUdp()
 	return nil
@@ -105,10 +104,10 @@ func (r *RegServer) RoutineInBound(id int) {
 }
 
 func (r *RegServer) handleInPackets(pkt *packet.Frame, id int) {
-	pkt.Lock()
+	//pkt.Lock()
 	defer func() {
 		logger.Debugf("handing in packet success in %d routine finished", id)
-		defer pkt.Unlock()
+		//defer pkt.Unlock()
 	}()
 
 	err := r.readHandler.Handle(pkt.Context(), pkt)
@@ -130,10 +129,10 @@ func (r *RegServer) RoutineOutBound(id int) {
 }
 
 func (r *RegServer) handleOutPackets(pkt *packet.Frame, id int) {
-	pkt.Lock()
+	//pkt.Lock()
 	defer func() {
 		logger.Debugf("handing out packet success in %d routine finished", id)
-		defer pkt.Unlock()
+		//defer pkt.Unlock()
 	}()
 
 	err := r.writeHandler.Handle(pkt.Context(), pkt)

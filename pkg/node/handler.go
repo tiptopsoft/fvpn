@@ -14,7 +14,7 @@ import (
 
 func (n *Node) tunInHandler() HandlerFunc {
 	return func(ctx context.Context, frame *packet.Frame) error {
-		defer frame.Unlock()
+		//defer frame.Unlock()
 		n.PutPktToOutbound(frame)
 		return nil
 	}
@@ -24,7 +24,7 @@ func (n *Node) tunInHandler() HandlerFunc {
 func (n *Node) udpInHandler() HandlerFunc {
 	return func(ctx context.Context, frame *packet.Frame) error {
 		//dest := ctx.Value("destAddr").(string)
-		buff := frame.Buff[:]
+		buff := frame.Packet[:]
 		headerBuff, err := packet.Decode(buff)
 		if err != nil {
 			return err
@@ -50,7 +50,6 @@ func (n *Node) udpInHandler() HandlerFunc {
 
 			break
 		case util.MsgTypePacket:
-			frame.Packet = buff[:]
 			n.PutPktToInbound(frame)
 		case util.HandShakeMsgType:
 			//cache dst peer when receive a handshake
