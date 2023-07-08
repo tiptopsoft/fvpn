@@ -8,6 +8,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/security"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"sync"
+	"time"
 )
 
 // Peer a destination will have a peer in fvpn, can connect to each other.
@@ -43,6 +44,20 @@ func (p *Peer) start() {
 		//cache peer
 		p.handshake()
 	}
+
+	go func() {
+		timer := time.NewTimer(time.Second * 10)
+		defer timer.Stop()
+		for {
+			select {
+			case <-timer.C:
+				logger.Debugf("sending keepalive....")
+				p.keepalive()
+				timer.Reset(time.Second * 10)
+			}
+
+		}
+	}()
 }
 
 func (p *Peer) SetEndpoint(ep nets.Endpoint) {
@@ -110,4 +125,21 @@ func (p *Peer) WriteToDevice() {
 
 		}
 	}
+}
+
+func (p *Peer) keepalive() {
+	pkt, err := packet.NewHeader(util.KeepaliveMsgType, "")
+	if err != nil {
+		return
+	}
+	buff, err := packet.Encode(pkt)
+	if err != nil {
+		return
+	}
+	size := len(buff)
+	f := packet.NewFrame()
+	copy(f.Packet[:size], buff)
+	f.Size = size
+
+	p.PutPktToOutbound(f)
 }

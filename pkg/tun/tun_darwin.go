@@ -101,6 +101,26 @@ func (tun *NativeTun) Read(buff []byte) (n int, err error) {
 	return n - 4, err
 }
 
+func (tun *NativeTun) Write(buff []byte) (int, error) {
+	size := len(buff) + 4
+	buf := make([]byte, size)
+	buf[0] = 0x00
+	buf[1] = 0x00
+	buf[2] = 0x00
+	//switch buf[4] >> 4 {
+	//case 4:
+	buf[3] = unix.AF_INET
+	copy(buf[4:], buff[:len(buff)])
+	//case 6:
+	//	buf[3] = unix.AF_INET6
+	//default:
+	//	return i, unix.EAFNOSUPPORT
+	//}
+
+	n, err := tun.file.Write(buf[:size])
+	return n, err
+}
+
 func socketCloexec(family, sotype, proto int) (fd int, err error) {
 	syscall.ForkLock.Lock()
 	defer syscall.ForkLock.Unlock()

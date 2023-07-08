@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"fmt"
 	. "github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/nets"
@@ -202,7 +203,11 @@ func (n *Node) ReadFromTun() {
 }
 
 func (n *Node) ReadFromUdp() {
+	defer func() {
+		fmt.Println("ReadFromUDP has exit.....")
+	}()
 	for {
+		logger.Debugf("executing udp reading......")
 		ctx := context.Background()
 		ctx = context.WithValue(ctx, "cache", n.cache)
 		f := packet.NewFrame()
@@ -210,6 +215,7 @@ func (n *Node) ReadFromUdp() {
 		logger.Debugf("udp receive %d byte from %s, data: %v", size, remoteAddr.IP, f.Buff[:size])
 		copy(f.Packet[:size], f.Buff[:size])
 		if err != nil {
+			logger.Error(err)
 			continue
 		}
 		f.Size = size

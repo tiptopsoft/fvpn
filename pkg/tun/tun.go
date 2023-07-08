@@ -57,13 +57,6 @@ func (tun *NativeTun) ReadToFrame(f *packet.Frame) (n int, err error) {
 	return n - 4, err
 }
 
-func (tun *NativeTun) Write(buff []byte) (int, error) {
-	tun.lock.Lock()
-	defer tun.lock.Unlock()
-	n, err := tun.file.Write(buff[4:])
-	return n - 4, err
-}
-
 func (tun *NativeTun) IPToString() string {
 	return tun.IP.String()
 }

@@ -13,6 +13,7 @@ const (
 	MsgTypeUnregisterSuper uint16 = 6
 	MsgTypeQueryPeer       uint16 = 11
 	HandShakeMsgType       uint16 = 12
+	KeepaliveMsgType       uint16 = 15
 	HandShakeMsgTypeAck    uint16 = 13
 	MsgTypeNotifyAck       uint16 = 14
 )

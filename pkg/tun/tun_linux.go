@@ -76,3 +76,10 @@ func (tun *NativeTun) Read(buff []byte) (n int, err error) {
 	n, err = tun.file.Read(buff)
 	return n, err
 }
+
+func (tun *NativeTun) Write(buff []byte) (int, error) {
+	tun.lock.Lock()
+	defer tun.lock.Unlock()
+	n, err := tun.file.Write(buff[:])
+	return n, err
+}
