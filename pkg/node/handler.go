@@ -51,7 +51,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 			break
 		case util.MsgTypePacket:
 			frame.Packet = buff[:]
-			//n.PutPktToInbound(frame)
+			n.PutPktToInbound(frame)
 		case util.HandShakeMsgType:
 			//cache dst peer when receive a handshake
 			err = CachePeerToLocal(n.privateKey, frame, n.cache)

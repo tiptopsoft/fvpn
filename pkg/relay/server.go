@@ -68,7 +68,7 @@ func (r *RegServer) start(address string) error {
 	logger.Debugf("server start at: %s", address)
 
 	nums := runtime.NumCPU()
-	for i := 0; i < nums; i++ {
+	for i := 0; i < nums/2; i++ {
 		r.ws.Add(1)
 		go r.RoutineInBound(i + 1)
 		go r.RoutineOutBound(i + 1)
