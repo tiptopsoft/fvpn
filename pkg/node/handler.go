@@ -39,8 +39,8 @@ func (n *Node) udpInHandler() HandlerFunc {
 			}
 			logger.Debugf("register success, got server server ack: (%v)", regAck)
 		case util.MsgTypeQueryPeer:
-			logger.Debugf("start get query response")
-
+			logger.Debugf("got list packets response")
+			n.handleQueryPeers(frame)
 		case util.MsgTypePacket:
 			n.PutPktToInbound(frame)
 		case util.HandShakeMsgType:
@@ -100,6 +100,7 @@ func CachePeerToLocal(privateKey security.NoisePrivateKey, frame *packet.Frame, 
 
 func (n *Node) handleQueryPeers(frame *packet.Frame) {
 	peers, _ := peer.Decode(frame.Packet[:])
+	logger.Debugf("go peers from remote: %v", peers.Peers)
 	for _, info := range peers.Peers {
 		ip := info.IP
 		addr := info.RemoteAddr

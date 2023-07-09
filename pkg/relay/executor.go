@@ -86,7 +86,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			logger.Debug("server got list peers packet")
 			peers := r.cache.ListPeers(frame.UidString())
 			peerAck := peer.NewPeerPacket()
-			peerAck.UserId = frame.UserId
+
 			for ip, p := range peers {
 				info := peer.PeerInfo{
 					IP:         net.ParseIP(ip),
