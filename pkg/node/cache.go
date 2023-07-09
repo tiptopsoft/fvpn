@@ -50,9 +50,9 @@ func (c *cache) GetPeer(userId, ip string) (*Peer, error) {
 	peer := peerMap[ip]
 
 	// if peer not exists use relay
-	if peer == nil {
-		return relayPeer, nil
-	}
+	//if peer == nil {
+	//	return relayPeer, nil
+	//}
 	return peer, nil
 }
 

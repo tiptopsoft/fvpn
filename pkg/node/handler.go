@@ -67,6 +67,8 @@ func (n *Node) udpInHandler() HandlerFunc {
 			if err != nil {
 				return err
 			}
+		case util.KeepaliveMsgType:
+			logger.Debugf("got keepalived packets from :%v, data: %v", frame.RemoteAddr, frame.Packet[:frame.Size])
 		}
 
 		return nil
@@ -103,12 +105,22 @@ func (n *Node) handleQueryPeers(frame *packet.Frame) {
 	logger.Debugf("go peers from remote: %v", peers.Peers)
 	for _, info := range peers.Peers {
 		ip := info.IP
+		if ip.String() == n.device.IPToString() {
+			continue
+		}
 		addr := info.RemoteAddr
+		p, err := n.cache.GetPeer(frame.UidString(), ip.String())
+		if err != nil || p == nil {
+			p = n.NewPeer(info.PubKey)
+			p.SetEndpoint(nets.NewEndpoint(addr.String()))
+			p.cipher = security.NewCipher(n.privateKey, p.PubKey)
+			err = n.cache.SetPeer(frame.UidString(), ip.String(), p)
+		} else {
+			if p.endpoint.DstToString() != addr.String() {
+				p.SetEndpoint(nets.NewEndpoint(addr.String()))
+			}
+		}
 
-		p := n.NewPeer(info.PubKey)
-		p.SetEndpoint(nets.NewEndpoint(addr.String()))
-		p.cipher = security.NewCipher(n.privateKey, p.PubKey)
-		err := n.cache.SetPeer(frame.UidString(), ip.String(), p)
 		if err != nil {
 			return
 		}
