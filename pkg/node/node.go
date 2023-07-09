@@ -12,6 +12,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/tun"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"sync"
+	"time"
 )
 
 var (
@@ -147,8 +148,18 @@ func (n *Node) up() error {
 	go n.ReadFromTun()
 	go n.WriteToUDP()
 	go n.WriteToDevice()
-
 	n.initRelay()
+	go func() {
+		timer := time.NewTimer(time.Second * 30)
+		for {
+			select {
+			case <-timer.C:
+				logger.Debugf("sending list packets...")
+				n.sendListPackets()
+				timer.Reset(time.Second * 30)
+			}
+		}
+	}()
 	n.wg.Wait()
 	return nil
 }
@@ -253,7 +264,8 @@ func (n *Node) sendListPackets() {
 	frame := packet.NewFrame()
 	frame.DstIP = n.relay.endpoint.DstIP().IP
 	copy(frame.Packet, hpkt)
-	n.PutPktToInbound(frame)
+	frame.Size = len(hpkt)
+	n.PutPktToOutbound(frame)
 }
 
 func (n *Node) WriteToUDP() {
@@ -261,14 +273,12 @@ func (n *Node) WriteToUDP() {
 		select {
 		case pkt := <-n.queue.outBound.c:
 			//only packet will find peer, other type will send to regServer
-			if pkt.FrameType == util.MsgTypePacket {
-				ip := pkt.DstIP
-				peer, err := n.cache.GetPeer(pkt.UidString(), ip.String())
-				if err != nil || peer == nil {
-					peer = n.relay
-				}
-				peer.queue.outBound.c <- pkt
+			ip := pkt.DstIP
+			peer, err := n.cache.GetPeer(pkt.UidString(), ip.String())
+			if err != nil || peer == nil {
+				peer = n.relay
 			}
+			peer.queue.outBound.c <- pkt
 		default:
 
 		}

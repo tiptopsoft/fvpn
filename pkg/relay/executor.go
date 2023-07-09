@@ -99,6 +99,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			newFrame := packet.NewFrame()
 			copy(newFrame.Packet, buff)
 			newFrame.UserId = frame.UserId
+			newFrame.RemoteAddr = frame.RemoteAddr
 			newFrame.FrameType = util.MsgTypeQueryPeer
 			newFrame.Size = len(buff)
 			r.PutPktToOutbound(newFrame)
