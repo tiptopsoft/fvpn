@@ -241,6 +241,21 @@ func (n *Node) ReadFromUdp() {
 	}
 }
 
+// sendListPackets send a packet list all nodes in current user
+func (n *Node) sendListPackets() {
+	//
+	h, _ := packet.NewHeader(util.MsgTypeQueryPeer, UCTL.UserId)
+	hpkt, err := packet.Encode(h)
+	if err != nil {
+		logger.Errorf("send list packet failed %v", err)
+		return
+	}
+	frame := packet.NewFrame()
+	frame.DstIP = n.relay.endpoint.DstIP().IP
+	copy(frame.Packet, hpkt)
+	n.PutPktToInbound(frame)
+}
+
 func (n *Node) WriteToUDP() {
 	for {
 		select {

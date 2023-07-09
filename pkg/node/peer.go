@@ -54,11 +54,9 @@ func (p *Peer) start() {
 					p.keepalive()
 					timer.Reset(time.Second * 10)
 				}
-
 			}
 		}()
 	}
-
 }
 
 func (p *Peer) SetEndpoint(ep nets.Endpoint) {
@@ -87,7 +85,6 @@ func (p *Peer) handshake() {
 	p.PutPktToOutbound(f)
 
 	//cache
-
 }
 
 func (p *Peer) PutPktToOutbound(pkt *packet.Frame) {

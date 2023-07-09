@@ -1,64 +1,50 @@
 package peer
 
 import (
-	"errors"
+	"bytes"
+	"encoding/binary"
+	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/security"
 	"github.com/topcloudz/fvpn/pkg/util"
-	"unsafe"
+	"net"
 )
 
+type PeerInfo struct {
+	IP         net.IP
+	RemoteAddr net.UDPAddr
+	PubKey     security.NoisePublicKey
+}
+
 type PeerPacket struct {
-	header packet.Header
+	Header packet.Header
+	UserId [8]byte
+	Peers  []PeerInfo
 }
 
-func (pkt PeerPacket) String() string {
-	//value := fmt.Sprintf("type: %d, srcMac: %s", pkt.header.Flags, pkt.SrcMac.String())
-	//return value
-	return ""
-}
-
-func NewPacket(networkId string) PeerPacket {
-	cmPacket, _ := packet.NewHeader(util.MsgTypeQueryPeer, networkId)
+func NewPeerPacket() PeerPacket {
+	h, _ := packet.NewHeader(util.MsgTypeQueryPeer, handler.UCTL.UserId)
 	return PeerPacket{
-		header: cmPacket,
+		Header: h,
+		Peers:  nil,
 	}
 }
 
-func Encode(p PeerPacket) ([]byte, error) {
-	b := make([]byte, unsafe.Sizeof(PeerPacket{}))
-	headerBuff, err := packet.Encode(p.header)
+func Encode(peerPacket PeerPacket) ([]byte, error) {
+	buf := &bytes.Buffer{}
+	err := binary.Write(buf, binary.BigEndian, peerPacket)
 	if err != nil {
-		return nil, errors.New("encode common packet failed")
+		return nil, err
 	}
-	idx := 0
-	idx = packet.EncodeBytes(b, headerBuff, idx)
-	//idx = packet.EncodeBytes(b, p.SrcMac[:], idx)
-	return b, nil
+	return buf.Bytes(), err
 }
 
-func (p PeerPacket) Decode(udpBytes []byte) (PeerPacket, error) {
-
-	res := NewPacket("")
-	h, err := packet.Decode(udpBytes)
+func Decode(buff []byte) (peerPacket PeerPacket, err error) {
+	buf := bytes.NewReader(buff)
+	err = binary.Read(buf, binary.BigEndian, &peerPacket)
 	if err != nil {
-		return PeerPacket{}, errors.New("decode common packet failed")
+		return PeerPacket{}, err
 	}
-	idx := 0
-	res.header = h
-	idx += int(unsafe.Sizeof(packet.Header{}))
-	//var mac = make([]byte, 6)
-	//packet.DecodeBytes(&mac, udpBytes, idx)
-	//res.SrcMac = mac
-	return res, nil
-}
 
-func DecodeWithCommonPacket(udpBytes []byte, cp packet.Header) (PeerPacket, error) {
-	res := NewPacket("")
-	idx := 0
-	res.header = cp
-	idx += int(unsafe.Sizeof(packet.Header{}))
-	//var mac = make([]byte, 6)
-	//packet.DecodeBytes(&mac, udpBytes, idx)
-	//res.SrcMac = mac
-	return res, nil
+	return peerPacket, nil
 }

@@ -8,6 +8,7 @@ import (
 type CacheFunc interface {
 	SetPeer(userId, ip string, peer *Peer) error
 	GetPeer(userId, ip string) (*Peer, error)
+	ListPeers(userId string) PeerMap
 }
 
 type cache struct {
@@ -37,7 +38,6 @@ func (c *cache) SetPeer(userId, ip string, peer *Peer) error {
 	}
 	peerMap[ip] = peer
 	//every add a peer will print current peers in cache
-	c.ListPeers()
 	return nil
 }
 
@@ -56,15 +56,6 @@ func (c *cache) GetPeer(userId, ip string) (*Peer, error) {
 	return peer, nil
 }
 
-func (c *cache) ListPeers() []*Peer {
-	var result []*Peer
-	for userId, peers := range c.peers {
-		logger.Debugf("user: %s, peers: %v", userId, peers)
-		for ip, peer := range peers {
-			logger.Debugf("ip: %s, peer: %v", ip, peer)
-			result = append(result, peer)
-		}
-	}
-
-	return result
+func (c *cache) ListPeers(userId string) PeerMap {
+	return c.peers[userId]
 }

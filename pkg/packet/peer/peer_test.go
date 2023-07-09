@@ -2,11 +2,12 @@ package peer
 
 import (
 	"fmt"
-	"github.com/topcloudz/fvpn/pkg/packet/peer/ack"
+	"net"
 	"testing"
 	"unsafe"
 )
 
-func TestEncode(t *testing.T) {
-	fmt.Print(unsafe.Sizeof(ack.EdgeInfo{}))
+func TestEncode1(t *testing.T) {
+	fmt.Println(unsafe.Sizeof(net.UDPAddr{}))
+	fmt.Println(unsafe.Sizeof(net.IP{}))
 }

@@ -7,7 +7,9 @@ import (
 	"github.com/topcloudz/fvpn/pkg/node"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/handshake"
+	"github.com/topcloudz/fvpn/pkg/packet/peer"
 	"github.com/topcloudz/fvpn/pkg/util"
+	"net"
 )
 
 func (r *RegServer) ReadFromUdp() {
@@ -80,6 +82,26 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 
 			frame.RemoteAddr = peer.GetEndpoint().DstIP()
 			r.PutPktToOutbound(frame)
+		case util.MsgTypeQueryPeer:
+			logger.Debug("server got list peers packet")
+			peers := r.cache.ListPeers(frame.UidString())
+			peerAck := peer.NewPeerPacket()
+			peerAck.UserId = frame.UserId
+			for ip, p := range peers {
+				info := peer.PeerInfo{
+					IP:         net.ParseIP(ip),
+					RemoteAddr: *p.GetEndpoint().DstIP(),
+				}
+				peerAck.Peers = append(peerAck.Peers, info)
+			}
+			buff, _ := peer.Encode(peerAck)
+
+			newFrame := packet.NewFrame()
+			copy(newFrame.Packet, buff)
+			newFrame.UserId = frame.UserId
+			newFrame.FrameType = util.MsgTypeQueryPeer
+			newFrame.Size = len(buff)
+			r.PutPktToOutbound(newFrame)
 		case util.HandShakeMsgType:
 			if err := node.CachePeerToLocal(r.key.privateKey, frame, r.cache); err != nil {
 				return err

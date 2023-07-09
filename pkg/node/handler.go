@@ -6,7 +6,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/nets"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/handshake"
-	peerack "github.com/topcloudz/fvpn/pkg/packet/peer/ack"
+	"github.com/topcloudz/fvpn/pkg/packet/peer"
 	"github.com/topcloudz/fvpn/pkg/packet/register/ack"
 	"github.com/topcloudz/fvpn/pkg/security"
 	"github.com/topcloudz/fvpn/pkg/util"
@@ -38,17 +38,9 @@ func (n *Node) udpInHandler() HandlerFunc {
 				return err
 			}
 			logger.Debugf("register success, got server server ack: (%v)", regAck)
-			break
 		case util.MsgTypeQueryPeer:
 			logger.Debugf("start get query response")
-			peerPacketAck, err := peerack.Decode(buff)
-			if err != nil {
-				return err
-			}
-			infos := peerPacketAck.NodeInfos
-			logger.Infof("got server peers: (%v)", infos)
 
-			break
 		case util.MsgTypePacket:
 			n.PutPktToInbound(frame)
 		case util.HandShakeMsgType:
@@ -104,4 +96,21 @@ func CachePeerToLocal(privateKey security.NoisePrivateKey, frame *packet.Frame, 
 		return err
 	}
 	return nil
+}
+
+func (n *Node) handleQueryPeers(frame *packet.Frame) {
+	peers, _ := peer.Decode(frame.Packet[:])
+	for _, info := range peers.Peers {
+		ip := info.IP
+		addr := info.RemoteAddr
+
+		p := n.NewPeer(info.PubKey)
+		p.SetEndpoint(nets.NewEndpoint(addr.String()))
+		p.cipher = security.NewCipher(n.privateKey, p.PubKey)
+		err := n.cache.SetPeer(frame.UidString(), ip.String(), p)
+		if err != nil {
+			return
+		}
+		p.start()
+	}
 }
