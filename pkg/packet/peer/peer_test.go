@@ -4,10 +4,17 @@ import (
 	"fmt"
 	"net"
 	"testing"
-	"unsafe"
 )
 
 func TestEncode1(t *testing.T) {
-	fmt.Println(unsafe.Sizeof(net.UDPAddr{}))
-	fmt.Println(unsafe.Sizeof(net.IP{}))
+
+	p := NewPeerPacket()
+	p.Header.SrcIP = net.ParseIP("121.1.1.1")
+	buff, err := Encode(p)
+	if err != nil {
+		panic(buff)
+	}
+
+	p1, _ := Decode(buff)
+	fmt.Println(p1.Header.SrcIP)
 }

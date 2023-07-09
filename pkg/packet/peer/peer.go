@@ -2,7 +2,7 @@ package peer
 
 import (
 	"bytes"
-	"encoding/binary"
+	"encoding/gob"
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/security"
@@ -32,7 +32,9 @@ func NewPeerPacket() PeerPacket {
 
 func Encode(peerPacket PeerPacket) ([]byte, error) {
 	buf := &bytes.Buffer{}
-	err := binary.Write(buf, binary.BigEndian, peerPacket)
+	b := gob.NewEncoder(buf)
+	//err := binary.Write(buf, binary.BigEndian, peerPacket)
+	err := b.Encode(peerPacket)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +43,9 @@ func Encode(peerPacket PeerPacket) ([]byte, error) {
 
 func Decode(buff []byte) (peerPacket PeerPacket, err error) {
 	buf := bytes.NewReader(buff)
-	err = binary.Read(buf, binary.BigEndian, &peerPacket)
+	//err = binary.Read(buf, binary.BigEndian, &peerPacket)
+	d := gob.NewDecoder(buf)
+	err = d.Decode(&peerPacket)
 	if err != nil {
 		return PeerPacket{}, err
 	}
