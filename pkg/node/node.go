@@ -88,6 +88,7 @@ func (n *Node) initRelay() {
 	n.relay.node = n
 	n.relay.endpoint = nets.NewEndpoint(n.cfg.ClientCfg.Registry)
 	n.relay.start()
+	n.relay.handshake(n.relay.endpoint.DstIP().IP)
 	relayPeer = n.relay
 	err := n.cache.SetPeer(UCTL.UserId, n.relay.endpoint.DstIP().IP.String(), n.relay)
 	if err != nil {
@@ -121,7 +122,7 @@ func (n *Node) nodeRegister() error {
 }
 
 func Start(cfg *util.Config) error {
-	iface, err := tun.New()
+	iface, err := tun.New(cfg.ClientCfg.Offset)
 	if err != nil {
 		return err
 	}
@@ -218,7 +219,6 @@ func (n *Node) ReadFromUdp() {
 		fmt.Println("ReadFromUDP has exit.....")
 	}()
 	for {
-		logger.Debugf("executing udp reading......")
 		ctx := context.Background()
 		ctx = context.WithValue(ctx, "cache", n.cache)
 		f := packet.NewFrame()
@@ -238,7 +238,7 @@ func (n *Node) ReadFromUdp() {
 			continue
 		}
 
-		f.SrcIP = hpkt.SrcIP
+		f.SrcIP = hpkt.SrcIP //192.168.0.1->192.168.0.2 srcIP =1, dstIP =2
 		f.DstIP = hpkt.DstIP
 		f.UserId = hpkt.UserId
 		f.FrameType = hpkt.Flags
@@ -265,6 +265,7 @@ func (n *Node) sendListPackets() {
 	frame.DstIP = n.relay.endpoint.DstIP().IP
 	copy(frame.Packet, hpkt)
 	frame.Size = len(hpkt)
+	frame.UserId = h.UserId
 	n.PutPktToOutbound(frame)
 }
 
@@ -274,10 +275,15 @@ func (n *Node) WriteToUDP() {
 		case pkt := <-n.queue.outBound.c:
 			//only packet will find peer, other type will send to regServer
 			ip := pkt.DstIP
+			logger.Debugf("userId: %v, dst ip: %v", pkt.UidString(), ip)
 			peer, err := n.cache.GetPeer(pkt.UidString(), ip.String())
-			if err != nil || peer == nil {
-				peer = n.relay
+			if err != nil {
+				logger.Error("%v", err)
+				continue
 			}
+			//if err != nil || peer == nil {
+			//	peer = n.relay
+			//}
 			peer.queue.outBound.c <- pkt
 		default:
 

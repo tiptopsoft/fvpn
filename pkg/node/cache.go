@@ -1,6 +1,7 @@
 package node
 
 import (
+	"errors"
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"sync"
 )
@@ -53,6 +54,9 @@ func (c *cache) GetPeer(userId, ip string) (*Peer, error) {
 	//if peer == nil {
 	//	return relayPeer, nil
 	//}
+	if peer == nil {
+		return nil, errors.New("peer is nil")
+	}
 	return peer, nil
 }
 

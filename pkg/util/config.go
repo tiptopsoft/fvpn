@@ -46,6 +46,7 @@ type ClientConfig struct {
 	Registry string   `mapstructure:"server"`
 	Listen   string   `mapstructure:"listen"`
 	Protocol Protocol `mapstructure:"type"`
+	Offset   int32    `mapstructure:"offset"`
 }
 
 type Mysql struct {

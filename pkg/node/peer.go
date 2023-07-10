@@ -7,6 +7,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/packet/handshake"
 	"github.com/topcloudz/fvpn/pkg/security"
 	"github.com/topcloudz/fvpn/pkg/util"
+	"net"
 	"sync"
 	"time"
 )
@@ -35,14 +36,15 @@ func (p *Peer) start() {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	if p.status == true {
+		logger.Debugf("peer has started: %v", p.endpoint.DstToString())
 		return
 	}
+
 	p.status = true
 	if p.node != nil && p.node.mode == 1 {
+		p.PubKey = p.node.privateKey.NewPubicKey() //use to send to remote for exchange pubKey
 		go p.SendPackets()
 		go p.WriteToDevice()
-		//cache peer
-		p.handshake()
 
 		go func() {
 			timer := time.NewTimer(time.Second * 10)
@@ -67,11 +69,11 @@ func (p *Peer) GetEndpoint() nets.Endpoint {
 	return p.endpoint
 }
 
-func (p *Peer) handshake() {
+func (p *Peer) handshake(dstIP net.IP) {
 	hpkt := handshake.NewPacket(util.HandShakeMsgType, handler.UCTL.UserId)
 	hpkt.Header.SrcIP = p.node.device.Addr()
-	hpkt.Header.DstIP = p.endpoint.DstIP().IP
-	hpkt.PubKey = p.node.pubKey
+	hpkt.Header.DstIP = dstIP
+	hpkt.PubKey = p.PubKey
 	buff, err := handshake.Encode(hpkt)
 	if err != nil {
 		return
@@ -81,10 +83,16 @@ func (p *Peer) handshake() {
 	f := packet.NewFrame()
 	copy(f.Packet[:size], buff)
 	f.Size = size
-
+	//cache a peer
+	//ep := nets.NewEndpoint(p.endpoint.DstToString())
+	//p.SetEndpoint(ep)
+	//err = p.node.cache.SetPeer(handler.UCTL.UserId, p.endpoint.DstToString(), p)
+	//if err != nil {
+	//	logger.Error("init cache peer failed.")
+	//	return
+	//}
+	logger.Debugf("sending pubkey to: %v, pubKey: %v", dstIP.String(), p.PubKey)
 	p.PutPktToOutbound(f)
-
-	//cache
 }
 
 func (p *Peer) PutPktToOutbound(pkt *packet.Frame) {

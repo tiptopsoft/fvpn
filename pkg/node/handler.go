@@ -45,25 +45,30 @@ func (n *Node) udpInHandler() HandlerFunc {
 			n.PutPktToInbound(frame)
 		case util.HandShakeMsgType:
 			//cache dst peer when receive a handshake
-			err = CachePeerToLocal(n.privateKey, frame, n.cache)
+			logger.Debugf("got handshake msg type, data: %v", frame.Packet[:frame.Size])
+			_, err := CachePeerToLocal(n.privateKey, frame, n.cache, n)
 			if err != nil {
 				return err
 			}
 			//build handshake resp
-			hPktack := handshake.NewPacket(util.HandShakeMsgTypeAck, frame.UidString())
-			hPktack.Header.SrcIP = frame.DstIP
-			hPktack.Header.DstIP = frame.SrcIP
-			hPktack.PubKey = n.privateKey.NewPubicKey()
-			buff, err := handshake.Encode(hPktack)
-			if err != nil {
-				return err
-			}
-
-			frame.Packet = buff
-			frame.Size = len(buff)
-		case util.HandShakeMsgTypeAck:
+			//hPktack := handshake.NewPacket(util.HandShakeMsgTypeAck, frame.UidString())
+			//logger.Debugf("got packet srcIP: %v, dstIP: %v", frame.SrcIP, frame.DstIP)
+			//hPktack.Header.SrcIP = frame.DstIP //dstIP = 2
+			//hPktack.Header.DstIP = frame.SrcIP //srcIP = 1
+			//hPktack.PubKey = n.privateKey.NewPubicKey()
+			//buff, err := handshake.Encode(hPktack)
+			//if err != nil {
+			//	return err
+			//}
+			//
+			//frame.Packet = buff
+			//frame.Size = len(buff)
+			//frame.DstIP = frame.SrcIP //dstIP = 1
+			//n.PutPktToOutbound(frame)
+		case util.HandShakeMsgTypeAck: //use for relay
 			//cache dst peer when receive a handshake
-			err = CachePeerToLocal(n.privateKey, frame, n.cache)
+			logger.Debugf("got handshake msg type in handshake ack, data: %v", frame.Packet[:frame.Size])
+			_, err = CachePeerToLocal(n.privateKey, frame, n.cache, n)
 			if err != nil {
 				return err
 			}
@@ -75,29 +80,30 @@ func (n *Node) udpInHandler() HandlerFunc {
 	}
 }
 
-func CachePeerToLocal(privateKey security.NoisePrivateKey, frame *packet.Frame, cache CacheFunc) error {
+func CachePeerToLocal(privateKey security.NoisePrivateKey, frame *packet.Frame, cache CacheFunc, node *Node) (*Peer, error) {
 	hpkt, err := handshake.Decode(frame.Buff)
 	if err != nil {
 		logger.Errorf("invalid handshake packet: %v", err)
-		return err
+		return nil, err
 	}
 
-	peer, err := cache.GetPeer(UCTL.UserId, frame.SrcIP.String())
-	if err != nil || peer == nil {
-		peer = new(Peer)
+	logger.Debugf("got remote peer: %v, pubKey: %v", frame.SrcIP.String(), hpkt.PubKey)
+	p, err := cache.GetPeer(UCTL.UserId, frame.SrcIP.String())
+	if err != nil || p == nil {
+		p = node.NewPeer(hpkt.PubKey)
 	}
-
-	peer.PubKey = hpkt.PubKey
+	p.node = node
 	ep := nets.NewEndpoint(frame.RemoteAddr.String())
-	peer.SetEndpoint(ep)
-	peer.cipher = security.NewCipher(privateKey, peer.PubKey)
-	err = cache.SetPeer(frame.UidString(), frame.SrcIP.String(), peer)
-	peer.start()
+	p.SetEndpoint(ep)
+	p.cipher = security.NewCipher(privateKey, hpkt.PubKey)
+	err = cache.SetPeer(frame.UidString(), frame.SrcIP.String(), p)
+	p.start()
 
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+
+	return p, nil
 }
 
 func (n *Node) handleQueryPeers(frame *packet.Frame) {
@@ -111,9 +117,8 @@ func (n *Node) handleQueryPeers(frame *packet.Frame) {
 		addr := info.RemoteAddr
 		p, err := n.cache.GetPeer(frame.UidString(), ip.String())
 		if err != nil || p == nil {
-			p = n.NewPeer(info.PubKey)
+			p = n.NewPeer(security.NoisePublicKey{}) //now has no pubKey
 			p.SetEndpoint(nets.NewEndpoint(addr.String()))
-			p.cipher = security.NewCipher(n.privateKey, p.PubKey)
 			err = n.cache.SetPeer(frame.UidString(), ip.String(), p)
 		} else {
 			if p.endpoint.DstToString() != addr.String() {
@@ -124,6 +129,8 @@ func (n *Node) handleQueryPeers(frame *packet.Frame) {
 		if err != nil {
 			return
 		}
+		//p.start()
 		p.start()
+		p.handshake(ip)
 	}
 }

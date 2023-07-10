@@ -14,7 +14,7 @@ import (
 
 var (
 	ipMap              sync.Map
-	ipNumber           atomic.Uint32
+	ipNumber           atomic.Int32
 	BROADCAST_MAC      = net.HardwareAddr{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}
 	MULTICAST_MAC      = net.HardwareAddr{0x01, 0x00, 0x5E, 0x00, 0x00, 0x00} // first 3 bytes are meaningful
 	IPV6_MULTICAST_MAC = net.HardwareAddr{0x33, 0x33, 0x00, 0x00, 0x00, 0x00}
@@ -26,7 +26,7 @@ type Endpoint struct {
 	Mac      net.HardwareAddr
 	IP       net.IP
 	Mask     net.IP
-	ipNumber uint32
+	ipNumber int32
 }
 
 // AddrCache 存储到map里
@@ -37,55 +37,34 @@ type AddrCache struct {
 }
 
 // New generate a endpoint
-func New(srcMac net.HardwareAddr) (*Endpoint, error) {
-	var ac any
-	var ok bool
-	ac, ok = ipMap.Load(srcMac.String())
-	if !ok {
-		num := ipNumber.Load()
-		if num == 0 {
-			num = string2Long("192.168.0.1")
-		} else {
-			num++
-		}
-		ip := net.ParseIP(GenerateIP(num))
-		ipMask, _, err := net.ParseCIDR("255.255.255.0/24")
+func New(offset int32) (*Endpoint, error) {
+	num := ipNumber.Load()
+	num = string2Long("192.168.0.1")
+	num = num + offset
+	ip := net.ParseIP(GenerateIP(num))
+	ipMask, _, err := net.ParseCIDR("255.255.255.0/24")
 
-		if err != nil {
-			return nil, errors.ErrInvalieCIDR
-		}
-		ac = AddrCache{
-			Group:  [4]byte{},
-			SrcMac: srcMac.String(),
-			Endpoint: Endpoint{
-				Mac:      srcMac,
-				IP:       ip,
-				Mask:     ipMask,
-				ipNumber: num,
-			},
-		}
-		ipNumber.Store(num)
-		ipMap.Store(srcMac.String(), ac)
-	} else {
-		cache := ac.(AddrCache)
-		ip := net.ParseIP(GenerateIP(cache.Endpoint.ipNumber))
-		cache.Endpoint.IP = ip
-		ipMap.Store(srcMac.String(), cache)
+	if err != nil {
+		return nil, errors.ErrInvalieCIDR
+	}
+	ep := &Endpoint{
+		IP:       ip,
+		Mask:     ipMask,
+		ipNumber: num,
 	}
 
-	res := ac.(AddrCache)
-	return &res.Endpoint, nil
+	return ep, nil
 }
 
 // ip到数字
-func string2Long(ip string) uint32 {
-	var long uint32
+func string2Long(ip string) int32 {
+	var long int32
 	binary.Read(bytes.NewBuffer(net.ParseIP(ip).To4()), binary.BigEndian, &long)
 	return long
 }
 
 // GenerateIP 数字到IP
-func GenerateIP(ipInt uint32) string {
+func GenerateIP(ipInt int32) string {
 	// need to do two bit shifting and “0xff” masking
 	b0 := (ipInt >> 24) & 0xff
 	b1 := (ipInt >> 16) & 0xff

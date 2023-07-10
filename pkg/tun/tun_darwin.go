@@ -22,7 +22,7 @@ var (
 	FakeIP      = net.ParseIP("5.244.24.141")
 )
 
-func New() (Device, error) {
+func New(offset int32) (Device, error) {
 	ifIndex := 0
 	var name string
 	var fd int

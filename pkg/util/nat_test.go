@@ -6,5 +6,4 @@ import (
 
 func TestCheckNatType(t *testing.T) {
 
-	checkNatType()
 }

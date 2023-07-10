@@ -104,7 +104,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			newFrame.Size = len(buff)
 			r.PutPktToOutbound(newFrame)
 		case util.HandShakeMsgType:
-			if err := node.CachePeerToLocal(r.key.privateKey, frame, r.cache); err != nil {
+			if _, err := node.CachePeerToLocal(r.key.privateKey, frame, r.cache, nil); err != nil {
 				return err
 			}
 			//build handshake resp

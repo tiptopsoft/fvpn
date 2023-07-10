@@ -5,16 +5,13 @@ import (
 	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"golang.org/x/sys/unix"
-	"net"
 	"os"
 	"syscall"
 	"unsafe"
 )
 
 var (
-	logger      = log.Log()
-	FakeGateway = "192.168.0.1/24"
-	FakeIP      = net.ParseIP("192.168.0.1")
+	logger = log.Log()
 )
 
 type Ifreq struct {
@@ -22,7 +19,7 @@ type Ifreq struct {
 	Flags uint16
 }
 
-func New() (*NativeTun, error) {
+func New(offset int32) (*NativeTun, error) {
 	name := fmt.Sprintf("%s%d", DefaultNamePrefix, 0)
 	var f = "/dev/net/tun"
 
@@ -58,7 +55,9 @@ func New() (*NativeTun, error) {
 		err = fmt.Errorf("tuntap set group error, errno %v", errno)
 	}
 
-	if err = util.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s %s", name, FakeGateway, FakeIP.String())); err != nil {
+	endpoint, _ := util.New(offset)
+	logger.Debugf("ip: %v, mask: %v", endpoint.IP, endpoint.Mask)
+	if err = util.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s", name, fmt.Sprintf("%s/%d", endpoint.IP.String(), 24))); err != nil {
 		return nil, err
 	}
 
@@ -66,7 +65,7 @@ func New() (*NativeTun, error) {
 		name: name, // size is 16
 		file: os.NewFile(uintptr(fd), name),
 		Fd:   fd,
-		IP:   FakeIP,
+		IP:   endpoint.IP,
 	}, nil
 }
 
