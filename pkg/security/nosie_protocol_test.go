@@ -8,6 +8,7 @@ import (
 	"golang.org/x/crypto/curve25519"
 	"io"
 	"testing"
+	"time"
 )
 
 // DH test
@@ -44,7 +45,7 @@ func TestCurve(t *testing.T) {
 	cip1 := NewCipher(privateKey, pubKey2)
 	cip2 := NewCipher(privateKey2, pubKey)
 
-	s := "hello, myworld"
+	s := "hello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworld"
 	sBuff := []byte(s)
 	frame := packet.NewFrame()
 	h, _ := packet.NewHeader(util.MsgTypePacket, "123456")
@@ -53,6 +54,7 @@ func TestCurve(t *testing.T) {
 	copy(frame.Packet[44:], sBuff)
 	size := len(headerBuff) + len(sBuff)
 
+	st := time.Now()
 	fmt.Println("before encoded: ", frame.Packet[:size])
 
 	encodedBuff, err := cip1.Encode(frame.Packet[:size])
@@ -61,6 +63,8 @@ func TestCurve(t *testing.T) {
 	}
 
 	fmt.Println("After encoded: ", encodedBuff[:len(encodedBuff)])
+	et := time.Since(st)
+	fmt.Println("cost: ", et)
 
 	decodedBuff, err := cip2.Decode(encodedBuff)
 	if err != nil {

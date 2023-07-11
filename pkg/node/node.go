@@ -151,13 +151,13 @@ func (n *Node) up() error {
 	go n.WriteToDevice()
 	n.initRelay()
 	go func() {
-		timer := time.NewTimer(time.Second * 30)
+		timer := time.NewTimer(time.Second * 5)
 		for {
 			select {
 			case <-timer.C:
 				logger.Debugf("sending list packets...")
 				n.sendListPackets()
-				timer.Reset(time.Second * 30)
+				timer.Reset(time.Second * 5)
 			}
 		}
 	}()
@@ -179,6 +179,7 @@ func (n *Node) ReadFromTun() {
 		frame.UserId = n.userId
 		frame.FrameType = util.MsgTypePacket
 		size, err := n.device.Read(frame.Buff[:])
+		st := time.Now()
 		if err != nil {
 			logger.Error(err)
 			continue
@@ -206,6 +207,8 @@ func (n *Node) ReadFromTun() {
 		frame.Size = size + packet.HeaderBuffSize
 
 		err = n.tunHandler.Handle(ctx, frame)
+		et := time.Since(st)
+		logger.Debugf("================encode cost: %v", et)
 
 		if err != nil {
 			continue
