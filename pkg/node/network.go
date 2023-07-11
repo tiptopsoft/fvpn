@@ -74,6 +74,9 @@ func (n *nodeNet) Access(userId, ip string) bool {
 	IP := net.ParseIP(ip)
 	networks := n.networks[userId]
 	for _, v := range networks.ipNet {
+		if v == nil {
+			continue
+		}
 		if v.String() == AllIPs {
 			return true
 		}
@@ -83,6 +86,9 @@ func (n *nodeNet) Access(userId, ip string) bool {
 	}
 
 	for _, v := range networks.ips {
+		if v == nil {
+			continue
+		}
 		if v.Equal(IP) {
 			return true
 		}

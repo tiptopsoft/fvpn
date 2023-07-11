@@ -77,7 +77,7 @@ func NewNode(iface tun.Device, bind nets.Bind) (*Node, error) {
 	n.queue.inBound = NewInBoundQueue()
 	//n.queue.handshakeBound = newHandshakeQueue()
 
-	n.tunHandler = WithMiddlewares(n.tunInHandler(), Encode(), n.AllowNetwork(), AuthCheck())
+	n.tunHandler = WithMiddlewares(n.tunInHandler(), AuthCheck(), n.AllowNetwork(), Encode())
 	n.udpHandler = WithMiddlewares(n.udpInHandler(), AuthCheck(), Decode())
 	n.wg.Add(1)
 
@@ -212,6 +212,7 @@ func (n *Node) ReadFromTun() {
 		logger.Debugf("================encode cost: %v", et)
 
 		if err != nil {
+			logger.Error(err)
 			continue
 		}
 
