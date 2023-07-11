@@ -15,6 +15,7 @@ import (
 // Peer a destination will have a peer in fvpn, can connect to each other.
 // a RegServer also is a peer
 type Peer struct {
+	p2p      bool
 	lock     sync.Mutex
 	status   bool
 	PubKey   security.NoisePublicKey

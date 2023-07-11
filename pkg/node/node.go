@@ -42,7 +42,7 @@ type Node struct {
 		inBound  *InBoundQueue  //after decrypt
 	}
 
-	netManager NetManagerFn
+	netCtl     NetworkManager
 	tunHandler Handler
 	udpHandler Handler
 	relay      *Peer
@@ -59,13 +59,14 @@ func (n *Node) PutPktToInbound(pkt *packet.Frame) {
 	n.queue.inBound.c <- pkt
 }
 
-func NewDevice(iface tun.Device, bind nets.Bind) (*Node, error) {
+func NewNode(iface tun.Device, bind nets.Bind) (*Node, error) {
 	n := &Node{
 		device: iface,
 		net:    struct{ bind nets.Bind }{bind: bind},
 		cache:  NewCache(),
 		mode:   1,
 	}
+	n.netCtl = NewNetworkManager(UCTL.UserId)
 	privateKey, err := security.NewPrivateKey()
 	if err != nil {
 		return nil, err
@@ -76,7 +77,7 @@ func NewDevice(iface tun.Device, bind nets.Bind) (*Node, error) {
 	n.queue.inBound = NewInBoundQueue()
 	//n.queue.handshakeBound = newHandshakeQueue()
 
-	n.tunHandler = WithMiddlewares(n.tunInHandler(), Encode(), AuthCheck())
+	n.tunHandler = WithMiddlewares(n.tunInHandler(), Encode(), n.AllowNetwork(), AuthCheck())
 	n.udpHandler = WithMiddlewares(n.udpInHandler(), AuthCheck(), Decode())
 	n.wg.Add(1)
 
@@ -127,7 +128,7 @@ func Start(cfg *util.Config) error {
 		return err
 	}
 
-	d, err := NewDevice(iface, nets.NewStdBind())
+	d, err := NewNode(iface, nets.NewStdBind())
 	logger.Debugf("device name: %s, ip: %s", d.device.Name(), d.device.IPToString())
 	d.cfg = cfg
 	if err != nil {
@@ -287,6 +288,9 @@ func (n *Node) WriteToUDP() {
 			//if err != nil || peer == nil {
 			//	peer = n.relay
 			//}
+			if !peer.p2p {
+				peer = n.relay
+			}
 			peer.queue.outBound.c <- pkt
 		default:
 

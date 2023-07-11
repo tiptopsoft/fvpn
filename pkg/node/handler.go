@@ -96,6 +96,7 @@ func CachePeerToLocal(privateKey security.NoisePrivateKey, frame *packet.Frame, 
 	ep := nets.NewEndpoint(frame.RemoteAddr.String())
 	p.SetEndpoint(ep)
 	p.cipher = security.NewCipher(privateKey, hpkt.PubKey)
+	p.p2p = true
 	err = cache.SetPeer(frame.UidString(), frame.SrcIP.String(), p)
 	p.start()
 

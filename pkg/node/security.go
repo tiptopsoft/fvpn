@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/util"
@@ -59,6 +60,22 @@ func Encode() func(handler.Handler) handler.Handler {
 				logger.Debugf("data after encode: %v", frame.Packet[:frame.Size])
 				if err != nil {
 					return err
+				}
+			}
+			return next.Handle(ctx, frame)
+		})
+	}
+}
+
+// AllowNetwork valid user can join a network or a node, so here will check
+func (n *Node) AllowNetwork() func(handler.Handler) handler.Handler {
+	return func(next handler.Handler) handler.Handler {
+		return handler.HandlerFunc(func(ctx context.Context, frame *packet.Frame) error {
+			if frame.FrameType == util.MsgTypePacket {
+				ip := frame.DstIP.String()
+				b := n.netCtl.Access(frame.UidString(), ip)
+				if !b {
+					return fmt.Errorf("has no access to IP: %v", ip)
 				}
 			}
 			return next.Handle(ctx, frame)
