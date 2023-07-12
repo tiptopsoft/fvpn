@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/topcloudz/fvpn/pkg/handler"
+	"github.com/topcloudz/fvpn/pkg/nets"
 	"github.com/topcloudz/fvpn/pkg/node"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/handshake"
@@ -126,6 +127,8 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 
 func (r *RegServer) register(frame *packet.Frame) (err error) {
 	p := new(node.Peer)
+	ep := nets.NewEndpoint(frame.RemoteAddr.String())
+	p.SetEndpoint(ep)
 	err = r.cache.SetPeer(frame.UidString(), frame.SrcIP.String(), p)
 	return
 }
