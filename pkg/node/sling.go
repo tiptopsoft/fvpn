@@ -1,4 +1,4 @@
-package http
+package node
 
 import (
 	"encoding/json"
@@ -12,31 +12,18 @@ type Interface interface {
 	ListNodes(userId string)
 }
 
-type Client struct {
+type client struct {
 	sling *sling.Sling
 }
 
-func New(base string) *Client {
-	return &Client{
+func NewClient(base string) *client {
+	return &client{
 		sling: sling.New().Client(http.DefaultClient).Base(base),
 	}
 }
 
-type JoinRequest struct {
-	SrcMac    string `json:"srcMac"`
-	NetworkId string `json:"networkId"`
-	Ip        string `json:"ip"`
-	Mask      string `json:"mask"`
-}
-
-type JoinResponse struct {
-	IP        string `json:"deviceIp"`
-	Mask      string `json:"mask"`
-	NetworkId string `json:"networkId"`
-}
-
-func (c *Client) JoinNetwork(req JoinRequest) (*JoinResponse, error) {
-	resp := new(Response)
+func (c *client) JoinNetwork(req util.JoinRequest) (*util.JoinResponse, error) {
+	resp := new(util.Response)
 	//First, read the config.json to get username and password to get token
 	username, password, err := util.GetUserInfo()
 	if err != nil {
@@ -63,7 +50,7 @@ func (c *Client) JoinNetwork(req JoinRequest) (*JoinResponse, error) {
 		return nil, err
 	}
 
-	var response JoinResponse
+	var response util.JoinResponse
 	err = json.Unmarshal(buff, &response)
 	if err != nil {
 		return nil, err
@@ -71,15 +58,30 @@ func (c *Client) JoinNetwork(req JoinRequest) (*JoinResponse, error) {
 	return &response, nil
 }
 
-func (c *Client) LeaveNetwork() error {
+func (c *client) LeaveNetwork() error {
 	return nil
 }
 
 // JoinLocalFvpn call fvpn to create device handle traffic
-func (c *Client) JoinLocalFvpn(req JoinRequest) error {
-	resp := new(Response)
-	_, err := c.sling.New().Post("/api/v1/join").BodyJSON(req).ReceiveSuccess(resp)
-	return err
+func (c *client) JoinLocalFvpn(req util.JoinRequest) (*util.JoinResponse, error) {
+	resp := new(util.Response)
+	c.sling.New().Post("/api/v1/join").BodyJSON(req).Receive(&resp, &resp)
+	if resp.Code == 500 {
+		return nil, errors.New(resp.Message)
+	}
+
+	jsonStr, err := json.Marshal(resp.Result)
+	if err != nil {
+		return nil, errors.New("invalid result")
+	}
+
+	var result util.JoinResponse
+	err = json.Unmarshal(jsonStr, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, nil
 }
 
 type LoginRequest struct {
@@ -91,8 +93,8 @@ type LoginResponse struct {
 	Token string `json:"token"`
 }
 
-func (c *Client) Login(req LoginRequest) (*LoginResponse, error) {
-	resp := new(Response)
+func (c *client) Login(req LoginRequest) (*LoginResponse, error) {
+	resp := new(util.Response)
 	c.sling.New().Post("api/v1/users/login").BodyJSON(req).Receive(resp, resp)
 	if resp.Code != 200 {
 		return nil, errors.New(resp.Message)
@@ -111,8 +113,8 @@ func (c *Client) Login(req LoginRequest) (*LoginResponse, error) {
 	return &tokenResp, nil
 }
 
-func (c *Client) Tokens(req LoginRequest) (*LoginResponse, error) {
-	resp := new(Response)
+func (c *client) Tokens(req LoginRequest) (*LoginResponse, error) {
+	resp := new(util.Response)
 	c.sling.New().Post("api/v1/tokens").BodyJSON(req).Receive(resp, resp)
 	if resp.Code != 200 {
 		return nil, errors.New(resp.Message)
@@ -131,8 +133,8 @@ func (c *Client) Tokens(req LoginRequest) (*LoginResponse, error) {
 	return &tokenResp, nil
 }
 
-func (c *Client) Logout(req LoginRequest) (*LoginResponse, error) {
-	resp := new(Response)
+func (c *client) Logout(req LoginRequest) (*LoginResponse, error) {
+	resp := new(util.Response)
 	c.sling.New().Post("api/v1/logout").BodyJSON(req).Receive(resp, resp)
 	if resp.Code != 200 {
 		return nil, errors.New(resp.Message)

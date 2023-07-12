@@ -3,7 +3,7 @@ package cmd
 import (
 	"errors"
 	"github.com/spf13/cobra"
-	"github.com/topcloudz/fvpn/pkg/client"
+	"github.com/topcloudz/fvpn/pkg/node"
 	"github.com/topcloudz/fvpn/pkg/util"
 )
 
@@ -11,7 +11,7 @@ import (
 type joinOptions struct {
 	*util.ClientConfig
 	StarConfigFilePath string
-	NetworkId          string
+	addr               string
 }
 
 func joinCmd() *cobra.Command {
@@ -34,21 +34,12 @@ func joinCmd() *cobra.Command {
 		},
 	}
 	fs := cmd.Flags()
-	fs.StringVarP(&opts.NetworkId, "config", "", "", "config file for fvpn")
+	fs.StringVarP(&opts.addr, "config", "", "", "config file for fvpn")
 
 	return cmd
 }
 
 // runJoin join a network cmd
 func runJoin(args []string) error {
-	config, err := util.InitConfig()
-	if err != nil {
-		return err
-	}
-
-	s := &client.Peer{
-		Config: config,
-	}
-
-	return s.RunJoinNetwork(args[0])
+	return node.RunJoinNetwork(args[0])
 }

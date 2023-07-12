@@ -32,10 +32,7 @@ type network struct {
 }
 
 func newNodeNet(userId string) *nodeNet {
-	networks := &network{
-		ips:   make([]net.IP, 20),
-		ipNet: make([]*net.IPNet, 20),
-	}
+	networks := &network{}
 	m := &nodeNet{
 		networks: make(map[string]*network, 1),
 	}

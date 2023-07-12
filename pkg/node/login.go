@@ -1,4 +1,4 @@
-package client
+package node
 
 //
 //func (p *Peer) Login(username, password string) error {

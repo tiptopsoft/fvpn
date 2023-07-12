@@ -162,6 +162,13 @@ func (n *Node) up() error {
 			}
 		}
 	}()
+
+	go func() {
+		err := n.HttpServer()
+		if err != nil {
+			logger.Errorf("start http failed. %v", err)
+		}
+	}()
 	n.wg.Wait()
 	return nil
 }
@@ -179,6 +186,7 @@ func (n *Node) ReadFromTun() {
 		ctx = context.WithValue(ctx, "cache", n.cache)
 		frame.UserId = n.userId
 		frame.FrameType = util.MsgTypePacket
+		st1 := time.Now()
 		size, err := n.device.Read(frame.Buff[:])
 		st := time.Now()
 		if err != nil {
@@ -209,7 +217,8 @@ func (n *Node) ReadFromTun() {
 
 		err = n.tunHandler.Handle(ctx, frame)
 		et := time.Since(st)
-		logger.Debugf("================encode cost: %v", et)
+		et2 := time.Since(st1)
+		logger.Debugf("================encode cost: %v, from read: %v", et, et2)
 
 		if err != nil {
 			logger.Error(err)
