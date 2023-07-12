@@ -1,7 +1,6 @@
 package node
 
 import (
-	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/nets"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/handshake"
@@ -45,7 +44,7 @@ func (p *Peer) start() {
 	if p.node != nil && p.node.mode == 1 {
 		p.PubKey = p.node.privateKey.NewPubicKey() //use to send to remote for exchange pubKey
 		go p.SendPackets()
-		go p.WriteToDevice()
+		//go p.WriteToDevice()
 
 		go func() {
 			timer := time.NewTimer(time.Second * 10)
@@ -71,7 +70,7 @@ func (p *Peer) GetEndpoint() nets.Endpoint {
 }
 
 func (p *Peer) handshake(dstIP net.IP) {
-	hpkt := handshake.NewPacket(util.HandShakeMsgType, handler.UCTL.UserId)
+	hpkt := handshake.NewPacket(util.HandShakeMsgType, util.UCTL.UserId)
 	hpkt.Header.SrcIP = p.node.device.Addr()
 	hpkt.Header.DstIP = dstIP
 	hpkt.PubKey = p.PubKey
@@ -81,7 +80,7 @@ func (p *Peer) handshake(dstIP net.IP) {
 	}
 
 	size := len(buff)
-	f := packet.NewFrame()
+	f := NewFrame()
 	copy(f.Packet[:size], buff)
 	f.Size = size
 	//cache a peer
@@ -96,7 +95,7 @@ func (p *Peer) handshake(dstIP net.IP) {
 	p.PutPktToOutbound(f)
 }
 
-func (p *Peer) PutPktToOutbound(pkt *packet.Frame) {
+func (p *Peer) PutPktToOutbound(pkt *Frame) {
 	//pkt.Lock()
 	//defer pkt.Unlock()
 	p.queue.outBound.c <- pkt
@@ -118,22 +117,6 @@ func (p *Peer) SendPackets() {
 	}
 }
 
-func (p *Peer) WriteToDevice() {
-	for {
-		select {
-		case pkt := <-p.queue.inBound.c:
-			write, err := p.node.device.Write(pkt.Packet[packet.HeaderBuffSize:pkt.Size])
-			if err != nil {
-				return
-			}
-
-			logger.Debugf("peer %v has write %d packets to device", p, write)
-		default:
-
-		}
-	}
-}
-
 func (p *Peer) keepalive() {
 	pkt, err := packet.NewHeader(util.KeepaliveMsgType, "")
 	if err != nil {
@@ -144,7 +127,7 @@ func (p *Peer) keepalive() {
 		return
 	}
 	size := len(buff)
-	f := packet.NewFrame()
+	f := NewFrame()
 	copy(f.Packet[:size], buff)
 	f.Size = size
 

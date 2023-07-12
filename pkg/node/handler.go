@@ -2,7 +2,6 @@ package node
 
 import (
 	"context"
-	. "github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/nets"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/packet/handshake"
@@ -12,8 +11,35 @@ import (
 	"github.com/topcloudz/fvpn/pkg/util"
 )
 
+type Handler interface {
+	Handle(ctx context.Context, frame *Frame) error
+}
+
+type HandlerFunc func(context.Context, *Frame) error
+
+func (f HandlerFunc) Handle(ctx context.Context, frame *Frame) error {
+	return f(ctx, frame)
+}
+
+type Middleware func(Handler) Handler
+
+// Chain wrap middleware in order execute
+func Chain(middlewares ...Middleware) func(Handler) Handler {
+	return func(h Handler) Handler {
+		for i := len(middlewares) - 1; i >= 0; i-- {
+			h = middlewares[i](h)
+		}
+
+		return h
+	}
+}
+
+func WithMiddlewares(handler Handler, middlewares ...Middleware) Handler {
+	return Chain(middlewares...)(handler)
+}
+
 func (n *Node) tunInHandler() HandlerFunc {
-	return func(ctx context.Context, frame *packet.Frame) error {
+	return func(ctx context.Context, frame *Frame) error {
 		//defer frame.Unlock()
 		n.PutPktToOutbound(frame)
 		return nil
@@ -22,7 +48,7 @@ func (n *Node) tunInHandler() HandlerFunc {
 
 // Handle union udp handler
 func (n *Node) udpInHandler() HandlerFunc {
-	return func(ctx context.Context, frame *packet.Frame) error {
+	return func(ctx context.Context, frame *Frame) error {
 		//dest := ctx.Value("destAddr").(string)
 		buff := frame.Packet[:]
 		headerBuff, err := packet.Decode(buff)
@@ -80,7 +106,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 	}
 }
 
-func CachePeerToLocal(privateKey security.NoisePrivateKey, frame *packet.Frame, cache CacheFunc, node *Node) (*Peer, error) {
+func CachePeerToLocal(privateKey security.NoisePrivateKey, frame *Frame, cache CacheFunc, node *Node) (*Peer, error) {
 	hpkt, err := handshake.Decode(frame.Buff)
 	if err != nil {
 		logger.Errorf("invalid handshake packet: %v", err)
@@ -88,7 +114,7 @@ func CachePeerToLocal(privateKey security.NoisePrivateKey, frame *packet.Frame, 
 	}
 
 	logger.Debugf("got remote peer: %v, pubKey: %v", frame.SrcIP.String(), hpkt.PubKey)
-	p, err := cache.GetPeer(UCTL.UserId, frame.SrcIP.String())
+	p, err := cache.GetPeer(util.UCTL.UserId, frame.SrcIP.String())
 	if err != nil || p == nil {
 		p = node.NewPeer(hpkt.PubKey)
 	}
@@ -107,7 +133,7 @@ func CachePeerToLocal(privateKey security.NoisePrivateKey, frame *packet.Frame, 
 	return p, nil
 }
 
-func (n *Node) handleQueryPeers(frame *packet.Frame) {
+func (n *Node) handleQueryPeers(frame *Frame) {
 	peers, _ := peer.Decode(frame.Packet[:])
 	logger.Debugf("go peers from remote: %v", peers.Peers)
 	for _, info := range peers.Peers {

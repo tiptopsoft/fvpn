@@ -1,9 +1,15 @@
 client:
   listen: :3000
-#  server: 127.0.0.1:4000
-  server: 211.159.225.186:4000
+  server: 127.0.0.1:4000
+  #  server: 211.159.225.186:4000
   type: udp
   offset: 1
+  relay:
+    enable: true
+  encrypt:
+    enable: true
+  auth:
+    enable: true
 
 #-------------------分害线
 server:

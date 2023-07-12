@@ -4,19 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/util"
 )
 
-func Decode() func(handler.Handler) handler.Handler {
-	return func(next handler.Handler) handler.Handler {
-		return handler.HandlerFunc(func(ctx context.Context, frame *packet.Frame) error {
+func Decode() func(Handler) Handler {
+	return func(next Handler) Handler {
+		return HandlerFunc(func(ctx context.Context, frame *Frame) error {
 			if frame.FrameType == util.MsgTypePacket {
 				offset := packet.HeaderBuffSize
 				buff := frame.Packet[offset:frame.Size]
 				cache := ctx.Value("cache").(CacheFunc)
-				peer, err := cache.GetPeer(handler.UCTL.UserId, frame.SrcIP.String())
+				peer, err := cache.GetPeer(util.UCTL.UserId, frame.SrcIP.String())
 				if err != nil {
 					return errors.New("peer not found")
 				}
@@ -38,15 +37,15 @@ func Decode() func(handler.Handler) handler.Handler {
 }
 
 // Encode Middleware Encrypt use exchangeKey
-func Encode() func(handler.Handler) handler.Handler {
-	return func(next handler.Handler) handler.Handler {
-		return handler.HandlerFunc(func(ctx context.Context, frame *packet.Frame) error {
+func Encode() func(Handler) Handler {
+	return func(next Handler) Handler {
+		return HandlerFunc(func(ctx context.Context, frame *Frame) error {
 			if frame.FrameType == util.MsgTypePacket {
 				offset := packet.HeaderBuffSize
 				buff := frame.Packet[offset:frame.Size]
 				//cache := ctx.Value("cache").(CacheFunc)
 
-				//peer, err := cache.GetPeer(handler.UCTL.UserId, frame.DstIP.String())
+				//peer, err := cache.GetPeer(UCTL.UserId, frame.DstIP.String())
 				//if err != nil  {
 				//	return errors.New("peer not found, if you want to use relay, please to put relay true")
 				//}
@@ -70,9 +69,9 @@ func Encode() func(handler.Handler) handler.Handler {
 }
 
 // AllowNetwork valid user can join a network or a node, so here will check
-func (n *Node) AllowNetwork() func(handler.Handler) handler.Handler {
-	return func(next handler.Handler) handler.Handler {
-		return handler.HandlerFunc(func(ctx context.Context, frame *packet.Frame) error {
+func (n *Node) AllowNetwork() func(Handler) Handler {
+	return func(next Handler) Handler {
+		return HandlerFunc(func(ctx context.Context, frame *Frame) error {
 			if frame.FrameType == util.MsgTypePacket {
 				ip := frame.DstIP.String()
 				b := n.netCtl.Access(frame.UidString(), ip)

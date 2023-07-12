@@ -5,6 +5,10 @@ import (
 	"net"
 )
 
+const (
+	FvpnPktBuffSize = 2048
+)
+
 // Header client's Header
 /**
   As learn from client, our Packet is form of below:

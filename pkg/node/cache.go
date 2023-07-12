@@ -2,7 +2,7 @@ package node
 
 import (
 	"errors"
-	"github.com/topcloudz/fvpn/pkg/handler"
+	"github.com/topcloudz/fvpn/pkg/util"
 	"sync"
 )
 
@@ -44,7 +44,7 @@ func (c *cache) SetPeer(userId, ip string, peer *Peer) error {
 
 func (c *cache) GetPeer(userId, ip string) (*Peer, error) {
 	if userId == "" {
-		userId = handler.UCTL.UserId
+		userId = util.UCTL.UserId
 	}
 
 	peerMap := c.peers[userId]

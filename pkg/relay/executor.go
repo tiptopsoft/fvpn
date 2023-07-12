@@ -3,7 +3,6 @@ package relay
 import (
 	"context"
 	"fmt"
-	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/nets"
 	"github.com/topcloudz/fvpn/pkg/node"
 	"github.com/topcloudz/fvpn/pkg/packet"
@@ -18,7 +17,7 @@ func (r *RegServer) ReadFromUdp() {
 	for {
 		ctx := context.Background()
 		ctx = context.WithValue(ctx, "cache", r.cache)
-		frame := packet.NewFrame()
+		frame := node.NewFrame()
 		frame.Ctx = ctx
 		n, addr, err := r.conn.ReadFromUDP(frame.Buff[:])
 		if err != nil || n < 0 {
@@ -43,8 +42,8 @@ func (r *RegServer) ReadFromUdp() {
 	}
 }
 
-func (r *RegServer) writeUdpHandler() handler.HandlerFunc {
-	return func(ctx context.Context, pkt *packet.Frame) error {
+func (r *RegServer) writeUdpHandler() node.HandlerFunc {
+	return func(ctx context.Context, pkt *node.Frame) error {
 		n, err := r.conn.WriteToUDP(pkt.Packet[:pkt.Size], pkt.RemoteAddr)
 		if err != nil {
 			return err
@@ -55,8 +54,8 @@ func (r *RegServer) writeUdpHandler() handler.HandlerFunc {
 }
 
 // serverUdpHandler  core self handler
-func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
-	return func(ctx context.Context, frame *packet.Frame) error {
+func (r *RegServer) serverUdpHandler() node.HandlerFunc {
+	return func(ctx context.Context, frame *node.Frame) error {
 		data := frame.Packet[:frame.Size]
 		switch frame.FrameType {
 		case util.MsgTypeRegisterSuper:
@@ -93,7 +92,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 			}
 			buff, _ := peer.Encode(peerAck)
 
-			newFrame := packet.NewFrame()
+			newFrame := node.NewFrame()
 			copy(newFrame.Packet, buff)
 			newFrame.UserId = frame.UserId
 			newFrame.RemoteAddr = frame.RemoteAddr
@@ -114,7 +113,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 				return err
 			}
 
-			newFrame := packet.NewFrame()
+			newFrame := node.NewFrame()
 			newFrame.Size = len(buff)
 			newFrame.RemoteAddr = frame.RemoteAddr
 			copy(newFrame.Packet[:newFrame.Size], buff)
@@ -125,7 +124,7 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 	}
 }
 
-func (r *RegServer) register(frame *packet.Frame) (err error) {
+func (r *RegServer) register(frame *node.Frame) (err error) {
 	p := new(node.Peer)
 	ep := nets.NewEndpoint(frame.RemoteAddr.String())
 	p.SetEndpoint(ep)

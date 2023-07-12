@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"errors"
-	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/security"
 	"github.com/topcloudz/fvpn/pkg/util"
@@ -23,7 +22,7 @@ type PeerPacket struct {
 }
 
 func NewPeerPacket() PeerPacket {
-	h, _ := packet.NewHeader(util.MsgTypeQueryPeer, handler.UCTL.UserId)
+	h, _ := packet.NewHeader(util.MsgTypeQueryPeer, util.UCTL.UserId)
 	return PeerPacket{
 		Header: h,
 		Peers:  nil,

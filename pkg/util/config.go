@@ -47,6 +47,7 @@ type ClientConfig struct {
 	Offset   int32    `mapstructure:"offset"`
 	Encrypt  Encrypt  `mapstructure:"encrypt"`
 	Auth     Auth     `mapstructure:"auth"`
+	Relay    Relay    `mapstructure:"relay"`
 }
 
 type Encrypt struct {
@@ -54,6 +55,10 @@ type Encrypt struct {
 }
 
 type Auth struct {
+	Enable bool `mapstructure:"enable"`
+}
+
+type Relay struct {
 	Enable bool `mapstructure:"enable"`
 }
 

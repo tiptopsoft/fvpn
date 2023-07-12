@@ -1,7 +1,7 @@
 package ack
 
 import (
-	packet "github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"net"
 	"unsafe"

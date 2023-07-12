@@ -1,7 +1,6 @@
 package node
 
 import (
-	"github.com/topcloudz/fvpn/pkg/packet"
 	"sync"
 )
 
@@ -12,23 +11,23 @@ const (
 )
 
 type OutBoundQueue struct {
-	c  chan *packet.Frame
+	c  chan *Frame
 	wg sync.WaitGroup
 }
 
 type InBoundQueue struct {
-	c  chan *packet.Frame
+	c  chan *Frame
 	wg sync.WaitGroup
 }
 
 type handshakeBound struct {
-	c  chan *packet.Frame
+	c  chan *Frame
 	wg sync.WaitGroup
 }
 
 func NewOutBoundQueue() *OutBoundQueue {
 	q := &OutBoundQueue{
-		c: make(chan *packet.Frame, QueueInboundSize),
+		c: make(chan *Frame, QueueInboundSize),
 	}
 	q.wg.Add(1)
 	go func() {
@@ -39,25 +38,25 @@ func NewOutBoundQueue() *OutBoundQueue {
 	return q
 }
 
-func (o *OutBoundQueue) PutPktToOutbound(pkt *packet.Frame) {
+func (o *OutBoundQueue) PutPktToOutbound(pkt *Frame) {
 	o.c <- pkt
 }
 
-func (o *OutBoundQueue) GetPktFromOutbound() chan *packet.Frame {
+func (o *OutBoundQueue) GetPktFromOutbound() chan *Frame {
 	return o.c
 }
 
-func (o *InBoundQueue) PutPktToInbound(pkt *packet.Frame) {
+func (o *InBoundQueue) PutPktToInbound(pkt *Frame) {
 	o.c <- pkt
 }
 
-func (o *InBoundQueue) GetPktFromInbound() chan *packet.Frame {
+func (o *InBoundQueue) GetPktFromInbound() chan *Frame {
 	return o.c
 }
 
 func NewInBoundQueue() *InBoundQueue {
 	q := &InBoundQueue{
-		c: make(chan *packet.Frame, QueueOutboundSize),
+		c: make(chan *Frame, QueueOutboundSize),
 	}
 	q.wg.Add(1)
 	go func() {
@@ -70,7 +69,7 @@ func NewInBoundQueue() *InBoundQueue {
 
 func newHandshakeQueue() *handshakeBound {
 	q := &handshakeBound{
-		c: make(chan *packet.Frame, QueueHandshakeBoundSize),
+		c: make(chan *Frame, QueueHandshakeBoundSize),
 	}
 	q.wg.Add(1)
 	go func() {

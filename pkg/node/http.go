@@ -2,7 +2,6 @@ package node
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/util"
 )
 
@@ -31,13 +30,13 @@ func (n *Node) joinNet() gin.HandlerFunc {
 		}
 
 		if req.Network != "" {
-			err = n.netCtl.JoinNet(handler.UCTL.UserId, req.Network)
+			err = n.netCtl.JoinNet(util.UCTL.UserId, req.Network)
 			if err != nil {
 				ctx.JSON(500, util.HttpError(err.Error()))
 				return
 			}
 		} else if req.IP != "" {
-			n.netCtl.JoinIP(handler.UCTL.UserId, req.IP)
+			n.netCtl.JoinIP(util.UCTL.UserId, req.IP)
 		}
 
 		resp := &util.JoinResponse{

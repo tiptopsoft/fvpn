@@ -2,7 +2,6 @@ package handshake
 
 import (
 	"errors"
-	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/util"
 )
@@ -33,7 +32,7 @@ func Encode(np HandShakePacket) ([]byte, error) {
 }
 
 func Decode(buff []byte) (HandShakePacket, error) {
-	res := NewPacket(util.HandShakeMsgType, handler.UCTL.UserId)
+	res := NewPacket(util.HandShakeMsgType, util.UCTL.UserId)
 	h, err := packet.Decode(buff)
 	if err != nil {
 		return HandShakePacket{}, errors.New("decode common packet failed")

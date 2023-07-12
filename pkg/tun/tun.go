@@ -1,7 +1,6 @@
 package tun
 
 import (
-	"github.com/topcloudz/fvpn/pkg/packet"
 	"net"
 	"os"
 	"sync"
@@ -49,12 +48,6 @@ type NativeTun struct {
 
 func (tun *NativeTun) Name() string {
 	return tun.name
-}
-
-func (tun *NativeTun) ReadToFrame(f *packet.Frame) (n int, err error) {
-	n, err = tun.file.Read(f.Buff)
-	f.Packet = f.Buff[4:]
-	return n - 4, err
 }
 
 func (tun *NativeTun) IPToString() string {

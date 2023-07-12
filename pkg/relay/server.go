@@ -2,9 +2,7 @@ package relay
 
 import (
 	"context"
-	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/node"
-	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/security"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"net"
@@ -23,8 +21,8 @@ type RegServer struct {
 	conn         *net.UDPConn
 	cache        node.CacheFunc
 	ws           sync.WaitGroup
-	readHandler  handler.Handler
-	writeHandler handler.Handler
+	readHandler  node.Handler
+	writeHandler node.Handler
 	queue        struct {
 		outBound *node.OutBoundQueue
 		inBound  *node.InBoundQueue
@@ -50,8 +48,8 @@ func (r *RegServer) Start(address string) error {
 		return err
 	}
 
-	r.readHandler = handler.WithMiddlewares(r.serverUdpHandler(), node.Decode())
-	r.writeHandler = handler.WithMiddlewares(r.writeUdpHandler(), node.Encode())
+	r.readHandler = node.WithMiddlewares(r.serverUdpHandler(), node.Decode())
+	r.writeHandler = node.WithMiddlewares(r.writeUdpHandler(), node.Encode())
 	r.cache = node.NewCache()
 	r.ws.Wait()
 	return nil
@@ -78,7 +76,7 @@ func (r *RegServer) start(address string) error {
 	return nil
 }
 
-func (r *RegServer) PutPktToOutbound(frame *packet.Frame) {
+func (r *RegServer) PutPktToOutbound(frame *node.Frame) {
 	r.queue.outBound.PutPktToOutbound(frame)
 }
 
@@ -86,7 +84,7 @@ func (r *RegServer) PutPktToOutbound(frame *packet.Frame) {
 //	return r.queue.outBound.GetPktFromOutbound()
 //}
 
-func (r *RegServer) PutPktToInbound(frame *packet.Frame) {
+func (r *RegServer) PutPktToInbound(frame *node.Frame) {
 	r.queue.inBound.PutPktToInbound(frame)
 }
 
@@ -104,7 +102,7 @@ func (r *RegServer) RoutineInBound(id int) {
 	}
 }
 
-func (r *RegServer) handleInPackets(pkt *packet.Frame, id int) {
+func (r *RegServer) handleInPackets(pkt *node.Frame, id int) {
 	//pkt.Lock()
 	defer func() {
 		logger.Debugf("handing in packet success in %d routine finished", id)
@@ -129,24 +127,30 @@ func (r *RegServer) RoutineOutBound(id int) {
 	}
 }
 
-func (r *RegServer) handleOutPackets(ctx context.Context, pkt *packet.Frame, id int) {
+func (r *RegServer) handleOutPackets(ctx context.Context, pkt *node.Frame, id int) {
 	//pkt.Lock()
 	defer func() {
 		logger.Debugf("handing out packet success in %d routine finished", id)
-		//defer pkt.Unlock()
 	}()
 
-	peer, err := r.cache.GetPeer(pkt.UidString(), pkt.DstIP.String())
-	if err != nil || peer == nil {
-		logger.Errorf("peer %v is not found", pkt.DstIP.String())
+	var err error
+	switch pkt.FrameType {
+	case util.MsgTypePacket:
+		peer, err := r.cache.GetPeer(pkt.UidString(), pkt.DstIP.String())
+		if err != nil || peer == nil {
+			logger.Errorf("peer %v is not found", pkt.DstIP.String())
+		}
+
+		logger.Debugf("write packet to peer %v: ", peer)
+
+		pkt.RemoteAddr = peer.GetEndpoint().DstIP()
+
+		ctx = context.WithValue(ctx, "peer", peer)
+		err = r.writeHandler.Handle(ctx, pkt)
+	default:
+		err = r.writeHandler.Handle(ctx, pkt)
 	}
 
-	logger.Debugf("write packet to peer %v: ", peer)
-
-	pkt.RemoteAddr = peer.GetEndpoint().DstIP()
-
-	ctx = context.WithValue(ctx, "peer", peer)
-	err = r.writeHandler.Handle(ctx, pkt)
 	if err != nil {
 		logger.Error(err)
 	}
