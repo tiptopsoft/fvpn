@@ -198,6 +198,13 @@ func (n *Node) ReadFromTun() {
 		if err != nil {
 			continue
 		}
+
+		peer, err := n.cache.GetPeer(UCTL.UserId, ipHeader.DstIP.String())
+		if err != nil || peer == nil {
+			peer = n.relay
+		}
+
+		ctx = context.WithValue(ctx, "peer", peer)
 		frame.SrcIP = ipHeader.SrcIP
 		frame.DstIP = ipHeader.DstIP
 

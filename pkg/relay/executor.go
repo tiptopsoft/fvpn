@@ -70,12 +70,8 @@ func (r *RegServer) serverUdpHandler() handler.HandlerFunc {
 		case util.MsgTypePacket:
 			logger.Infof("server got forward packet size:%d, data: %v", frame.Size, data)
 			peer, err := r.cache.GetPeer(frame.UidString(), frame.DstIP.String())
-			if err != nil {
+			if err != nil || peer == nil {
 				return fmt.Errorf("peer %v is not found", frame.DstIP.String())
-			}
-
-			if peer == nil {
-				return fmt.Errorf("remote ep %v not on line", frame.DstIP.String())
 			}
 
 			logger.Debugf("write packet to peer %v: ", peer)

@@ -44,12 +44,14 @@ func Encode() func(handler.Handler) handler.Handler {
 			if frame.FrameType == util.MsgTypePacket {
 				offset := packet.HeaderBuffSize
 				buff := frame.Packet[offset:frame.Size]
-				cache := ctx.Value("cache").(CacheFunc)
-				peer, err := cache.GetPeer(handler.UCTL.UserId, frame.DstIP.String())
-				if err != nil {
-					return errors.New("peer not found")
-				}
+				//cache := ctx.Value("cache").(CacheFunc)
 
+				//peer, err := cache.GetPeer(handler.UCTL.UserId, frame.DstIP.String())
+				//if err != nil  {
+				//	return errors.New("peer not found, if you want to use relay, please to put relay true")
+				//}
+
+				peer := ctx.Value("peer").(*Peer)
 				logger.Debugf("data before encode: %v", buff)
 				encoded, err := peer.GetCodec().Encode(buff)
 				if err != nil {

@@ -34,11 +34,9 @@ type Star struct {
 }
 
 type Config struct {
-	ClientCfg    *ClientConfig `mapstructure:"client"`
-	ServerCfg    *ServerConfig `mapstructure:"server"`
-	OpenAuth     bool          `mapstructure:"openAuth"`
-	OpenEncrypt  bool          `mapstructure:"openEncrypt"`
-	OpenCompress bool          `mapstructure:"openCompress"`
+	ClientCfg *ClientConfig `mapstructure:"client"`
+	ServerCfg *ServerConfig `mapstructure:"server"`
+	OpenAuth  bool          `mapstructure:"openAuth"`
 }
 
 // ClientConfig read from a config file or cmd flags, or can be assgined from a server after got the server ack.
@@ -47,13 +45,16 @@ type ClientConfig struct {
 	Listen   string   `mapstructure:"listen"`
 	Protocol Protocol `mapstructure:"type"`
 	Offset   int32    `mapstructure:"offset"`
+	Encrypt  Encrypt  `mapstructure:"encrypt"`
+	Auth     Auth     `mapstructure:"auth"`
 }
 
-type Mysql struct {
-	User     string `mapstructure:"user"`
-	Url      string `mapstructure:"url"`
-	Password string `mapstructure:"password"`
-	Name     string `mapstructure:"name"`
+type Encrypt struct {
+	Enable bool `mapstructure:"enable"`
+}
+
+type Auth struct {
+	Enable bool `mapstructure:"enable"`
 }
 
 type ServerConfig struct {

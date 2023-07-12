@@ -1,6 +1,7 @@
 package relay
 
 import (
+	"context"
 	"github.com/topcloudz/fvpn/pkg/handler"
 	"github.com/topcloudz/fvpn/pkg/node"
 	"github.com/topcloudz/fvpn/pkg/packet"
@@ -121,21 +122,31 @@ func (r *RegServer) RoutineOutBound(id int) {
 	for {
 		select {
 		case pkt := <-r.queue.outBound.GetPktFromOutbound():
-			r.handleOutPackets(pkt, id)
+			r.handleOutPackets(context.Background(), pkt, id)
 		default:
 
 		}
 	}
 }
 
-func (r *RegServer) handleOutPackets(pkt *packet.Frame, id int) {
+func (r *RegServer) handleOutPackets(ctx context.Context, pkt *packet.Frame, id int) {
 	//pkt.Lock()
 	defer func() {
 		logger.Debugf("handing out packet success in %d routine finished", id)
 		//defer pkt.Unlock()
 	}()
 
-	err := r.writeHandler.Handle(pkt.Context(), pkt)
+	peer, err := r.cache.GetPeer(pkt.UidString(), pkt.DstIP.String())
+	if err != nil || peer == nil {
+		logger.Errorf("peer %v is not found", pkt.DstIP.String())
+	}
+
+	logger.Debugf("write packet to peer %v: ", peer)
+
+	pkt.RemoteAddr = peer.GetEndpoint().DstIP()
+
+	ctx = context.WithValue(ctx, "peer", peer)
+	err = r.writeHandler.Handle(ctx, pkt)
 	if err != nil {
 		logger.Error(err)
 	}
