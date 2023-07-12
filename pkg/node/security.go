@@ -50,7 +50,7 @@ func Encode() func(Handler) Handler {
 				//	return errors.New("peer not found, if you want to use relay, please to put relay true")
 				//}
 
-				peer := ctx.Value("peer").(*Peer)
+				peer := frame.GetPeer()
 				logger.Debugf("data before encode: %v", buff)
 				encoded, err := peer.GetCodec().Encode(buff)
 				if err != nil {

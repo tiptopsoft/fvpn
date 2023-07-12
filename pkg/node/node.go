@@ -214,7 +214,6 @@ func (n *Node) ReadFromTun() {
 			}
 		}
 
-		ctx = context.WithValue(ctx, "peer", peer)
 		frame.SrcIP = ipHeader.SrcIP
 		frame.DstIP = ipHeader.DstIP
 
@@ -293,6 +292,7 @@ func (n *Node) sendListPackets() {
 		return
 	}
 	frame := NewFrame()
+	frame.Peer = n.relay
 	frame.DstIP = n.relay.endpoint.DstIP().IP
 	copy(frame.Packet, hpkt)
 	frame.Size = len(hpkt)
