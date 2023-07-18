@@ -14,7 +14,7 @@ type CacheFunc interface {
 
 type cache struct {
 	lock  sync.Mutex
-	peers map[string]PeerMap //userId: map[ip]*Peer
+	peers map[string]PeerMap //userId: map[cidr]*Peer
 }
 
 var (

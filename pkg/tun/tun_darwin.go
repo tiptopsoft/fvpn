@@ -6,6 +6,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"golang.org/x/sys/unix"
+	"net"
 	"os"
 	"syscall"
 )
@@ -21,7 +22,7 @@ var (
 	//FakeIP      = net.ParseIP("5.244.24.141")
 )
 
-func New(offset int32) (Device, error) {
+func New() (Device, error) {
 	ifIndex := 0
 	var name string
 	var fd int
@@ -130,9 +131,10 @@ func (tun *NativeTun) JoinNetwork(network string) error {
 	return util.ExecCommand("/bin/sh", "-c", fmt.Sprintf("route add -net %s %s", network, tun.IP))
 }
 
-func (tun *NativeTun) SetIP(net, ip string) error {
+func (tun *NativeTun) SetIP(network, ip string) error {
 	//set ip
-	return util.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s %s", tun.Name(), net, ip))
+	tun.IP = net.ParseIP(ip)
+	return util.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s %s", tun.Name(), network, ip))
 }
 
 func (tun *NativeTun) SetMTU(mtu int) error {

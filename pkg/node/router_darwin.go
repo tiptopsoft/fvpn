@@ -3,22 +3,18 @@ package node
 import (
 	"fmt"
 	"github.com/topcloudz/fvpn/pkg/util"
-	"strings"
 )
 
-func (r *router) AddRouter(ip string) error {
-	return r.action(ip, "add")
+func (r *router) AddRouter(cidr string) error {
+	return r.action(cidr, "add")
 }
 
-func (r *router) RemoveRouter(ip string) error {
-	return r.action(ip, "delete")
+func (r *router) RemoveRouter(cidr string) error {
+	return r.action(cidr, "delete")
 }
 
-func (r *router) action(ip, action string) error {
-	if !strings.Contains(ip, "/") {
-		ip = fmt.Sprintf("%s/24", ip)
-	}
-	rule := fmt.Sprintf("route %s %s %s", action, ip, r.ip)
-
+func (r *router) action(cidr, action string) error {
+	//example: sudo route -nv add -net 192.168.10.1 -netmask 255.255.255.0 -interface en0
+	rule := fmt.Sprintf("route -nv %s -net %s -interface %s", action, cidr, r.name)
 	return util.ExecCommand("/bin/sh", "-c", rule)
 }

@@ -2,13 +2,16 @@ package util
 
 import (
 	"encoding/json"
-	"errors"
 	"os"
 	"path/filepath"
 )
 
+type Local struct {
+	file *os.File
+}
+
 type LocalConfig struct {
-	Auth  string `json:"Auth"`
+	Auth  string `json:"auth"`
 	AppId string `json:"appId"`
 }
 
@@ -19,10 +22,12 @@ type Response struct {
 }
 
 type JoinRequest struct {
-	NetWorkId string `json:"netWorkId"`
+	NetWorkId string `json:"networkId"`
+	CIDR      string `json:"cidr"`
 }
 
 type JoinResponse struct {
+	CIDR    string `json:"cidr"`
 	IP      string `json:"ip"`
 	Name    string `json:"name"`
 	Network string `json:"network"`
@@ -58,8 +63,7 @@ func HttpError(message string) Response {
 		Message: message,
 	}
 }
-
-func GetLocalConfig() (*LocalConfig, error) {
+func NewLocal(mode int) (*Local, error) {
 	homeDir, err := os.UserHomeDir()
 	path := filepath.Join(homeDir, ".fvpn/config.json")
 	_, err = os.Stat(path)
@@ -71,15 +75,47 @@ func GetLocalConfig() (*LocalConfig, error) {
 		}
 		file, err = os.Create(path)
 	} else {
-		file, err = os.OpenFile(path, os.O_RDWR, 0755)
+		file, err = os.OpenFile(path, mode, 0755)
 	}
-	defer file.Close()
-	var local LocalConfig
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&local)
-	if err != nil {
-		return nil, errors.New("login failed")
-	}
-
-	return &local, nil
+	return &Local{file: file}, nil
 }
+
+func (l *Local) ReadFile() (config *LocalConfig, err error) {
+	decoder := json.NewDecoder(l.file)
+	err = decoder.Decode(&config)
+	return
+}
+
+func (l *Local) WriteFile(config *LocalConfig) error {
+	encoder := json.NewEncoder(l.file)
+	return encoder.Encode(config)
+}
+
+func (l *Local) Close() error {
+	return l.file.Close()
+}
+
+//func GetLocalConfig() (*LocalConfig, error) {
+//	homeDir, err := os.UserHomeDir()
+//	path := filepath.Join(homeDir, ".fvpn/config.json")
+//	_, err = os.Stat(path)
+//	var file *os.file
+//	if os.IsNotExist(err) {
+//		parentDir := filepath.Dir(path)
+//		if err := os.MkdirAll(parentDir, 0755); err != nil {
+//			return nil, err
+//		}
+//		file, err = os.Create(path)
+//	} else {
+//		file, err = os.OpenFile(path, os.O_RDWR, 0755)
+//	}
+//	defer file.Close()
+//	var local LocalConfig
+//	decoder := json.NewDecoder(file)
+//	err = decoder.Decode(&local)
+//	if err != nil {
+//		return nil, errors.New("login failed")
+//	}
+//
+//	return &local, nil
+//}

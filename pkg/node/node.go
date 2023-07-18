@@ -14,6 +14,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/tun"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"io"
+	"os"
 	"sync"
 	"time"
 )
@@ -127,27 +128,30 @@ func (n *Node) nodeRegister() error {
 }
 
 func Start(cfg *util.Config) error {
-	iface, err := tun.New(cfg.ClientCfg.Offset)
+	iface, err := tun.New()
 	if err != nil {
 		return err
 	}
 
-	//send http to get ip
+	//send http to get cidr
 	client := NewClient(cfg.ClientCfg.ControlUrl())
 	appId, err := appId()
 	if err != nil {
 		return err
 	}
 	resp, err := client.Init(appId)
+	if err != nil {
+		return err
+	}
 	d, err := NewNode(iface, nets.NewStdBind(), cfg.ClientCfg)
+	if err != nil {
+		return err
+	}
 	err = d.device.SetIP(resp.Mask, resp.IP)
 	if err != nil {
 		return err
 	}
-	logger.Debugf("device name: %s, ip: %s", d.device.Name(), d.device.IPToString())
-	if err != nil {
-		return err
-	}
+	logger.Debugf("device name: %s, cidr: %s", d.device.Name(), d.device.IPToString())
 
 	return d.up()
 }
@@ -212,6 +216,9 @@ func (n *Node) ReadFromTun() {
 		if err != nil {
 			continue
 		}
+		if ipHeader.DstIP.String() == n.device.Addr().String() {
+			continue
+		}
 
 		peer, err := n.cache.GetPeer(util.UCTL.UserId, ipHeader.DstIP.String())
 		if err != nil || peer == nil {
@@ -268,7 +275,6 @@ func (n *Node) ReadFromUdp() {
 		ctx = context.WithValue(ctx, "cache", n.cache)
 		f := NewFrame()
 		size, remoteAddr, err := n.net.bind.Conn().ReadFromUDP(f.Buff[:])
-		logger.Debugf("udp receive %d byte from %s, data: %v", size, remoteAddr.IP, f.Buff[:size])
 		copy(f.Packet[:size], f.Buff[:size])
 		if err != nil {
 			logger.Error(err)
@@ -282,6 +288,7 @@ func (n *Node) ReadFromUdp() {
 			logger.Error(err)
 			continue
 		}
+		logger.Debugf("udp receive %d byte from %s, data type: [%v]", size, remoteAddr.IP, util.GetFrameTypeName(hpkt.Flags))
 
 		f.SrcIP = hpkt.SrcIP //192.168.0.1->192.168.0.2 srcIP =1, dstIP =2
 		f.DstIP = hpkt.DstIP
@@ -321,7 +328,7 @@ func (n *Node) WriteToUDP() {
 		case pkt := <-n.queue.outBound.c:
 			//only packet will find peer, other type will send to regServer
 			ip := pkt.DstIP
-			logger.Debugf("userId: %v, dst ip: %v", pkt.UidString(), ip)
+			logger.Debugf("userId: %v, dst cidr: %v", pkt.UidString(), ip)
 			pkt.Peer.queue.outBound.c <- pkt
 		default:
 
@@ -347,21 +354,36 @@ func (n *Node) WriteToDevice() {
 
 // appId is a unique identify for a node
 func appId() (string, error) {
-	local, err := util.GetLocalConfig()
+	local, err := util.NewLocal(os.O_RDWR)
+	//local, err := util.GetLocalConfig()
+	if err != nil {
+		return "", err
+	}
+	l, err := local.ReadFile()
 	if err != nil {
 		return "", err
 	}
 
-	if local.AppId == "" {
+	if l.AppId == "" {
+		local.Close()
+		local1, err := util.NewLocal(os.O_RDWR | os.O_CREATE)
+		if err != nil {
+			return "", err
+		}
+		defer local1.Close()
 		var appId [5]byte
 		if _, err := io.ReadFull(rand.Reader, appId[:]); err != nil {
 			return "", errors.New("generate appId failed")
 		}
 
-		local.AppId = hex.EncodeToString(appId[:])
+		l.AppId = hex.EncodeToString(appId[:])
+		err = local1.WriteFile(l)
+		if err != nil {
+			return "", err
+		}
 	}
 
-	return local.AppId, nil
+	return l.AppId, nil
 }
 
 //func (d *Node) RoutineEncryption(id int) {

@@ -1,43 +1,56 @@
 package node
 
 import (
-	echo "github.com/labstack/echo/v4"
+	"github.com/gin-gonic/gin"
+	"github.com/labstack/echo/v4"
 	"github.com/topcloudz/fvpn/pkg/util"
+	"net/http"
 )
 
 var (
-	PREFIX = "api/v1/"
+	PREFIX = "/api/v1/"
 )
 
 func (n *Node) HttpServer() error {
-	//server := gin.Default()
-	server := echo.New()
-	server.Use(checkAuth())
+	server := gin.Default()
+	//server := echo.New()
+	//server.Use(checkAuth())
+	//server.GET("/", hello)
 	server.POST(PREFIX+"join", n.joinNet())
-	return server.Start(n.cfg.HttpListenStr())
+
+	return server.Run(n.cfg.HttpListenStr())
 }
 
-func (n *Node) joinNet() func(ctx echo.Context) error {
-	return func(ctx echo.Context) error {
+func hello(c echo.Context) error {
+	return c.String(http.StatusOK, "Hello, World!")
+}
+
+func (n *Node) joinNet() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
 		var req util.JoinRequest
 		err := ctx.Bind(&req)
 
 		if err != nil {
-			return ctx.JSON(500, util.HttpError(err.Error()))
+			ctx.JSON(500, util.HttpError(err.Error()))
+			return
 		}
 
-		if req.NetWorkId != "" {
-			err = n.netCtl.JoinNet(util.UCTL.UserId, req.NetWorkId)
+		if req.CIDR != "" {
+			err = n.netCtl.JoinNet(util.UCTL.UserId, req.CIDR)
 			if err != nil {
-				return ctx.JSON(500, util.HttpError(err.Error()))
+				ctx.JSON(500, util.HttpError(err.Error()))
+				return
 			}
+		} else {
+			ctx.JSON(500, util.HttpError("cidr is nil"))
+			return
 		}
 
 		resp := &util.JoinResponse{
 			IP:   n.device.IPToString(),
 			Name: n.device.Name(),
 		}
-		return ctx.JSON(200, util.HttpOK(resp))
+		ctx.JSON(200, util.HttpOK(resp))
 	}
 }
 

@@ -71,6 +71,7 @@ func (c *ClientManager) JoinNetwork(networkId string) (*util.JoinResponse, error
 		return nil, err
 	}
 
+	req.CIDR = response.CIDR
 	joinResp, err := c.JoinLocalFvpn(*req)
 	if err != nil {
 		return nil, err
@@ -86,7 +87,7 @@ func (c *client) LeaveNetwork() error {
 // JoinLocalFvpn call fvpn to create device handle traffic
 func (c *ClientManager) JoinLocalFvpn(req util.JoinRequest) (*util.JoinResponse, error) {
 	resp := new(util.Response)
-	c.ConsoleClient.sling.New().Post("/api/v1/join").BodyJSON(req).Receive(&resp, &resp)
+	c.LocalClient.sling.New().Post("/api/v1/join").BodyJSON(req).Receive(&resp, &resp)
 	if resp.Code == 500 {
 		return nil, errors.New(resp.Message)
 	}

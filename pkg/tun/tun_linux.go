@@ -5,6 +5,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"golang.org/x/sys/unix"
+	"net"
 	"os"
 	"syscall"
 	"unsafe"
@@ -19,7 +20,7 @@ type Ifreq struct {
 	Flags uint16
 }
 
-func New(offset int32) (*NativeTun, error) {
+func New() (*NativeTun, error) {
 	name := fmt.Sprintf("%s%d", DefaultNamePrefix, 0)
 	var f = "/dev/net/tun"
 
@@ -55,17 +56,17 @@ func New(offset int32) (*NativeTun, error) {
 		err = fmt.Errorf("tuntap set group error, errno %v", errno)
 	}
 
-	endpoint, _ := util.New(offset)
-	logger.Debugf("ip: %v, mask: %v", endpoint.IP, endpoint.Mask)
-	if err = util.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s", name, fmt.Sprintf("%s/%d", endpoint.IP.String(), 24))); err != nil {
-		return nil, err
-	}
+	//endpoint, _ := util.New(offset)
+	//logger.Debugf("ip: %v, mask: %v", endpoint.IP, endpoint.Mask)
+	//if err = util.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s", name, fmt.Sprintf("%s/%d", endpoint.IP.String(), 24))); err != nil {
+	//	return nil, err
+	//}
 
 	return &NativeTun{
 		name: name, // size is 16
 		file: os.NewFile(uintptr(fd), name),
 		Fd:   fd,
-		IP:   endpoint.IP,
+		//IP:   endpoint.IP,
 	}, nil
 }
 
@@ -76,7 +77,13 @@ func (tun *NativeTun) Read(buff []byte) (n int, err error) {
 	return n, err
 }
 
-func (tun *NativeTun) SetIP(net, ip string) error {
+func (tun *NativeTun) SetIP(network, ip string) error {
+	tun.IP = net.ParseIP(ip)
+	logger.Debugf("set ip network: %s, ip: %s", network, ip)
+	//ex: ifconfig fvpn0 192.168.0.2 netmask 255.255.255.0
+	if err := util.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s netmask %s ", tun.Name(), ip, network)); err != nil {
+		return err
+	}
 	return nil
 }
 

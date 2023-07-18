@@ -65,7 +65,6 @@ func (n *Node) udpInHandler() HandlerFunc {
 			}
 			logger.Debugf("register success, got server server ack: (%v)", regAck)
 		case util.MsgTypeQueryPeer:
-			logger.Debugf("got list packets response")
 			n.handleQueryPeers(frame)
 		case util.MsgTypePacket:
 			n.PutPktToInbound(frame)
@@ -139,6 +138,11 @@ func (n *Node) handleQueryPeers(frame *Frame) {
 	for _, info := range peers.Peers {
 		ip := info.IP
 		if ip.String() == n.device.IPToString() {
+			continue
+		}
+
+		if ip.String() == n.relay.endpoint.DstIP().IP.String() {
+			//relay pass
 			continue
 		}
 

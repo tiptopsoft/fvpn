@@ -1,18 +1,18 @@
 package node
 
 type RouterManager interface {
-	AddRouter(ip string) error
-	RemoveRouter(ip string) error
+	AddRouter(cidr string) error
+	RemoveRouter(cidr string) error
 }
 
 type router struct {
-	ip   string
+	cidr string
 	name string
 }
 
-func NewRouter(ip, name string) RouterManager {
+func NewRouter(cidr, name string) RouterManager {
 	return &router{
-		ip:   ip,
+		cidr: cidr,
 		name: name,
 	}
 }
