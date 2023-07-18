@@ -14,12 +14,16 @@ import (
 // Peer a destination will have a peer in fvpn, can connect to each other.
 // a RegServer also is a peer
 type Peer struct {
-	p2p      bool
-	lock     sync.Mutex
-	status   bool
-	PubKey   security.NoisePublicKey
-	node     *Node
-	endpoint nets.Endpoint //
+	st          time.Time
+	keepaliveCh chan int //1：exit keepalive 2: exit send packet 3 exit timer
+	sendCh      chan int
+	checkCh     chan int
+	p2p         bool
+	lock        sync.Mutex
+	status      bool
+	PubKey      security.NoisePublicKey
+	node        *Node
+	endpoint    nets.Endpoint //
 
 	queue struct {
 		outBound *OutBoundQueue // data to write to dst peer
@@ -51,10 +55,29 @@ func (p *Peer) start() {
 			defer timer.Stop()
 			for {
 				select {
+				case <-p.keepaliveCh:
+					return
 				case <-timer.C:
-					logger.Debugf("sending keepalive....")
 					p.keepalive()
 					timer.Reset(time.Second * 10)
+				}
+			}
+		}()
+
+		go func() {
+			timer := time.NewTimer(time.Minute * 2)
+			defer timer.Stop()
+			for {
+				select {
+				case <-p.checkCh:
+					return
+				case <-timer.C:
+					b := p.check()
+					if b {
+						//shutdown this peer
+						p.close()
+					}
+					timer.Reset(time.Minute * 2)
 				}
 			}
 		}()
@@ -104,6 +127,8 @@ func (p *Peer) PutPktToOutbound(pkt *Frame) {
 func (p *Peer) SendPackets() {
 	for {
 		select {
+		case <-p.sendCh:
+			return
 		case pkt := <-p.queue.outBound.c:
 			send, err := p.node.net.bind.Send(pkt.Packet[:pkt.Size], p.endpoint)
 			if err != nil {
@@ -132,4 +157,20 @@ func (p *Peer) keepalive() {
 	f.Size = size
 
 	p.PutPktToOutbound(f)
+}
+
+func (p *Peer) check() bool {
+	st := time.Since(p.st)
+	if st.Minutes() == 5 {
+		return true
+	}
+
+	return false
+}
+
+func (p *Peer) close() {
+	p.checkCh <- 1
+	p.sendCh <- 1
+	p.keepaliveCh <- 1
+	logger.Debug("peer stop signal sended")
 }

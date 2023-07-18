@@ -105,9 +105,18 @@ func (cfg *ClientConfig) AuthEnable() bool {
 	return cfg.Auth.Enable
 }
 
+type Redis struct {
+	Enable   bool   `json:"enable"`
+	Url      string `json:"host"`
+	Port     int    `json:"port"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 type ServerConfig struct {
 	Listen     string `mapstructure:"Listen"`
 	HttpListen string `mapstructure:"HttpListen"`
+	Redis      Redis  `json:redis`
 	//Protocol   Protocol `mapstructure:"type"`
 }
 
@@ -130,12 +139,14 @@ func InitConfig() (config *Config, err error) {
 	viper.SetDefault("client.Listen", ":3000")
 	viper.SetDefault("server.Listen", ":4000")
 	viper.SetDefault("server.HttpListen", ":4001")
+	viper.SetDefault("server.redis.enable", false)
 	if err = viper.ReadInConfig(); err != nil { // Handle errors reading the config file
 		//if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 		//	viper.ReadConfig(bytes.NewBuffer(defaultYaml))
 		//} else {
 		//	return nil, errors.New("invalid config")
 		//}
+		return nil, err
 	}
 
 	if err = viper.UnmarshalExact(&config); err != nil {

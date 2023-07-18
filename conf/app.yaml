@@ -14,3 +14,9 @@ client:
 server:
   listen: :4000
   httpListen: :4009
+  redis:
+    enable: true
+    url: 211.158.125.186
+    port: 6679
+    username: winston
+    password: 123456

@@ -104,6 +104,7 @@ func (n *Node) initRelay() {
 
 func (n *Node) NewPeer(pk security.NoisePublicKey) *Peer {
 	p := new(Peer)
+	p.st = time.Now()
 	p.PubKey = pk
 	p.queue.outBound = NewOutBoundQueue()
 	p.queue.inBound = NewInBoundQueue()
