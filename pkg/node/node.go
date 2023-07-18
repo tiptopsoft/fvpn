@@ -2,6 +2,9 @@ package node
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/nets"
@@ -10,6 +13,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/security"
 	"github.com/topcloudz/fvpn/pkg/tun"
 	"github.com/topcloudz/fvpn/pkg/util"
+	"io"
 	"sync"
 	"time"
 )
@@ -87,7 +91,7 @@ func NewNode(iface tun.Device, bind nets.Bind, cfg *util.ClientConfig) (*Node, e
 func (n *Node) initRelay() {
 	n.relay = n.NewPeer(security.NoisePublicKey{})
 	n.relay.node = n
-	n.relay.endpoint = nets.NewEndpoint(n.cfg.Registry)
+	n.relay.endpoint = nets.NewEndpoint(n.cfg.RegistryUrl())
 	n.relay.start()
 	n.relay.handshake(n.relay.endpoint.DstIP().IP)
 	relayPeer = n.relay
@@ -128,7 +132,18 @@ func Start(cfg *util.Config) error {
 		return err
 	}
 
+	//send http to get ip
+	client := NewClient(cfg.ClientCfg.ControlUrl())
+	appId, err := appId()
+	if err != nil {
+		return err
+	}
+	resp, err := client.Init(appId)
 	d, err := NewNode(iface, nets.NewStdBind(), cfg.ClientCfg)
+	err = d.device.SetIP(resp.Mask, resp.IP)
+	if err != nil {
+		return err
+	}
 	logger.Debugf("device name: %s, ip: %s", d.device.Name(), d.device.IPToString())
 	if err != nil {
 		return err
@@ -200,13 +215,13 @@ func (n *Node) ReadFromTun() {
 
 		peer, err := n.cache.GetPeer(util.UCTL.UserId, ipHeader.DstIP.String())
 		if err != nil || peer == nil {
-			if n.cfg.Relay.Enable {
+			if n.cfg.EnableRelay() {
 				frame.Peer = n.relay
 			}
 		} else {
 			if peer.p2p {
 				frame.Peer = peer
-			} else if n.cfg.Relay.Enable {
+			} else if n.cfg.EnableRelay() {
 				frame.Peer = n.relay
 			} else {
 				//drop packets
@@ -331,8 +346,22 @@ func (n *Node) WriteToDevice() {
 }
 
 // appId is a unique identify for a node
-func (n *Node) appId() string {
-	return string(n.pubKey[:])
+func appId() (string, error) {
+	local, err := util.GetLocalConfig()
+	if err != nil {
+		return "", err
+	}
+
+	if local.AppId == "" {
+		var appId [5]byte
+		if _, err := io.ReadFull(rand.Reader, appId[:]); err != nil {
+			return "", errors.New("generate appId failed")
+		}
+
+		local.AppId = hex.EncodeToString(appId[:])
+	}
+
+	return local.AppId, nil
 }
 
 //func (d *Node) RoutineEncryption(id int) {

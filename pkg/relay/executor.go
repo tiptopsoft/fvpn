@@ -24,13 +24,14 @@ func (r *RegServer) ReadFromUdp() {
 			logger.Error("no data exists")
 			continue
 		}
-		logger.Debugf("Read from udp %d byte, data: %v", n, frame.Buff[:n])
 		copy(frame.Packet, frame.Buff)
 		packetHeader, err := util.GetPacketHeader(frame.Buff[:])
 		if err != nil {
 			logger.Errorf("get header falied. %v", err)
 			continue
 		}
+
+		logger.Debugf("Read from %v udp %d byte, data type: [%v]", addr, n, util.GetFrameTypeName(packetHeader.Flags))
 		frame.Size = n
 		frame.FrameType = packetHeader.Flags
 		frame.RemoteAddr = addr
@@ -127,6 +128,7 @@ func (r *RegServer) serverUdpHandler() node.HandlerFunc {
 func (r *RegServer) register(frame *node.Frame) (err error) {
 	p := new(node.Peer)
 	ep := nets.NewEndpoint(frame.RemoteAddr.String())
+	//ep.SetSrcIP(frame.SrcIP)
 	p.SetEndpoint(ep)
 	err = r.cache.SetPeer(frame.UidString(), frame.SrcIP.String(), p)
 	return

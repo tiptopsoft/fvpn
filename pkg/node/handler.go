@@ -141,6 +141,7 @@ func (n *Node) handleQueryPeers(frame *Frame) {
 		if ip.String() == n.device.IPToString() {
 			continue
 		}
+
 		addr := info.RemoteAddr
 		p, err := n.cache.GetPeer(frame.UidString(), ip.String())
 		if err != nil || p == nil {
@@ -156,7 +157,6 @@ func (n *Node) handleQueryPeers(frame *Frame) {
 		if err != nil {
 			return
 		}
-		//p.start()
 		p.start()
 		p.handshake(ip)
 	}

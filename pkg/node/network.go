@@ -6,11 +6,10 @@ import (
 
 // NetworkManager Join a network like : 192.168.0.1/24 if you give 192.168.0.1, default is 24
 type NetworkManager interface {
-	JoinIP(userId, ip string)
-	JoinNet(userID, cidr string) error
-	Leave(userId, ip string) error
+	JoinNet(userId, cidr string) error
+	Leave(userId, cidr string) error
 	LeaveNet(userId, cidr string) error
-	Access(userId, ip string) bool
+	Access(userId, cidr string) bool
 }
 
 var (

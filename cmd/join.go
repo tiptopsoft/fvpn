@@ -41,5 +41,9 @@ func joinCmd() *cobra.Command {
 
 // runJoin join a network cmd
 func runJoin(args []string) error {
-	return node.RunJoinNetwork(args[0])
+	cfg, err := util.InitConfig()
+	if err != nil {
+		return err
+	}
+	return node.RunJoinNetwork(cfg, args[0])
 }

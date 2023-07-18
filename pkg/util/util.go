@@ -38,35 +38,35 @@ func GetPacketHeader(buff []byte) (packet.Header, error) {
 	return h, nil
 }
 
-func GetUserInfo() (string, string, error) {
+func GetLocalInfo() (string, string, string, error) {
 	homedir, err := os.UserHomeDir()
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 	path := filepath.Join(homedir, ".fvpn/config.json")
 	_, err = os.Stat(path)
 	if os.IsNotExist(err) {
-		return "", "", errors.New("please login")
+		return "", "", "", errors.New("please login")
 	}
 	file, err := os.Open(path)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 
 	decoder := json.NewDecoder(file)
 
-	var resp Login
+	var resp LocalConfig
 	err = decoder.Decode(&resp)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 
 	values := strings.Split(resp.Auth, ":")
 	username := values[0]
 	password, err := Base64Decode(values[1])
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 
-	return username, password, nil
+	return username, password, resp.AppId, nil
 }

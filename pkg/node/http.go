@@ -12,10 +12,9 @@ var (
 func (n *Node) HttpServer() error {
 	//server := gin.Default()
 	server := echo.New()
+	server.Use(checkAuth())
 	server.POST(PREFIX+"join", n.joinNet())
-	//server.POST(PREFIX+"join", n.joinNet())
-	//err := server.Run(":6663")
-	return server.Start(":6663")
+	return server.Start(n.cfg.HttpListenStr())
 }
 
 func (n *Node) joinNet() func(ctx echo.Context) error {
@@ -27,13 +26,11 @@ func (n *Node) joinNet() func(ctx echo.Context) error {
 			return ctx.JSON(500, util.HttpError(err.Error()))
 		}
 
-		if req.Network != "" {
-			err = n.netCtl.JoinNet(util.UCTL.UserId, req.Network)
+		if req.NetWorkId != "" {
+			err = n.netCtl.JoinNet(util.UCTL.UserId, req.NetWorkId)
 			if err != nil {
 				return ctx.JSON(500, util.HttpError(err.Error()))
 			}
-		} else if req.IP != "" {
-			n.netCtl.JoinIP(util.UCTL.UserId, req.IP)
 		}
 
 		resp := &util.JoinResponse{
@@ -47,5 +44,13 @@ func (n *Node) joinNet() func(ctx echo.Context) error {
 func leaveNet() func(ctx echo.Context) error {
 	return func(ctx echo.Context) error {
 		return nil
+	}
+}
+
+func checkAuth() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			return nil
+		}
 	}
 }

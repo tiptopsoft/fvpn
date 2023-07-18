@@ -6,7 +6,6 @@ import (
 	"github.com/topcloudz/fvpn/pkg/log"
 	"github.com/topcloudz/fvpn/pkg/util"
 	"golang.org/x/sys/unix"
-	"net"
 	"os"
 	"syscall"
 )
@@ -17,9 +16,9 @@ const (
 )
 
 var (
-	logger      = log.Log()
-	FakeGateway = "5.244.24.141/24"
-	FakeIP      = net.ParseIP("5.244.24.141")
+	logger = log.Log()
+	//FakeGateway = "5.244.24.141/24"
+	//FakeIP      = net.ParseIP("5.244.24.141")
 )
 
 func New(offset int32) (Device, error) {
@@ -70,17 +69,12 @@ func New(offset int32) (Device, error) {
 		break
 	}
 
-	//set ip
-	if err = util.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s %s", name, FakeGateway, FakeIP.String())); err != nil {
-		return nil, err
-	}
-
 	tun := &NativeTun{
 		file:      os.NewFile(uintptr(fd), name),
 		Fd:        0,
 		name:      name,
 		NetworkId: "",
-		IP:        FakeIP,
+		//IP:        FakeIP,
 	}
 
 	logger.Debugf("create tun %s success", name)
@@ -130,5 +124,17 @@ func socketCloexec(family, sotype, proto int) (fd int, err error) {
 }
 
 func (tun *NativeTun) JoinNetwork(network string) error {
-	return util.ExecCommand("/bin/sh", "-c", fmt.Sprintf("route add -net %s %s", network, FakeIP))
+	if tun.IP == nil {
+		return errors.New("ip should set first")
+	}
+	return util.ExecCommand("/bin/sh", "-c", fmt.Sprintf("route add -net %s %s", network, tun.IP))
+}
+
+func (tun *NativeTun) SetIP(net, ip string) error {
+	//set ip
+	return util.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s %s", tun.Name(), net, ip))
+}
+
+func (tun *NativeTun) SetMTU(mtu int) error {
+	return nil
 }

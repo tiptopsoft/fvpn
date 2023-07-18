@@ -28,6 +28,8 @@ type Device interface {
 	Name() string
 	Read(buff []byte) (int, error)
 	Write(buff []byte) (int, error)
+	SetIP(net, ip string) error
+	SetMTU(mtu int) error
 	IPToString() string
 	Addr() net.IP
 }

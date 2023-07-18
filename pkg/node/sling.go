@@ -16,31 +16,46 @@ type client struct {
 	sling *sling.Sling
 }
 
+type ClientManager struct {
+	ConsoleClient *client
+	LocalClient   *client
+}
+
 func NewClient(base string) *client {
 	return &client{
 		sling: sling.New().Client(http.DefaultClient).Base(base),
 	}
 }
 
-func (c *client) JoinNetwork(req util.JoinRequest) (*util.JoinResponse, error) {
+func NewManager(cfg *util.ClientConfig) *ClientManager {
+	return &ClientManager{
+		ConsoleClient: NewClient(cfg.ControlUrl()),
+		LocalClient:   NewClient(cfg.HostUrl()),
+	}
+}
+
+func (c *ClientManager) JoinNetwork(networkId string) (*util.JoinResponse, error) {
 	resp := new(util.Response)
 	//First, read the config.json to get username and password to get token
-	username, password, err := util.GetUserInfo()
+	username, password, _, err := util.GetLocalInfo()
 	if err != nil {
 		return nil, err
 	}
 
-	loginRequest := LoginRequest{
+	loginRequest := util.LoginRequest{
 		Username: username,
 		Password: password,
 	}
 
-	tokenResp, err := c.Tokens(loginRequest)
+	tokenResp, err := c.ConsoleClient.Tokens(loginRequest)
 	if err != nil {
 		return nil, err
 	}
 
-	c.sling.New().Post("/api/v1/network/join").BodyJSON(req).Set("token", tokenResp.Token).Receive(resp, resp)
+	req := new(util.JoinRequest)
+	req.NetWorkId = networkId
+
+	c.ConsoleClient.sling.New().Post("/api/v1/network/join").BodyJSON(req).Set("token", tokenResp.Token).Receive(resp, resp)
 	if resp.Code != 200 {
 		return nil, errors.New(resp.Message)
 	}
@@ -55,7 +70,13 @@ func (c *client) JoinNetwork(req util.JoinRequest) (*util.JoinResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &response, nil
+
+	joinResp, err := c.JoinLocalFvpn(*req)
+	if err != nil {
+		return nil, err
+	}
+
+	return joinResp, nil
 }
 
 func (c *client) LeaveNetwork() error {
@@ -63,9 +84,9 @@ func (c *client) LeaveNetwork() error {
 }
 
 // JoinLocalFvpn call fvpn to create device handle traffic
-func (c *client) JoinLocalFvpn(req util.JoinRequest) (*util.JoinResponse, error) {
+func (c *ClientManager) JoinLocalFvpn(req util.JoinRequest) (*util.JoinResponse, error) {
 	resp := new(util.Response)
-	c.sling.New().Post("/api/v1/join").BodyJSON(req).Receive(&resp, &resp)
+	c.ConsoleClient.sling.New().Post("/api/v1/join").BodyJSON(req).Receive(&resp, &resp)
 	if resp.Code == 500 {
 		return nil, errors.New(resp.Message)
 	}
@@ -84,23 +105,14 @@ func (c *client) JoinLocalFvpn(req util.JoinRequest) (*util.JoinResponse, error)
 	return &result, nil
 }
 
-type LoginRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-type LoginResponse struct {
-	Token string `json:"token"`
-}
-
-func (c *client) Login(req LoginRequest) (*LoginResponse, error) {
+func (c *client) Login(req util.LoginRequest) (*util.LoginResponse, error) {
 	resp := new(util.Response)
 	c.sling.New().Post("api/v1/users/login").BodyJSON(req).Receive(resp, resp)
 	if resp.Code != 200 {
 		return nil, errors.New(resp.Message)
 	}
 
-	var tokenResp LoginResponse
+	var tokenResp util.LoginResponse
 	buff, err := json.Marshal(resp.Result)
 	if err != nil {
 		return nil, err
@@ -113,14 +125,14 @@ func (c *client) Login(req LoginRequest) (*LoginResponse, error) {
 	return &tokenResp, nil
 }
 
-func (c *client) Tokens(req LoginRequest) (*LoginResponse, error) {
+func (c *client) Tokens(req util.LoginRequest) (*util.LoginResponse, error) {
 	resp := new(util.Response)
 	c.sling.New().Post("api/v1/tokens").BodyJSON(req).Receive(resp, resp)
 	if resp.Code != 200 {
 		return nil, errors.New(resp.Message)
 	}
 
-	var tokenResp LoginResponse
+	var tokenResp util.LoginResponse
 	buff, err := json.Marshal(resp.Result)
 	if err != nil {
 		return nil, err
@@ -133,11 +145,44 @@ func (c *client) Tokens(req LoginRequest) (*LoginResponse, error) {
 	return &tokenResp, nil
 }
 
-func (c *client) Logout(req LoginRequest) (*LoginResponse, error) {
+func (c *client) Logout(req util.LoginRequest) (*util.LoginResponse, error) {
 	resp := new(util.Response)
 	c.sling.New().Post("api/v1/logout").BodyJSON(req).Receive(resp, resp)
 	if resp.Code != 200 {
 		return nil, errors.New(resp.Message)
 	}
-	return resp.Result.(*LoginResponse), nil
+	return resp.Result.(*util.LoginResponse), nil
+}
+
+func (c *client) Init(appId string) (*util.InitResponse, error) {
+	resp := new(util.Response)
+	//First, read the config.json to get username and password to get token
+	username, password, _, err := util.GetLocalInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	loginRequest := util.LoginRequest{
+		Username: username,
+		Password: password,
+	}
+
+	tokenResp, err := c.Tokens(loginRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	c.sling.New().Post("/api/v1/network/init/"+appId).Set("token", tokenResp.Token).Receive(resp, resp)
+
+	var initResp util.InitResponse
+	buff, err := json.Marshal(resp.Result)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(buff, &initResp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &initResp, nil
 }

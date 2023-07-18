@@ -76,6 +76,14 @@ func (tun *NativeTun) Read(buff []byte) (n int, err error) {
 	return n, err
 }
 
+func (tun *NativeTun) SetIP(net, ip string) error {
+	return nil
+}
+
+func (tun *NativeTun) SetMTU(mtu int) error {
+	return nil
+}
+
 func (tun *NativeTun) Write(buff []byte) (int, error) {
 	tun.lock.Lock()
 	defer tun.lock.Unlock()

@@ -12,6 +12,7 @@ import (
 
 type PeerInfo struct {
 	IP         net.IP
+	NatIP      net.IP
 	RemoteAddr net.UDPAddr
 	PubKey     security.NoisePublicKey
 }

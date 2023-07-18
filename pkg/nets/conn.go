@@ -19,12 +19,13 @@ type Bind interface {
 type Endpoint interface {
 	SrcToString() string
 	DstToString() string
-	SrcIP() *net.UDPAddr
+	SrcIP() net.IP
 	DstIP() *net.UDPAddr
+	//SetSrcIP(ip net.IP)
 }
 
 type endpoint struct {
-	srcIP *net.UDPAddr
+	srcIP net.IP
 	dstIP *net.UDPAddr
 }
 
@@ -50,7 +51,11 @@ func (p *endpoint) DstToString() string {
 	return p.dstIP.String()
 }
 
-func (p *endpoint) SrcIP() *net.UDPAddr {
+func (p *endpoint) SetSrcIP(ip net.IP) {
+	p.srcIP = ip
+}
+
+func (p *endpoint) SrcIP() net.IP {
 	return p.srcIP
 }
 

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/topcloudz/fvpn/pkg/node"
+	"github.com/topcloudz/fvpn/pkg/util"
 	"os"
 )
 
@@ -39,10 +41,10 @@ func loginCmd() *cobra.Command {
 
 // runJoin join a network cmd
 func runLogin(opts loginOptions) error {
-	//config, err := option.InitConfig()
-	//if err != nil {
-	//	return err
-	//}
+	config, err := util.InitConfig()
+	if err != nil {
+		return err
+	}
 
 	//s := &client.Peer{
 	//	Config: config,
@@ -70,11 +72,11 @@ func runLogin(opts loginOptions) error {
 
 	//check whether has been login TODO
 
-	//err = s.Login(opts.Username, opts.Password)
-	//if err != nil {
-	//	return err
-	//}
-	//fmt.Println("Login Succeeded")
+	err = node.Login(opts.Username, opts.Password, config.ClientCfg)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Login Succeeded")
 
 	return nil
 

@@ -36,7 +36,7 @@ func Decode() func(Handler) Handler {
 	}
 }
 
-// Encode Middleware Encrypt use exchangeKey
+// Encode Middleware encrypt use exchangeKey
 func Encode() func(Handler) Handler {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx context.Context, frame *Frame) error {
