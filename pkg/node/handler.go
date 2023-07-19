@@ -99,6 +99,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 			frame.Size = len(buff)
 			frame.DstIP = frame.SrcIP //dstIP = 1
 			frame.Peer = p
+			logger.Debugf(">>>>>>>will send a handshakd ack to remote back, dst: [%v]", frame.Peer.endpoint.DstToString())
 			n.PutPktToOutbound(frame)
 		case util.HandShakeMsgTypeAck: //use for relay
 			//cache dst peer when receive a handshake
