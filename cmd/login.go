@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/moby/term"
 	"github.com/spf13/cobra"
 	"github.com/topcloudz/fvpn/pkg/node"
 	"github.com/topcloudz/fvpn/pkg/util"
@@ -56,13 +57,13 @@ func runLogin(opts loginOptions) error {
 		}
 
 		if opts.Username == "" {
-			if token, err := readLine("Token", false); err != nil {
+			if token, err := readLine("Token", true); err != nil {
 				return errors.New("token required")
 			} else {
 				opts.Password = token
 			}
 		} else {
-			if password, err := readLine("Password: ", false); err != nil {
+			if password, err := readLine("Password: ", true); err != nil {
 				return errors.New("password required")
 			} else {
 				opts.Password = password
@@ -82,14 +83,38 @@ func runLogin(opts loginOptions) error {
 
 }
 
+//func readLine(prompt string, slient bool) (string, error) {
+//	fmt.Print(prompt)
+//	reader := bufio.NewReader(os.Stdin)
+//	line, _, err := reader.ReadLine()
+//	if err != nil {
+//		panic(err)
+//		return "", err
+//	}
+//
+//	return string(line), err
+//}
+
 func readLine(prompt string, slient bool) (string, error) {
 	fmt.Print(prompt)
+	if slient {
+		fd := os.Stdin.Fd()
+		state, err := term.SaveState(fd)
+		if err != nil {
+			return "", err
+		}
+		term.DisableEcho(fd, state)
+		defer term.RestoreTerminal(fd, state)
+	}
+
 	reader := bufio.NewReader(os.Stdin)
 	line, _, err := reader.ReadLine()
 	if err != nil {
-		panic(err)
 		return "", err
 	}
+	if slient {
+		fmt.Println()
+	}
 
-	return string(line), err
+	return string(line), nil
 }

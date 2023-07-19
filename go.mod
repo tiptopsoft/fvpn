@@ -6,6 +6,7 @@ require (
 	github.com/dghubble/sling v1.4.1
 	github.com/gin-gonic/gin v1.9.1
 	github.com/labstack/echo/v4 v4.10.2
+	github.com/moby/term v0.5.0
 	github.com/spf13/cobra v1.6.0
 	github.com/spf13/viper v1.13.0
 	go.uber.org/atomic v1.7.0
@@ -15,6 +16,7 @@ require (
 )
 
 require (
+	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
