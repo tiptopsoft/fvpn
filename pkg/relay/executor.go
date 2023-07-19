@@ -70,14 +70,15 @@ func (r *RegServer) serverUdpHandler() node.HandlerFunc {
 			break
 		case util.MsgTypePacket:
 			logger.Infof("server got forward packet size:%d, data: %v", frame.Size, data)
-			peer, err := r.cache.GetPeer(frame.UidString(), frame.DstIP.String())
-			if err != nil || peer == nil {
+			p, err := r.cache.GetPeer(frame.UidString(), frame.DstIP.String())
+			if err != nil || p == nil {
 				return fmt.Errorf("peer %v is not found", frame.DstIP.String())
 			}
 
-			logger.Debugf("write packet to peer %v: ", peer)
+			logger.Debugf("write packet to peer %v: ", p)
 
-			frame.RemoteAddr = peer.GetEndpoint().DstIP()
+			frame.RemoteAddr = p.GetEndpoint().DstIP()
+			frame.Peer = p //change peer to dst peer
 			r.PutPktToOutbound(frame)
 		case util.MsgTypeQueryPeer:
 			logger.Debug("server got list peers packet")
