@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/topcloudz/fvpn/pkg/util"
+	"io"
 	"os"
 	"path/filepath"
 )
@@ -39,7 +40,7 @@ func Login(username, password string, cfg *util.ClientConfig) error {
 	var local util.LocalConfig
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&local)
-	if err != nil {
+	if err != nil && err != io.EOF {
 		return errors.New("login failed")
 	}
 

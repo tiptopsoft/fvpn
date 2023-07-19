@@ -1,50 +1,54 @@
-## FVPN
+## fvpn
 
-A fvpn is a modern smart vpn. use fvpn we can create our own private network, after we join a network, we can connect other device that join in the network we just join in.
-Use fvpn you also can compose you own registry, if you didn't, you can use our services online. as it is default choice.
+fvpn is a modern smart vpn. using fvpn we can create our own private network, as our devices such as cell phone, home pc and so on can join in this network, 
+so they can connect to each other.
+
 ## Get Started
 you can start fvpn from an example below:
+-  register on our website: www.efvpn.com, after you registerd, you can free create three networks, if you want create more, you can see here.
+-  install fvpn on your devices
 
 ## Galary
-- Node: a node is a device which install in your pc/router/...
-- Registry: a registry is a service center, node can register its self to a registry
-- NetworkId: 
-- User: If you want to use our public services, you should sign up an account in our website. you can create networkId, you also can manage it. 
+- Node: a node is a device which install in your pc/phone/...
+- Registry: a registry is a service center, which node registered to
+- NetworkId: a network is exactly a cidr, can be set in pc router.
 
 ## security
+- DH
+- curve-25519
+- protocol-noise
+beside of, every tunnel have different encrypt key.
 
+## use insight
+- working at home
+- visit you nas when you are not at home
+- visit your on private network when you don not want to buy a machine has public ip.
 
 ## Example
-when you use fvpn, you should create an app.yml
+when you use fvpn, create an app.yaml is optional, because fvpn have a default config. when you create you own registry, you can change default config from create an app.yaml.
+you should put app.yaml to /etc/fvpn or ~/.fvpn/
 ```azure
 client:
   listen: :3000
   server: 127.0.0.1
-  type: udp
 
 #-------------------分害线
 server:
   listen: :4000
   httpListen: :4009
-  type: udp
+
 ```
+
 start a node use commands below:
-```azure
+```shell
 fvpn node
 ```
-you can use alias short name:
-```azure
-fvpn n
-```
 
-join a network:
-```azure
+join a network: 
+provide a networkId which you create on console.
+```shell
 fvpn join xxx
 ```
-
-## IP 
-after you join a network, you can visit your console, in which you can see your device status and device info. also can see your devices register in this network. as a device can 
-join multiple network.
 
 ## Compile
 
