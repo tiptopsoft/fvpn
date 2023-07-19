@@ -133,7 +133,7 @@ func InitConfig() (config *Config, err error) {
 	viper.SetDefault("client.ConsoleUrl", "https://www.efvpn.com")
 	viper.SetDefault("client.HttpListen", ":6662")
 	viper.SetDefault("client.server", "www.efvpn.com:4000")
-	viper.SetDefault("client.Relay.Enable", false)
+	viper.SetDefault("client.Relay.Enable", true)
 	viper.SetDefault("client.Encrypt.Enable", true)
 	viper.SetDefault("client.Auth.Enable", true)
 	viper.SetDefault("client.Listen", ":3000")

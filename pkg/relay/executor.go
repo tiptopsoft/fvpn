@@ -58,7 +58,7 @@ func (r *RegServer) writeUdpHandler() node.HandlerFunc {
 // serverUdpHandler  core self handler
 func (r *RegServer) serverUdpHandler() node.HandlerFunc {
 	return func(ctx context.Context, frame *node.Frame) error {
-		data := frame.Packet[:frame.Size]
+		logger.Infof("server got packet size:%d, data type: [%v]", frame.Size, util.GetFrameTypeName(util.MsgTypePacket))
 		switch frame.FrameType {
 		case util.MsgTypeRegisterSuper:
 			err := r.register(frame)
@@ -70,19 +70,15 @@ func (r *RegServer) serverUdpHandler() node.HandlerFunc {
 			frame.Packet = f
 			break
 		case util.MsgTypePacket:
-			logger.Infof("server got forward packet size:%d, data: %v", frame.Size, data)
 			p, err := r.cache.GetPeer(frame.UidString(), frame.DstIP.String())
 			if err != nil || p == nil {
 				return fmt.Errorf("peer %v is not found", frame.DstIP.String())
 			}
-
 			logger.Debugf("write packet to peer %v: ", p)
-
 			frame.RemoteAddr = p.GetEndpoint().DstIP()
 			frame.Peer = p //change peer to dst peer
 			r.PutPktToOutbound(frame)
 		case util.MsgTypeQueryPeer:
-			logger.Debug("server got list peers packet")
 			peers := r.cache.ListPeers(frame.UidString())
 			peerAck := peer.NewPeerPacket()
 

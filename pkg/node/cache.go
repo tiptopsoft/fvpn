@@ -40,7 +40,7 @@ func (c *cache) SetPeer(userId, ip string, peer *Peer) error {
 	peerMap[ip] = peer
 	//print
 	for ip, p := range peerMap {
-		logger.Debugf("peer in cache,ip: [%v], peer: [%v]", ip, p)
+		logger.Debugf("========================peer in cache,ip: [%v], peer: [%v]", ip, p.endpoint.DstToString())
 	}
 	//every add a peer will print current peers in cache
 	return nil

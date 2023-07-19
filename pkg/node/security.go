@@ -19,7 +19,7 @@ func Decode() func(Handler) Handler {
 					return fmt.Errorf("dst ip: %v peer not found", frame.DstIP.String())
 				}
 
-				logger.Debugf("use src peer: [%v] to decode", peer.endpoint.SrcIP().String())
+				logger.Debugf("use src peer: [%v] to decode", peer.endpoint.DstIP().String())
 
 				logger.Debugf("data before decode: %v", buff)
 				decoded, err := peer.GetCodec().Decode(buff)

@@ -216,12 +216,14 @@ func (n *Node) ReadFromTun() {
 			logger.Error(err)
 			continue
 		}
-		//logger.Debugf("node %s receive %d byte", n.device.Name(), size)
 		ipHeader, err := util.GetIPFrameHeader(frame.Buff[:])
 		if err != nil {
+			logger.Error(err)
 			continue
 		}
+		logger.Debugf("node %s receive %d byte, srcIP: %v, dstIP: %v", n.device.Name(), size, ipHeader.SrcIP, ipHeader.DstIP)
 		if ipHeader.DstIP.String() == n.device.Addr().String() {
+			logger.Error("self address.....")
 			continue
 		}
 
@@ -241,7 +243,7 @@ func (n *Node) ReadFromTun() {
 			}
 		}
 
-		frame.SrcIP = ipHeader.SrcIP
+		frame.SrcIP = n.device.Addr()
 		frame.DstIP = ipHeader.DstIP
 
 		h, _ := packet.NewHeader(util.MsgTypePacket, util.UCTL.UserId)
@@ -300,7 +302,10 @@ func (n *Node) ReadFromUdp() {
 		f.UserId = hpkt.UserId
 		f.FrameType = hpkt.Flags
 
-		f.Peer, _ = n.cache.GetPeer(f.UidString(), f.SrcIP.String())
+		f.Peer, err = n.cache.GetPeer(f.UidString(), f.SrcIP.String())
+		if err != nil || !f.Peer.p2p {
+			f.Peer = n.relay
+		}
 
 		err = n.udpHandler.Handle(ctx, f)
 		if err != nil {
