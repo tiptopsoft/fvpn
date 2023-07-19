@@ -134,7 +134,7 @@ func (tun *NativeTun) JoinNetwork(network string) error {
 func (tun *NativeTun) SetIP(network, ip string) error {
 	//set ip
 	tun.IP = net.ParseIP(ip)
-	return util.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s %s", tun.Name(), network, ip))
+	return util.ExecCommand("/bin/sh", "-c", fmt.Sprintf("ifconfig %s %s %s", tun.Name(), ip, ip))
 }
 
 func (tun *NativeTun) SetMTU(mtu int) error {

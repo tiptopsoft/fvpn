@@ -221,11 +221,10 @@ func (n *Node) ReadFromTun() {
 			logger.Error(err)
 			continue
 		}
-		logger.Debugf("node %s receive %d byte, srcIP: %v, dstIP: %v", n.device.Name(), size, ipHeader.SrcIP, ipHeader.DstIP)
 		if ipHeader.DstIP.String() == n.device.Addr().String() {
-			logger.Error("self address.....")
 			continue
 		}
+		logger.Debugf("node %s receive %d byte, srcIP: %v, dstIP: %v", n.device.Name(), size, ipHeader.SrcIP, ipHeader.DstIP)
 
 		peer, err := n.cache.GetPeer(util.UCTL.UserId, ipHeader.DstIP.String())
 		if err != nil || peer == nil {
