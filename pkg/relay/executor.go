@@ -38,7 +38,8 @@ func (r *RegServer) ReadFromUdp() {
 		frame.SrcIP = packetHeader.SrcIP
 		frame.DstIP = packetHeader.DstIP
 		frame.UserId = packetHeader.UserId
-		frame.Peer, _ = r.cache.GetPeer(frame.UidString(), frame.DstIP.String())
+		//decode use origin peer
+		frame.Peer, _ = r.cache.GetPeer(frame.UidString(), frame.SrcIP.String())
 		r.PutPktToInbound(frame)
 	}
 }
