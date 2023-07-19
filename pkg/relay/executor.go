@@ -31,7 +31,7 @@ func (r *RegServer) ReadFromUdp() {
 			continue
 		}
 
-		logger.Debugf("Read from %v udp %d byte, data type: [%v]", addr, n, util.GetFrameTypeName(packetHeader.Flags))
+		logger.Debugf("Read from %v udp %d byte, srcIP: %v, dstIP: %v, data type: [%v]", addr, n, packetHeader.SrcIP, packetHeader.DstIP, util.GetFrameTypeName(packetHeader.Flags))
 		frame.Size = n
 		frame.FrameType = packetHeader.Flags
 		frame.RemoteAddr = addr
