@@ -179,7 +179,7 @@ func (n *Node) up() error {
 		for {
 			select {
 			case <-timer.C:
-				logger.Debugf("sending list packets...")
+				//logger.Debugf("sending list packets...")
 				n.sendListPackets()
 				timer.Reset(time.Second * 5)
 			}
@@ -216,7 +216,7 @@ func (n *Node) ReadFromTun() {
 			logger.Error(err)
 			continue
 		}
-		logger.Debugf("node %s receive %d byte", n.device.Name(), size)
+		//logger.Debugf("node %s receive %d byte", n.device.Name(), size)
 		ipHeader, err := util.GetIPFrameHeader(frame.Buff[:])
 		if err != nil {
 			continue

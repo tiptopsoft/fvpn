@@ -116,15 +116,7 @@ func (p *Peer) handshake(dstIP net.IP) {
 	f := NewFrame()
 	copy(f.Packet[:size], buff)
 	f.Size = size
-	//cache a peer
-	//ep := nets.NewEndpoint(p.endpoint.DstToString())
-	//p.SetEndpoint(ep)
-	//err = p.node.cache.SetPeer(handler.UCTL.UserId, p.endpoint.DstToString(), p)
-	//if err != nil {
-	//	logger.Error("init cache peer failed.")
-	//	return
-	//}
-	logger.Debugf("sending handshake pubkey to: %v, pubKey: %v, remote address: [%v], type: [%v]", dstIP.String(), p.PubKey, p.endpoint.DstToString(), "handshake")
+	logger.Debugf("sending handshake pubkey to: %v, pubKey: %v, remote address: [%v], type: [%v]", dstIP.String(), p.PubKey, p.endpoint.DstToString(), util.GetFrameTypeName(util.HandShakeMsgType))
 	p.PutPktToOutbound(f)
 }
 
