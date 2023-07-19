@@ -300,6 +300,8 @@ func (n *Node) ReadFromUdp() {
 		f.UserId = hpkt.UserId
 		f.FrameType = hpkt.Flags
 
+		f.Peer, _ = n.cache.GetPeer(f.UidString(), f.SrcIP.String())
+
 		err = n.udpHandler.Handle(ctx, f)
 		if err != nil {
 			logger.Error(err)

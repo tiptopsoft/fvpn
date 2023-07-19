@@ -2,7 +2,6 @@ package node
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/topcloudz/fvpn/pkg/packet"
 	"github.com/topcloudz/fvpn/pkg/util"
@@ -14,10 +13,10 @@ func Decode() func(Handler) Handler {
 			if frame.FrameType == util.MsgTypePacket {
 				offset := packet.HeaderBuffSize
 				buff := frame.Packet[offset:frame.Size]
-				cache := ctx.Value("cache").(CacheFunc)
-				peer, err := cache.GetPeer(util.UCTL.UserId, frame.SrcIP.String())
-				if err != nil {
-					return errors.New("peer not found")
+				//cache := ctx.Value("cache").(CacheFunc)
+				peer := frame.GetPeer()
+				if peer == nil {
+					return fmt.Errorf("dst ip: %v peer not found", frame.DstIP.String())
 				}
 
 				logger.Debugf("data before decode: %v", buff)
