@@ -141,10 +141,13 @@ func (n *Node) handleQueryPeers(frame *Frame) {
 			continue
 		}
 
-		if ip.String() == n.relay.endpoint.DstIP().IP.String() {
-			//relay pass
-			continue
-		}
+		//if ip.String() == n.relay.endpoint.DstIP().IP.String() {
+		//	//relay pass
+		//	p, _ := n.cache.GetPeer(frame.UidString(), ip.String())
+		//	p.st = time.Now()
+		//	n.cache.SetPeer(frame.UidString(), ip.String(), p)
+		//	continue
+		//}
 
 		addr := info.RemoteAddr
 		p, err := n.cache.GetPeer(frame.UidString(), ip.String())
@@ -162,6 +165,8 @@ func (n *Node) handleQueryPeers(frame *Frame) {
 			return
 		}
 		p.start()
-		p.handshake(ip)
+		if p.status {
+			p.handshake(ip)
+		}
 	}
 }

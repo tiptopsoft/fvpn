@@ -6,6 +6,7 @@ import (
 	"github.com/topcloudz/fvpn/pkg/packet/handshake"
 	"github.com/topcloudz/fvpn/pkg/security"
 	"github.com/topcloudz/fvpn/pkg/util"
+	"go.uber.org/atomic"
 	"net"
 	"sync"
 	"time"
@@ -14,6 +15,8 @@ import (
 // Peer a destination will have a peer in fvpn, can connect to each other.
 // a RegServer also is a peer
 type Peer struct {
+	isRelay     bool
+	index       atomic.Int32
 	st          time.Time
 	keepaliveCh chan int //1：exit keepalive 2: exit send packet 3 exit timer
 	sendCh      chan int
@@ -37,11 +40,18 @@ func (p *Peer) GetCodec() security.CipherFunc {
 }
 
 func (p *Peer) start() {
-	p.lock.Lock()
-	defer p.lock.Unlock()
+	//p.lock.Lock()
+	//defer p.lock.Unlock()
+	if p.index.Load() > 3 {
+		logger.Debugf("peer %v have try too much times", p)
+		return
+	}
+	p.index.Inc()
 	if p.status == true {
 		logger.Debugf("peer has started: %v", p.endpoint.DstToString())
 		return
+	} else {
+		logger.Debugf("peer starting......")
 	}
 
 	p.status = true
@@ -65,7 +75,7 @@ func (p *Peer) start() {
 		}()
 
 		go func() {
-			timer := time.NewTimer(time.Minute * 2)
+			timer := time.NewTimer(time.Second * 30)
 			defer timer.Stop()
 			for {
 				select {
@@ -77,7 +87,7 @@ func (p *Peer) start() {
 						//shutdown this peer
 						p.close()
 					}
-					timer.Reset(time.Minute * 2)
+					timer.Reset(time.Second * 30)
 				}
 			}
 		}()
@@ -114,7 +124,7 @@ func (p *Peer) handshake(dstIP net.IP) {
 	//	logger.Error("init cache peer failed.")
 	//	return
 	//}
-	logger.Debugf("sending pubkey to: %v, pubKey: %v", dstIP.String(), p.PubKey)
+	logger.Debugf("sending handshake pubkey to: %v, pubKey: %v, remote address: [%v], type: [%v]", dstIP.String(), p.PubKey, p.endpoint.DstToString(), "handshake")
 	p.PutPktToOutbound(f)
 }
 
@@ -135,7 +145,7 @@ func (p *Peer) SendPackets() {
 				logger.Error(err)
 				continue
 			}
-			logger.Debugf("peer %v has send %d packets to %s, buff: %v", p, send, p.endpoint.DstToString(), pkt.Packet[:pkt.Size])
+			logger.Debugf("node has send %d packets to %s", send, p.endpoint.DstToString())
 		default:
 
 		}
@@ -160,8 +170,11 @@ func (p *Peer) keepalive() {
 }
 
 func (p *Peer) check() bool {
+	if p.isRelay || p.p2p {
+		return false
+	}
 	st := time.Since(p.st)
-	if st.Minutes() == 5 {
+	if st.Seconds() >= 30 {
 		return true
 	}
 
@@ -172,5 +185,6 @@ func (p *Peer) close() {
 	p.checkCh <- 1
 	p.sendCh <- 1
 	p.keepaliveCh <- 1
-	logger.Debug("peer stop signal sended")
+	p.status = false
+	logger.Debug("================peer stop signal have send to peer: %v", p)
 }

@@ -103,6 +103,7 @@ func (c *ClientManager) JoinLocalFvpn(req util.JoinRequest) (*util.JoinResponse,
 		return nil, err
 	}
 
+	result.CIDR = req.CIDR
 	return &result, nil
 }
 

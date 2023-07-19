@@ -92,6 +92,7 @@ func NewNode(iface tun.Device, bind nets.Bind, cfg *util.ClientConfig) (*Node, e
 func (n *Node) initRelay() {
 	n.relay = n.NewPeer(security.NoisePublicKey{})
 	n.relay.node = n
+	n.relay.isRelay = true
 	n.relay.endpoint = nets.NewEndpoint(n.cfg.RegistryUrl())
 	n.relay.start()
 	n.relay.handshake(n.relay.endpoint.DstIP().IP)
@@ -105,6 +106,9 @@ func (n *Node) initRelay() {
 func (n *Node) NewPeer(pk security.NoisePublicKey) *Peer {
 	p := new(Peer)
 	p.st = time.Now()
+	p.checkCh = make(chan int, 1)
+	p.sendCh = make(chan int, 1)
+	p.keepaliveCh = make(chan int, 1)
 	p.PubKey = pk
 	p.queue.outBound = NewOutBoundQueue()
 	p.queue.inBound = NewInBoundQueue()
@@ -205,9 +209,9 @@ func (n *Node) ReadFromTun() {
 		ctx = context.WithValue(ctx, "cache", n.cache)
 		frame.UserId = n.userId
 		frame.FrameType = util.MsgTypePacket
-		st1 := time.Now()
+		//st1 := time.Now()
 		size, err := n.device.Read(frame.Buff[:])
-		st := time.Now()
+		//st := time.Now()
 		if err != nil {
 			logger.Error(err)
 			continue
@@ -255,9 +259,9 @@ func (n *Node) ReadFromTun() {
 		frame.Size = size + packet.HeaderBuffSize
 
 		err = n.tunHandler.Handle(ctx, frame)
-		et := time.Since(st)
-		et2 := time.Since(st1)
-		logger.Debugf("================encode cost: %v, from read: %v", et, et2)
+		//et := time.Since(st)
+		//et2 := time.Since(st1)
+		//logger.Debugf("================encode cost: %v, from read: %v", et, et2)
 
 		if err != nil {
 			logger.Error(err)

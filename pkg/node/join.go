@@ -13,7 +13,7 @@ func RunJoinNetwork(cfg *util.Config, networkId string) error {
 		return err
 	}
 
-	return NewRouter(resp.IP, resp.Name).AddRouter(resp.Network)
+	return NewRouter(resp.CIDR, resp.Name).AddRouter(resp.CIDR)
 }
 
 func (p *Peer) RunLeaveNetwork(networkId string) error {
