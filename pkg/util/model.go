@@ -11,8 +11,15 @@ type Local struct {
 }
 
 type LocalConfig struct {
-	Auth  string `json:"auth"`
-	AppId string `json:"appId"`
+	Auth   string `json:"auth"`
+	AppId  string `json:"appId"`
+	UserId string `json:"userId"`
+}
+
+type LocalInfo struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	UserId   string `json:"userId"`
 }
 
 type Response struct {
@@ -45,7 +52,8 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	Token string `json:"token"`
+	Token  string `json:"token"`
+	UserId string `json:"userId"`
 }
 
 func HttpOK(data interface{}) Response {

@@ -50,6 +50,8 @@ func (n *Node) joinNet() gin.HandlerFunc {
 			IP:   n.device.IPToString(),
 			Name: n.device.Name(),
 		}
+
+		//userId替换
 		ctx.JSON(200, util.HttpOK(resp))
 	}
 }

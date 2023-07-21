@@ -52,8 +52,9 @@ func Login(username, password string, cfg *util.ClientConfig) error {
 	encoder := json.NewEncoder(file)
 
 	b := util.LocalConfig{
-		Auth:  fmt.Sprintf("%s:%s", username, util.StringToBase64(password)),
-		AppId: local.AppId,
+		Auth:   fmt.Sprintf("%s:%s", username, util.StringToBase64(password)),
+		AppId:  local.AppId,
+		UserId: resp.UserId,
 	}
 	return encoder.Encode(b)
 }

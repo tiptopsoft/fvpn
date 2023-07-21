@@ -37,14 +37,14 @@ func NewManager(cfg *util.ClientConfig) *ClientManager {
 func (c *ClientManager) JoinNetwork(networkId string) (*util.JoinResponse, error) {
 	resp := new(util.Response)
 	//First, read the config.json to get username and password to get token
-	username, password, _, err := util.GetLocalInfo()
+	info, err := util.GetLocalInfo()
 	if err != nil {
 		return nil, err
 	}
 
 	loginRequest := util.LoginRequest{
-		Username: username,
-		Password: password,
+		Username: info.Username,
+		Password: info.Password,
 	}
 
 	tokenResp, err := c.ConsoleClient.Tokens(loginRequest)
@@ -159,16 +159,20 @@ func (c *client) Logout(req util.LoginRequest) (*util.LoginResponse, error) {
 func (c *client) Init(appId string) (*util.InitResponse, error) {
 	resp := new(util.Response)
 	//First, read the config.json to get username and password to get token
-	username, password, _, err := util.GetLocalInfo()
+	info, err := util.GetLocalInfo()
 	if err != nil {
 		return nil, err
 	}
 
 	loginRequest := util.LoginRequest{
-		Username: username,
-		Password: password,
+		Username: info.Username,
+		Password: info.Password,
 	}
 
+	err = util.UCTL.SetUserId(info.UserId)
+	if err != nil {
+		return nil, err
+	}
 	tokenResp, err := c.Tokens(loginRequest)
 	if err != nil {
 		return nil, err
