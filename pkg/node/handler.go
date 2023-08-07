@@ -1,14 +1,28 @@
+// Copyright 2023 Tiptopsoft, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package node
 
 import (
 	"context"
-	"github.com/topcloudz/fvpn/pkg/nets"
-	"github.com/topcloudz/fvpn/pkg/packet"
-	"github.com/topcloudz/fvpn/pkg/packet/handshake"
-	"github.com/topcloudz/fvpn/pkg/packet/peer"
-	"github.com/topcloudz/fvpn/pkg/packet/register/ack"
-	"github.com/topcloudz/fvpn/pkg/security"
-	"github.com/topcloudz/fvpn/pkg/util"
+	"github.com/tiptopsoft/fvpn/pkg/nets"
+	"github.com/tiptopsoft/fvpn/pkg/packet"
+	"github.com/tiptopsoft/fvpn/pkg/packet/handshake"
+	"github.com/tiptopsoft/fvpn/pkg/packet/peer"
+	"github.com/tiptopsoft/fvpn/pkg/packet/register/ack"
+	"github.com/tiptopsoft/fvpn/pkg/security"
+	"github.com/tiptopsoft/fvpn/pkg/util"
 )
 
 type Handler interface {
@@ -104,10 +118,11 @@ func (n *Node) udpInHandler() HandlerFunc {
 		case util.HandShakeMsgTypeAck: //use for relay
 			//cache dst peer when receive a handshake
 			logger.Debugf("got handshake msg type in handshake ack, data: %v, data type: [%v]", frame.Packet[:frame.Size], util.GetFrameTypeName(util.HandShakeMsgTypeAck))
-			p, err := n.cache.GetPeer(frame.UidString(), frame.SrcIP.String())
-			p.p2p = true
 			//err = n.cache.SetPeer(frame.UidString(), frame.SrcIP.String(), p)
 			_, err = CachePeerToLocal(n.privateKey, frame, n.cache, n)
+			p, err := n.cache.GetPeer(frame.UidString(), frame.SrcIP.String())
+			p.p2p = true
+			n.cache.SetPeer(frame.UidString(), frame.SrcIP.String(), p)
 			if err != nil {
 				return err
 			}

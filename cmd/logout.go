@@ -1,11 +1,9 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
-	"os"
-	"path/filepath"
+	"github.com/tiptopsoft/fvpn/pkg/util"
 )
 
 func logout() *cobra.Command {
@@ -24,18 +22,11 @@ func logout() *cobra.Command {
 }
 
 func runLogout(opts *loginOptions) error {
-	//TOTO delete content in ~/.fvpn/config.json
-	homeDir, err := os.UserHomeDir()
+	localCfg, err := util.GetLocalConfig()
 	if err != nil {
-		return err
+		return fmt.Errorf("logout failed, %v", err)
 	}
-
-	path := filepath.Join(homeDir, "./fvpn/config.json")
-	err = os.RemoveAll(path)
-	if err != nil {
-		return errors.New("logout failed")
-	}
-
-	fmt.Println("logout success")
-	return nil
+	localCfg.Auth = ""
+	localCfg.UserId = ""
+	return util.ReplaceLocalConfig(localCfg)
 }

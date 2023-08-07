@@ -1,10 +1,25 @@
-package node
+// Copyright 2023 Tiptopsoft, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package http
 
 import (
 	"encoding/json"
 	"errors"
 	"github.com/dghubble/sling"
-	"github.com/topcloudz/fvpn/pkg/util"
+	"github.com/tiptopsoft/fvpn/pkg/model"
+	"github.com/tiptopsoft/fvpn/pkg/util"
 	"net/http"
 )
 
@@ -27,22 +42,22 @@ func NewClient(base string) *client {
 	}
 }
 
-func NewManager(cfg *util.ClientConfig) *ClientManager {
+func NewManager(cfg *util.NodeCfg) *ClientManager {
 	return &ClientManager{
 		ConsoleClient: NewClient(cfg.ControlUrl()),
 		LocalClient:   NewClient(cfg.HostUrl()),
 	}
 }
 
-func (c *ClientManager) JoinNetwork(networkId string) (*util.JoinResponse, error) {
-	resp := new(util.Response)
+func (c *ClientManager) JoinNetwork(networkId string) (*model.JoinResponse, error) {
+	resp := new(model.Response)
 	//First, read the config.json to get username and password to get token
-	info, err := util.GetLocalInfo()
+	info, err := util.GetLocalUserInfo()
 	if err != nil {
 		return nil, err
 	}
 
-	loginRequest := util.LoginRequest{
+	loginRequest := model.LoginRequest{
 		Username: info.Username,
 		Password: info.Password,
 	}
@@ -52,7 +67,7 @@ func (c *ClientManager) JoinNetwork(networkId string) (*util.JoinResponse, error
 		return nil, err
 	}
 
-	req := new(util.JoinRequest)
+	req := new(model.JoinRequest)
 	req.NetWorkId = networkId
 
 	c.ConsoleClient.sling.New().Post("/api/v1/network/join").BodyJSON(req).Set("token", tokenResp.Token).Receive(resp, resp)
@@ -65,7 +80,7 @@ func (c *ClientManager) JoinNetwork(networkId string) (*util.JoinResponse, error
 		return nil, err
 	}
 
-	var response util.JoinResponse
+	var response model.JoinResponse
 	err = json.Unmarshal(buff, &response)
 	if err != nil {
 		return nil, err
@@ -85,8 +100,8 @@ func (c *client) LeaveNetwork() error {
 }
 
 // JoinLocalFvpn call fvpn to create device handle traffic
-func (c *ClientManager) JoinLocalFvpn(req util.JoinRequest) (*util.JoinResponse, error) {
-	resp := new(util.Response)
+func (c *ClientManager) JoinLocalFvpn(req model.JoinRequest) (*model.JoinResponse, error) {
+	resp := new(model.Response)
 	c.LocalClient.sling.New().Post("/api/v1/join").BodyJSON(req).Receive(&resp, &resp)
 	if resp.Code == 500 {
 		return nil, errors.New(resp.Message)
@@ -97,7 +112,7 @@ func (c *ClientManager) JoinLocalFvpn(req util.JoinRequest) (*util.JoinResponse,
 		return nil, errors.New("invalid result")
 	}
 
-	var result util.JoinResponse
+	var result model.JoinResponse
 	err = json.Unmarshal(jsonStr, &result)
 	if err != nil {
 		return nil, err
@@ -107,14 +122,37 @@ func (c *ClientManager) JoinLocalFvpn(req util.JoinRequest) (*util.JoinResponse,
 	return &result, nil
 }
 
-func (c *client) Login(req util.LoginRequest) (*util.LoginResponse, error) {
-	resp := new(util.Response)
+func (c *ClientManager) LeaveFvpnNetwork(req model.JoinRequest) (*model.JoinResponse, error) {
+	resp := new(model.Response)
+	c.LocalClient.sling.New().Post("/api/v1/leave").BodyJSON(req).Receive(&resp, &resp)
+	if resp.Code == 500 {
+		return nil, errors.New(resp.Message)
+	}
+
+	jsonStr, err := json.Marshal(resp.Result)
+	if err != nil {
+		return nil, errors.New("invalid result")
+	}
+
+	var result model.JoinResponse
+	err = json.Unmarshal(jsonStr, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	result.CIDR = req.CIDR
+
+	return &result, nil
+}
+
+func (c *client) Login(req model.LoginRequest) (*model.LoginResponse, error) {
+	resp := new(model.Response)
 	c.sling.New().Post("api/v1/users/login").BodyJSON(req).Receive(resp, resp)
 	if resp.Code != 200 {
 		return nil, errors.New(resp.Message)
 	}
 
-	var tokenResp util.LoginResponse
+	var tokenResp model.LoginResponse
 	buff, err := json.Marshal(resp.Result)
 	if err != nil {
 		return nil, err
@@ -127,14 +165,14 @@ func (c *client) Login(req util.LoginRequest) (*util.LoginResponse, error) {
 	return &tokenResp, nil
 }
 
-func (c *client) Tokens(req util.LoginRequest) (*util.LoginResponse, error) {
-	resp := new(util.Response)
+func (c *client) Tokens(req model.LoginRequest) (*model.LoginResponse, error) {
+	resp := new(model.Response)
 	c.sling.New().Post("api/v1/tokens").BodyJSON(req).Receive(resp, resp)
 	if resp.Code != 200 {
 		return nil, errors.New(resp.Message)
 	}
 
-	var tokenResp util.LoginResponse
+	var tokenResp model.LoginResponse
 	buff, err := json.Marshal(resp.Result)
 	if err != nil {
 		return nil, err
@@ -147,24 +185,24 @@ func (c *client) Tokens(req util.LoginRequest) (*util.LoginResponse, error) {
 	return &tokenResp, nil
 }
 
-func (c *client) Logout(req util.LoginRequest) (*util.LoginResponse, error) {
-	resp := new(util.Response)
-	c.sling.New().Post("api/v1/logout").BodyJSON(req).Receive(resp, resp)
-	if resp.Code != 200 {
-		return nil, errors.New(resp.Message)
-	}
-	return resp.Result.(*util.LoginResponse), nil
-}
+//func (c *client) Logout(req model.LoginRequest) (*model.LoginResponse, error) {
+//	resp := new(model.Response)
+//	c.sling.New().Post("api/v1/logout").BodyJSON(req).Receive(resp, resp)
+//	if resp.Code != 200 {
+//		return nil, errors.New(resp.Message)
+//	}
+//	return resp.Result.(*model.LoginResponse), nil
+//}
 
-func (c *client) Init(appId string) (*util.InitResponse, error) {
-	resp := new(util.Response)
+func (c *client) Init(appId string) (*model.InitResponse, error) {
+	resp := new(model.Response)
 	//First, read the config.json to get username and password to get token
-	info, err := util.GetLocalInfo()
+	info, err := util.GetLocalUserInfo()
 	if err != nil {
 		return nil, err
 	}
 
-	loginRequest := util.LoginRequest{
+	loginRequest := model.LoginRequest{
 		Username: info.Username,
 		Password: info.Password,
 	}
@@ -180,7 +218,7 @@ func (c *client) Init(appId string) (*util.InitResponse, error) {
 
 	c.sling.New().Post("/api/v1/network/init/"+appId).Set("token", tokenResp.Token).Receive(resp, resp)
 
-	var initResp util.InitResponse
+	var initResp model.InitResponse
 	buff, err := json.Marshal(resp.Result)
 	if err != nil {
 		return nil, err
@@ -192,3 +230,16 @@ func (c *client) Init(appId string) (*util.InitResponse, error) {
 
 	return &initResp, nil
 }
+
+//
+//func (c *client) Report() error {
+//	resp := new(util.Response)
+//	info, err := util.GetLocalInfo()
+//
+//	loginRequest := util.LoginRequest{
+//		Username: info.Username,
+//		Password: info.Password,
+//	}
+//
+//	err = util.UCTL.SetUserId(info.UserId)
+//}

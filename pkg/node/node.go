@@ -1,3 +1,17 @@
+// Copyright 2023 Tiptopsoft, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package node
 
 import (
@@ -6,15 +20,15 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/topcloudz/fvpn/pkg/log"
-	"github.com/topcloudz/fvpn/pkg/nets"
-	"github.com/topcloudz/fvpn/pkg/packet"
-	"github.com/topcloudz/fvpn/pkg/packet/register"
-	"github.com/topcloudz/fvpn/pkg/security"
-	"github.com/topcloudz/fvpn/pkg/tun"
-	"github.com/topcloudz/fvpn/pkg/util"
+	"github.com/tiptopsoft/fvpn/pkg/http"
+	"github.com/tiptopsoft/fvpn/pkg/log"
+	"github.com/tiptopsoft/fvpn/pkg/nets"
+	"github.com/tiptopsoft/fvpn/pkg/packet"
+	"github.com/tiptopsoft/fvpn/pkg/packet/register"
+	"github.com/tiptopsoft/fvpn/pkg/security"
+	"github.com/tiptopsoft/fvpn/pkg/tun"
+	"github.com/tiptopsoft/fvpn/pkg/util"
 	"io"
-	"os"
 	"sync"
 	"time"
 )
@@ -27,7 +41,7 @@ var (
 // Node is a dev in any os.
 type Node struct {
 	mode       int
-	cfg        *util.ClientConfig
+	cfg        *util.NodeCfg
 	privateKey security.NoisePrivateKey
 	pubKey     security.NoisePublicKey
 	device     tun.Device
@@ -63,7 +77,7 @@ func (n *Node) PutPktToInbound(pkt *Frame) {
 	n.queue.inBound.c <- pkt
 }
 
-func NewNode(iface tun.Device, bind nets.Bind, cfg *util.ClientConfig) (*Node, error) {
+func NewNode(iface tun.Device, bind nets.Bind, cfg *util.NodeCfg) (*Node, error) {
 	n := &Node{
 		device: iface,
 		net:    struct{ bind nets.Bind }{bind: bind},
@@ -139,7 +153,7 @@ func Start(cfg *util.Config) error {
 	}
 
 	//send http to get cidr
-	client := NewClient(cfg.ClientCfg.ControlUrl())
+	client := http.NewClient(cfg.NodeCfg.ControlUrl())
 	appId, err := appId()
 	if err != nil {
 		return err
@@ -148,7 +162,7 @@ func Start(cfg *util.Config) error {
 	if err != nil {
 		return err
 	}
-	d, err := NewNode(iface, nets.NewStdBind(), cfg.ClientCfg)
+	d, err := NewNode(iface, nets.NewStdBind(), cfg.NodeCfg)
 	if err != nil {
 		return err
 	}
@@ -164,7 +178,7 @@ func Start(cfg *util.Config) error {
 func (n *Node) up() error {
 	defer n.wg.Done()
 	port, _, err := n.net.bind.Open(0)
-	logger.Debugf("fvpn start at: %d", port)
+	logger.Infof("fvpn started at: %d", port)
 	if err != nil {
 		return err
 	}
@@ -230,18 +244,17 @@ func (n *Node) ReadFromTun() {
 		if err != nil || peer == nil {
 			if n.cfg.EnableRelay() {
 				frame.Peer = n.relay
+			} else {
+				//drop
+				continue
 			}
 		} else {
-			if peer.p2p {
+			if !peer.p2p {
 				frame.Peer = peer
-			} else if n.cfg.EnableRelay() {
-				frame.Peer = n.relay
-			} else {
-				//drop packets
-				continue
 			}
 		}
 
+		logger.Debugf("frame's peer is :%v", frame.Peer.endpoint.DstToString())
 		frame.SrcIP = n.device.Addr()
 		frame.DstIP = ipHeader.DstIP
 
@@ -330,6 +343,7 @@ func (n *Node) sendListPackets() {
 	copy(frame.Packet, hpkt)
 	frame.Size = len(hpkt)
 	frame.UserId = h.UserId
+	frame.FrameType = util.MsgTypeQueryPeer
 	n.PutPktToOutbound(frame)
 }
 
@@ -365,30 +379,19 @@ func (n *Node) WriteToDevice() {
 
 // appId is a unique identify for a node
 func appId() (string, error) {
-	local, err := util.NewLocal(os.O_RDWR)
-	//local, err := util.GetLocalConfig()
-	if err != nil {
-		return "", err
-	}
-	l, err := local.ReadFile()
+	l, err := util.GetLocalConfig()
 	if err != nil {
 		return "", err
 	}
 
 	if l.AppId == "" {
-		local.Close()
-		local1, err := util.NewLocal(os.O_RDWR | os.O_CREATE)
-		if err != nil {
-			return "", err
-		}
-		defer local1.Close()
 		var appId [5]byte
 		if _, err := io.ReadFull(rand.Reader, appId[:]); err != nil {
 			return "", errors.New("generate appId failed")
 		}
 
 		l.AppId = hex.EncodeToString(appId[:])
-		err = local1.WriteFile(l)
+		err := util.UpdateLocalConfig(l)
 		if err != nil {
 			return "", err
 		}
@@ -396,15 +399,3 @@ func appId() (string, error) {
 
 	return l.AppId, nil
 }
-
-//func (d *Node) RoutineEncryption(id int) {
-//
-//}
-//
-//func (d *Node) RoutineDescryption(id int) {
-//
-//}
-//
-//func (d *Node) RoutineHandshake(id int) {
-//
-//}

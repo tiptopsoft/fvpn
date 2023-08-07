@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/moby/term"
 	"github.com/spf13/cobra"
-	"github.com/topcloudz/fvpn/pkg/node"
-	"github.com/topcloudz/fvpn/pkg/util"
+	"github.com/tiptopsoft/fvpn/pkg/node"
+	"github.com/tiptopsoft/fvpn/pkg/util"
 	"os"
 )
 
@@ -73,7 +73,7 @@ func runLogin(opts loginOptions) error {
 
 	//check whether has been login TODO
 
-	err = node.Login(opts.Username, opts.Password, config.ClientCfg)
+	err = node.Login(opts.Username, opts.Password, config.NodeCfg)
 	if err != nil {
 		return err
 	}

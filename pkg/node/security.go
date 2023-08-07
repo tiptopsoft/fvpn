@@ -1,10 +1,24 @@
+// Copyright 2023 Tiptopsoft, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package node
 
 import (
 	"context"
 	"fmt"
-	"github.com/topcloudz/fvpn/pkg/packet"
-	"github.com/topcloudz/fvpn/pkg/util"
+	"github.com/tiptopsoft/fvpn/pkg/packet"
+	"github.com/tiptopsoft/fvpn/pkg/util"
 )
 
 func Decode() func(Handler) Handler {
@@ -52,7 +66,7 @@ func Encode() func(Handler) Handler {
 				//}
 
 				peer := frame.GetPeer()
-				logger.Debugf("data before encode: %v", buff)
+				logger.Debugf("peer is :%v, data before encode: %v", peer.GetEndpoint().DstIP(), buff)
 				encoded, err := peer.GetCodec().Encode(buff)
 				if err != nil {
 					return err

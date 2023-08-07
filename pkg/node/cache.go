@@ -1,8 +1,22 @@
+// Copyright 2023 Tiptopsoft, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package node
 
 import (
 	"errors"
-	"github.com/topcloudz/fvpn/pkg/util"
+	"github.com/tiptopsoft/fvpn/pkg/util"
 	"sync"
 )
 
@@ -30,6 +44,7 @@ func NewCache() CacheFunc {
 }
 
 func (c *cache) SetPeer(userId, ip string, peer *Peer) error {
+	logger.Debugf("will cache peer, ip: %v, peer: %v, cipher: %v", ip, peer.GetEndpoint().DstIP(), peer.cipher)
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	peerMap := c.peers[userId]
@@ -39,9 +54,9 @@ func (c *cache) SetPeer(userId, ip string, peer *Peer) error {
 	}
 	peerMap[ip] = peer
 	//print
-	for ip, p := range peerMap {
-		logger.Debugf("========================peer in cache,ip: [%v], peer: [%v]", ip, p.endpoint.DstToString())
-	}
+	//for ip, p := range peerMap {
+	//	logger.Debugf("========================peer in cache,ip: [%v], peer: [%v], cipher: %v ", ip, p.endpoint.DstToString(), p.cipher)
+	//}
 	//every add a peer will print current peers in cache
 	return nil
 }

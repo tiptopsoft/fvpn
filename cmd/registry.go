@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/topcloudz/fvpn/pkg/relay"
-	"github.com/topcloudz/fvpn/pkg/util"
+	"github.com/tiptopsoft/fvpn/pkg/relay"
+	"github.com/tiptopsoft/fvpn/pkg/util"
 )
 
 type RegStarOptions struct {
@@ -37,8 +37,8 @@ func runSuper(opts *RegStarOptions) error {
 		return err
 	}
 	s := relay.RegServer{
-		ServerConfig: config.ServerCfg,
+		RegistryCfg: config.RegistryCfg,
 	}
 
-	return s.Start(config.ServerCfg.Listen)
+	return s.Start(config.RegistryCfg.Listen)
 }

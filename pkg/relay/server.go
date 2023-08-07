@@ -1,14 +1,28 @@
+// Copyright 2023 Tiptopsoft, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package relay
 
 import (
 	"context"
-	"github.com/topcloudz/fvpn/pkg/node"
-	"github.com/topcloudz/fvpn/pkg/security"
-	"github.com/topcloudz/fvpn/pkg/util"
+	"github.com/tiptopsoft/fvpn/pkg/node"
+	"github.com/tiptopsoft/fvpn/pkg/security"
+	"github.com/tiptopsoft/fvpn/pkg/util"
 	"net"
 	"sync"
 
-	"github.com/topcloudz/fvpn/pkg/log"
+	"github.com/tiptopsoft/fvpn/pkg/log"
 )
 
 var (
@@ -17,7 +31,7 @@ var (
 
 // RegServer use as server
 type RegServer struct {
-	*util.ServerConfig
+	*util.RegistryCfg
 	conn         *net.UDPConn
 	cache        node.CacheFunc
 	ws           sync.WaitGroup

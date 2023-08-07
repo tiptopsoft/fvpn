@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/topcloudz/fvpn/pkg/node"
-	"github.com/topcloudz/fvpn/pkg/util"
+	"github.com/tiptopsoft/fvpn/pkg/node"
+	"github.com/tiptopsoft/fvpn/pkg/util"
 )
 
 type upOptions struct {
-	*util.ClientConfig
+	*util.NodeCfg
 	StarConfigFilePath string
 }
 

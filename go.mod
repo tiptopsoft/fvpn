@@ -1,4 +1,4 @@
-module github.com/topcloudz/fvpn
+module github.com/tiptopsoft/fvpn
 
 go 1.20
 

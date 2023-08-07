@@ -1,11 +1,25 @@
+// Copyright 2023 Tiptopsoft, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package node
 
 import (
-	"github.com/topcloudz/fvpn/pkg/nets"
-	"github.com/topcloudz/fvpn/pkg/packet"
-	"github.com/topcloudz/fvpn/pkg/packet/handshake"
-	"github.com/topcloudz/fvpn/pkg/security"
-	"github.com/topcloudz/fvpn/pkg/util"
+	"github.com/tiptopsoft/fvpn/pkg/nets"
+	"github.com/tiptopsoft/fvpn/pkg/packet"
+	"github.com/tiptopsoft/fvpn/pkg/packet/handshake"
+	"github.com/tiptopsoft/fvpn/pkg/security"
+	"github.com/tiptopsoft/fvpn/pkg/util"
 	"go.uber.org/atomic"
 	"net"
 	"sync"
@@ -43,7 +57,7 @@ func (p *Peer) start() {
 	//p.lock.Lock()
 	//defer p.lock.Unlock()
 	if p.index.Load() > 3 {
-		logger.Debugf("peer %v have try too much times", p)
+		logger.Debugf("peer %v have try too much times", p.endpoint.DstToString())
 		return
 	}
 	p.index.Inc()
@@ -116,6 +130,7 @@ func (p *Peer) handshake(dstIP net.IP) {
 	f := NewFrame()
 	copy(f.Packet[:size], buff)
 	f.Size = size
+	f.FrameType = util.HandShakeMsgType
 	logger.Debugf("sending handshake pubkey to: %v, pubKey: %v, remote address: [%v], type: [%v]", dstIP.String(), p.PubKey, p.endpoint.DstToString(), util.GetFrameTypeName(util.HandShakeMsgType))
 	p.PutPktToOutbound(f)
 }
@@ -137,7 +152,7 @@ func (p *Peer) SendPackets() {
 				logger.Error(err)
 				continue
 			}
-			logger.Debugf("node has send %d packets to %s", send, p.endpoint.DstToString())
+			logger.Debugf("node has send %d packets to %s, data type: [%v]", send, p.endpoint.DstToString(), util.GetFrameTypeName(pkt.FrameType))
 		default:
 
 		}
@@ -157,6 +172,7 @@ func (p *Peer) keepalive() {
 	f := NewFrame()
 	copy(f.Packet[:size], buff)
 	f.Size = size
+	f.FrameType = util.KeepaliveMsgType
 
 	p.PutPktToOutbound(f)
 }

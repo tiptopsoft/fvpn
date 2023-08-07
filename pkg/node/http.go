@@ -1,9 +1,24 @@
+// Copyright 2023 Tiptopsoft, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package node
 
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/labstack/echo/v4"
-	"github.com/topcloudz/fvpn/pkg/util"
+	"github.com/tiptopsoft/fvpn/pkg/model"
+	"github.com/tiptopsoft/fvpn/pkg/util"
 	"net/http"
 )
 
@@ -27,45 +42,62 @@ func hello(c echo.Context) error {
 
 func (n *Node) joinNet() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var req util.JoinRequest
+		var req model.JoinRequest
 		err := ctx.Bind(&req)
 
 		if err != nil {
-			ctx.JSON(500, util.HttpError(err.Error()))
+			ctx.JSON(500, model.HttpError(err.Error()))
 			return
 		}
 
 		if req.CIDR != "" {
 			err = n.netCtl.JoinNet(util.UCTL.UserId, req.CIDR)
 			if err != nil {
-				ctx.JSON(500, util.HttpError(err.Error()))
+				ctx.JSON(500, model.HttpError(err.Error()))
 				return
 			}
 		} else {
-			ctx.JSON(500, util.HttpError("cidr is nil"))
+			ctx.JSON(500, model.HttpError("cidr is nil"))
 			return
 		}
 
-		resp := &util.JoinResponse{
+		resp := &model.JoinResponse{
 			IP:   n.device.IPToString(),
 			Name: n.device.Name(),
 		}
 
 		//userId替换
-		ctx.JSON(200, util.HttpOK(resp))
+		ctx.JSON(200, model.HttpOK(resp))
 	}
 }
 
-func leaveNet() func(ctx echo.Context) error {
-	return func(ctx echo.Context) error {
-		return nil
-	}
-}
+func (n *Node) leaveNet() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var req model.JoinRequest
+		err := ctx.Bind(&req)
 
-func checkAuth() echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			return nil
+		if err != nil {
+			ctx.JSON(500, model.HttpError(err.Error()))
+			return
 		}
+
+		if req.CIDR != "" {
+			err = n.netCtl.LeaveNet(util.UCTL.UserId, req.CIDR)
+			if err != nil {
+				ctx.JSON(500, model.HttpError(err.Error()))
+				return
+			}
+		} else {
+			ctx.JSON(500, model.HttpError("cidr is nil"))
+			return
+		}
+
+		//resp := &model.JoinResponse{
+		//	IP:   n.device.IPToString(),
+		//	Name: n.device.Name(),
+		//}
+
+		//userId替换
+		ctx.JSON(200, model.HttpOK(nil))
 	}
 }

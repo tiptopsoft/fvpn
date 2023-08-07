@@ -1,13 +1,23 @@
+// Copyright 2023 Tiptopsoft, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package util
 
 import (
-	"encoding/json"
 	"errors"
-	"github.com/topcloudz/fvpn/pkg/packet"
+	"github.com/tiptopsoft/fvpn/pkg/packet"
 	"net"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 type IPHeader struct {
@@ -36,38 +46,4 @@ func GetPacketHeader(buff []byte) (packet.Header, error) {
 		return packet.Header{}, err
 	}
 	return h, nil
-}
-
-func GetLocalInfo() (info *LocalInfo, err error) {
-	homedir, err := os.UserHomeDir()
-	if err != nil {
-		return nil, err
-	}
-	path := filepath.Join(homedir, ".fvpn/config.json")
-	_, err = os.Stat(path)
-	if os.IsNotExist(err) {
-		return nil, errors.New("please login")
-	}
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-
-	decoder := json.NewDecoder(file)
-
-	var local LocalConfig
-	err = decoder.Decode(&local)
-	if err != nil {
-		return nil, err
-	}
-
-	values := strings.Split(local.Auth, ":")
-	info.Username = values[0]
-	info.Password, err = Base64Decode(values[1])
-	info.UserId = local.UserId
-	if err != nil {
-		return nil, err
-	}
-
-	return info, nil
 }

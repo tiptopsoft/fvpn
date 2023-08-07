@@ -3,13 +3,13 @@ package cmd
 import (
 	"errors"
 	"github.com/spf13/cobra"
-	"github.com/topcloudz/fvpn/pkg/node"
-	"github.com/topcloudz/fvpn/pkg/util"
+	"github.com/tiptopsoft/fvpn/pkg/node"
+	"github.com/tiptopsoft/fvpn/pkg/util"
 )
 
 // Join a networkId will be created tun device. and will be assigned a IP which can be found in our website.
 type joinOptions struct {
-	*util.ClientConfig
+	*util.NodeCfg
 	StarConfigFilePath string
 	addr               string
 }

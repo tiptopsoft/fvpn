@@ -1,6 +1,4 @@
 VERSION ?= latest
-OUT_DIR = ${M}/bin
-BINARY = ${M}
 
 RELEASE_BIN = ${M}-$(VERSION)-bin
 RELEASE_SRC = ${M}-$(VERSION)-src
@@ -16,15 +14,16 @@ GO_TEST = $(GO) test
 GO_LINT = $(GO_PATH)/bin/golangci-lint
 GO_LICENSER = $(GO_PATH)/bin/go-licenser
 GO_BUILD_FLAGS = -v
+PLATFORM = linux
+ARCH = amd64
+
 
 build:
-	GOPROXY=https://goproxy.cn,direct CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/fvpn main.go
-
+	bash ${shell pwd}/hack/build.sh
 build-m1:
-	GOPROXY=https://goproxy.cn,direct go build -o bin/fvpn main.go
+	GOPROXY=https://goproxy.cn,direct go build -v -o bin/fvpn main.go
 
 image: build
-	cd ${shell pwd}/bin/ && docker buildx build  -t registry.cn-hangzhou.aliyuncs.com/fvpn/fvpn:${tags} -f ${shell pwd}/docker/Dockerfile .
-
+	docker build -t registry.cn-hangzhou.aliyuncs.com/fvpn/fvpn:${tags} -f ${shell pwd}/docker/Dockerfile ${shell pwd}/bin/linux/amd64
 image-push: image
 	docker push registry.cn-hangzhou.aliyuncs.com/fvpn/fvpn:${tags}
