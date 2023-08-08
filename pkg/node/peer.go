@@ -29,6 +29,7 @@ import (
 // Peer a destination will have a peer in fvpn, can connect to each other.
 // a RegServer also is a peer
 type Peer struct {
+	id          uint64
 	isRelay     bool
 	index       atomic.Int32
 	st          time.Time
@@ -131,14 +132,14 @@ func (p *Peer) handshake(dstIP net.IP) {
 	copy(f.Packet[:size], buff)
 	f.Size = size
 	f.FrameType = util.HandShakeMsgType
+	f.Peer = p
 	logger.Debugf("sending handshake pubkey to: %v, pubKey: %v, remote address: [%v], type: [%v]", dstIP.String(), p.PubKey, p.endpoint.DstToString(), util.GetFrameTypeName(util.HandShakeMsgType))
 	p.PutPktToOutbound(f)
 }
 
 func (p *Peer) PutPktToOutbound(pkt *Frame) {
-	//pkt.Lock()
-	//defer pkt.Unlock()
 	p.queue.outBound.c <- pkt
+	logger.Debugf("Adding pkt to peer: [%v], data type: [%v]", p.id, util.GetFrameTypeName(pkt.FrameType))
 }
 
 func (p *Peer) SendPackets() {
@@ -152,7 +153,7 @@ func (p *Peer) SendPackets() {
 				logger.Error(err)
 				continue
 			}
-			logger.Debugf("node has send %d packets to %s, data type: [%v]", send, p.endpoint.DstToString(), util.GetFrameTypeName(pkt.FrameType))
+			logger.Debugf("node [%v] has send %d packets to %s, data type: [%v]", p.id, send, p.endpoint.DstToString(), util.GetFrameTypeName(pkt.FrameType))
 		default:
 
 		}
@@ -170,6 +171,7 @@ func (p *Peer) keepalive() {
 	}
 	size := len(buff)
 	f := NewFrame()
+	f.Peer = p
 	copy(f.Packet[:size], buff)
 	f.Size = size
 	f.FrameType = util.KeepaliveMsgType
@@ -194,5 +196,5 @@ func (p *Peer) close() {
 	p.sendCh <- 1
 	p.keepaliveCh <- 1
 	p.status = false
-	logger.Debug("================peer stop signal have send to peer: %v", p)
+	logger.Debug("================peer stop signal have send to peer: %v", p.endpoint.DstToString())
 }

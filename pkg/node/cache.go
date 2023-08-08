@@ -44,7 +44,6 @@ func NewCache() CacheFunc {
 }
 
 func (c *cache) SetPeer(userId, ip string, peer *Peer) error {
-	logger.Debugf("will cache peer, ip: %v, peer: %v, cipher: %v", ip, peer.GetEndpoint().DstIP(), peer.cipher)
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	peerMap := c.peers[userId]

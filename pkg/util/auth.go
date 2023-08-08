@@ -16,13 +16,13 @@ package util
 import "sync"
 
 var (
-	UCTL = user{
+	UCTL = &user{
 		UserId: "123456789abcdef0",
 	}
 )
 
 type UserFunc interface {
-	GetUserId() ([]byte, error)
+	GetUserId() string
 	SetUserId(userId string) error
 	SetUserInfo(username, password string) error
 }
@@ -43,21 +43,21 @@ var (
 	_ UserFunc = (*user)(nil)
 )
 
-func (u *user) GetUserId() ([]byte, error) {
-	return nil, nil
+func (u *user) GetUserId() string {
+	return u.UserId
 }
 
 func (u *user) SetUserId(userId string) error {
 	u.lock.Lock()
 	defer u.lock.Unlock()
-	UCTL.UserId = userId
+	u.UserId = userId
 	return nil
 }
 
 func (u *user) SetUserInfo(username, password string) error {
 	u.lock.Lock()
 	defer u.lock.Unlock()
-	UCTL.Username = username
-	UCTL.Password = password
+	u.Username = username
+	u.Password = password
 	return nil
 }

@@ -45,8 +45,8 @@ func Encode(np HandShakePacket) ([]byte, error) {
 	return b, nil
 }
 
-func Decode(buff []byte) (HandShakePacket, error) {
-	res := NewPacket(util.HandShakeMsgType, util.UCTL.UserId)
+func Decode(msgType uint16, buff []byte) (HandShakePacket, error) {
+	res := NewPacket(msgType, util.UCTL.GetUserId())
 	h, err := packet.Decode(buff)
 	if err != nil {
 		return HandShakePacket{}, errors.New("decode common packet failed")

@@ -40,6 +40,7 @@ var (
 
 // Node is a dev in any os.
 type Node struct {
+	lock       sync.Mutex
 	mode       int
 	cfg        *util.NodeCfg
 	privateKey security.NoisePrivateKey
@@ -104,8 +105,7 @@ func NewNode(iface tun.Device, bind nets.Bind, cfg *util.NodeCfg) (*Node, error)
 }
 
 func (n *Node) initRelay() {
-	n.relay = n.NewPeer(security.NoisePublicKey{})
-	n.relay.node = n
+	n.relay = n.GetPeer(util.UCTL.UserId, n.cfg.RegistryUrl(), security.NoisePublicKey{})
 	n.relay.isRelay = true
 	n.relay.endpoint = nets.NewEndpoint(n.cfg.RegistryUrl())
 	n.relay.start()
@@ -117,8 +117,17 @@ func (n *Node) initRelay() {
 	}
 }
 
-func (n *Node) NewPeer(pk security.NoisePublicKey) *Peer {
+func (n *Node) GetPeer(uid, srcIP string, pk security.NoisePublicKey) *Peer {
+	n.lock.Lock()
+	defer n.lock.Unlock()
+	logger.Debugf("will create peer for userId: %v, ip: %v", uid, srcIP)
+	peer, _ := n.cache.GetPeer(uid, srcIP)
+	if peer != nil {
+		return peer
+	}
+
 	p := new(Peer)
+	p.id = uint64(time.Now().Nanosecond())
 	p.st = time.Now()
 	p.checkCh = make(chan int, 1)
 	p.sendCh = make(chan int, 1)
@@ -127,6 +136,9 @@ func (n *Node) NewPeer(pk security.NoisePublicKey) *Peer {
 	p.queue.outBound = NewOutBoundQueue()
 	p.queue.inBound = NewInBoundQueue()
 	p.node = n
+
+	n.cache.SetPeer(uid, srcIP, p)
+	logger.Debugf("created peer for : %v", srcIP)
 	return p
 }
 
@@ -141,6 +153,7 @@ func (n *Node) nodeRegister() error {
 
 	size := len(buff)
 	f := NewFrame()
+	f.Peer = n.relay
 	copy(f.Packet[:size], buff)
 	n.relay.PutPktToOutbound(f)
 	return nil
@@ -177,17 +190,18 @@ func Start(cfg *util.Config) error {
 
 func (n *Node) up() error {
 	defer n.wg.Done()
-	port, _, err := n.net.bind.Open(0)
+	port, _, err := n.net.bind.Open(6061)
 	logger.Infof("fvpn started at: %d", port)
 	if err != nil {
 		return err
 	}
+	//init first
+	n.initRelay()
 
 	go n.ReadFromUdp()
 	go n.ReadFromTun()
 	go n.WriteToUDP()
 	go n.WriteToDevice()
-	n.initRelay()
 	go func() {
 		timer := time.NewTimer(time.Second * 5)
 		for {
@@ -307,7 +321,13 @@ func (n *Node) ReadFromUdp() {
 			logger.Error(err)
 			continue
 		}
-		logger.Debugf("udp receive %d byte from %s, data type: [%v]", size, remoteAddr.IP, util.GetFrameTypeName(hpkt.Flags))
+		dataType := util.GetFrameTypeName(hpkt.Flags)
+		if dataType == "" {
+			//drop
+			logger.Debugf("got invalid data. size: %d", size)
+			continue
+		}
+		logger.Debugf("udp receive %d byte from %s, data type: [%v]", size, remoteAddr.IP, dataType)
 
 		f.SrcIP = hpkt.SrcIP //192.168.0.1->192.168.0.2 srcIP =1, dstIP =2
 		f.DstIP = hpkt.DstIP
@@ -330,7 +350,6 @@ func (n *Node) ReadFromUdp() {
 
 // sendListPackets send a packet list all nodes in current user
 func (n *Node) sendListPackets() {
-	//
 	h, _ := packet.NewHeader(util.MsgTypeQueryPeer, util.UCTL.UserId)
 	hpkt, err := packet.Encode(h)
 	if err != nil {
@@ -351,10 +370,9 @@ func (n *Node) WriteToUDP() {
 	for {
 		select {
 		case pkt := <-n.queue.outBound.c:
-			//only packet will find peer, other type will send to regServer
 			ip := pkt.DstIP
-			logger.Debugf("userId: %v, dst cidr: %v", pkt.UidString(), ip)
-			pkt.Peer.queue.outBound.c <- pkt
+			pkt.Peer.PutPktToOutbound(pkt)
+			logger.Debugf("userId: %v, dst cidr: %v, dst peer: %v, data type: [%v]", pkt.UidString(), ip, pkt.Peer.endpoint.DstToString(), util.GetFrameTypeName(pkt.FrameType))
 		default:
 
 		}
