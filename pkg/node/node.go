@@ -264,6 +264,8 @@ func (n *Node) ReadFromTun() {
 			}
 		} else {
 			if !peer.p2p {
+				frame.Peer = n.relay
+			} else {
 				frame.Peer = peer
 			}
 		}
