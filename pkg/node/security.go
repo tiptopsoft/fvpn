@@ -60,7 +60,7 @@ func Encode() func(Handler) Handler {
 				buff := frame.Packet[offset:frame.Size]
 				//cache := ctx.Value("cache").(CacheFunc)
 
-				//peer, err := cache.GetPeer(UCTL.UserId, frame.DstIP.String())
+				//peer, err := cache.NewPeer(UCTL.UserId, frame.DstIP.String())
 				//if err != nil  {
 				//	return errors.New("peer not found, if you want to use relay, please to put relay true")
 				//}

@@ -105,7 +105,7 @@ func NewNode(iface tun.Device, bind nets.Bind, cfg *util.NodeCfg) (*Node, error)
 }
 
 func (n *Node) initRelay() {
-	n.relay = n.GetPeer(util.UCTL.UserId, n.cfg.RegistryUrl(), security.NoisePublicKey{})
+	n.relay = NewPeer(util.UCTL.UserId, n.cfg.RegistryUrl(), security.NoisePublicKey{}, n.cache, n)
 	n.relay.isRelay = true
 	n.relay.endpoint = nets.NewEndpoint(n.cfg.RegistryUrl())
 	n.relay.start()
@@ -117,30 +117,30 @@ func (n *Node) initRelay() {
 	}
 }
 
-func (n *Node) GetPeer(uid, srcIP string, pk security.NoisePublicKey) *Peer {
-	n.lock.Lock()
-	defer n.lock.Unlock()
-	logger.Debugf("will create peer for userId: %v, ip: %v", uid, srcIP)
-	peer, _ := n.cache.GetPeer(uid, srcIP)
-	if peer != nil {
-		return peer
-	}
-
-	p := new(Peer)
-	p.id = uint64(time.Now().Nanosecond())
-	p.st = time.Now()
-	p.checkCh = make(chan int, 1)
-	p.sendCh = make(chan int, 1)
-	p.keepaliveCh = make(chan int, 1)
-	p.PubKey = pk
-	p.queue.outBound = NewOutBoundQueue()
-	p.queue.inBound = NewInBoundQueue()
-	p.node = n
-
-	n.cache.SetPeer(uid, srcIP, p)
-	logger.Debugf("created peer for : %v", srcIP)
-	return p
-}
+//func (n *Node) NewPeer(uid, srcIP string, pk security.NoisePublicKey) *Peer {
+//	n.lock.Lock()
+//	defer n.lock.Unlock()
+//	logger.Debugf("will create peer for userId: %v, ip: %v", uid, srcIP)
+//	peer, _ := n.cache.GetPeer(uid, srcIP)
+//	if peer != nil {
+//		return peer
+//	}
+//
+//	p := new(Peer)
+//	p.id = uint64(time.Now().Nanosecond())
+//	p.st = time.Now()
+//	p.checkCh = make(chan int, 1)
+//	p.sendCh = make(chan int, 1)
+//	p.keepaliveCh = make(chan int, 1)
+//	p.PubKey = pk
+//	p.queue.outBound = NewOutBoundQueue()
+//	p.queue.inBound = NewInBoundQueue()
+//	p.node = n
+//
+//	n.cache.SetPeer(uid, srcIP, p)
+//	logger.Debugf("created peer for : %v", srcIP)
+//	return p
+//}
 
 func (n *Node) nodeRegister() error {
 	rPkt := register.NewPacket()

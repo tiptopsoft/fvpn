@@ -90,8 +90,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 				return err
 			}
 
-			p := n.GetPeer(util.UCTL.UserId, frame.SrcIP.String(), headerPkt.PubKey)
-			p.node = n
+			p := NewPeer(util.UCTL.UserId, frame.SrcIP.String(), headerPkt.PubKey, n.cache, n)
 			ep := nets.NewEndpoint(frame.RemoteAddr.String())
 			p.SetEndpoint(ep)
 			n.cache.SetPeer(frame.UidString(), frame.SrcIP.String(), p)
@@ -140,7 +139,7 @@ func CachePeers(privateKey security.NoisePrivateKey, frame *Frame, cache Interfa
 	srcIP := frame.SrcIP.String()
 	logger.Debugf("got remote peer: %v, pubKey: %v", srcIP, hpkt.PubKey)
 
-	p := node.GetPeer(uid, srcIP, hpkt.PubKey)
+	p := NewPeer(uid, srcIP, hpkt.PubKey, cache, node)
 	p.node = node
 	ep := nets.NewEndpoint(frame.RemoteAddr.String())
 	p.SetEndpoint(ep)
@@ -165,7 +164,7 @@ func (n *Node) handleQueryPeers(frame *Frame) {
 		}
 
 		addr := info.RemoteAddr
-		p := n.GetPeer(frame.UidString(), ip.String(), security.NoisePublicKey{}) //now has no pubKey
+		p := NewPeer(frame.UidString(), ip.String(), security.NoisePublicKey{}, n.cache, n) //now has no pubKey
 		if p.endpoint == nil {
 			p.SetEndpoint(nets.NewEndpoint(addr.String()))
 		} else if p.endpoint.DstToString() != addr.String() {

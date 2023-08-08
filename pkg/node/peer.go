@@ -117,6 +117,31 @@ func (p *Peer) GetEndpoint() nets.Endpoint {
 	return p.endpoint
 }
 
+func NewPeer(uid, srcIP string, pk security.NoisePublicKey, cache Interface, node *Node) *Peer {
+	logger.Debugf("will create peer for userId: %v, ip: %v", uid, srcIP)
+	peer, _ := cache.GetPeer(uid, srcIP)
+	if peer != nil {
+		return peer
+	}
+
+	p := new(Peer)
+	p.id = uint64(time.Now().Nanosecond())
+	p.st = time.Now()
+	p.checkCh = make(chan int, 1)
+	p.sendCh = make(chan int, 1)
+	p.keepaliveCh = make(chan int, 1)
+	p.PubKey = pk
+	p.queue.outBound = NewOutBoundQueue()
+	p.queue.inBound = NewInBoundQueue()
+	if node != nil {
+		p.node = node
+	}
+
+	cache.SetPeer(uid, srcIP, p)
+	logger.Debugf("created peer for : %v", srcIP)
+	return p
+}
+
 func (p *Peer) handshake(dstIP net.IP) {
 	hpkt := handshake.NewPacket(util.HandShakeMsgType, util.UCTL.UserId)
 	hpkt.Header.SrcIP = p.node.device.Addr()
