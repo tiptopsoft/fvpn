@@ -33,7 +33,7 @@ var (
 type RegServer struct {
 	*util.RegistryCfg
 	conn         *net.UDPConn
-	cache        node.CacheFunc
+	cache        node.Interface
 	ws           sync.WaitGroup
 	readHandler  node.Handler
 	writeHandler node.Handler
@@ -51,20 +51,20 @@ type RegServer struct {
 	appIds map[string]string
 }
 
-func (r *RegServer) Start(address string) error {
+func (r *RegServer) Start() error {
 	var err error
 	r.queue.outBound = node.NewOutBoundQueue()
 	r.queue.inBound = node.NewInBoundQueue()
 	if r.key.privateKey, err = security.NewPrivateKey(); err != nil {
 		return err
 	}
-	if err = r.start(address); err != nil {
+	if err = r.start(r.RegistryCfg.Listen); err != nil {
 		return err
 	}
 
 	r.readHandler = node.WithMiddlewares(r.serverUdpHandler(), node.Decode())
 	r.writeHandler = node.WithMiddlewares(r.writeUdpHandler(), node.Encode())
-	r.cache = node.NewCache()
+	r.cache = node.NewCache(r.RegistryCfg.Driver)
 	r.ws.Wait()
 	return nil
 }

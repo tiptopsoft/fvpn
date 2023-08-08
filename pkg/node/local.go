@@ -20,30 +20,24 @@ import (
 	"sync"
 )
 
-type CacheFunc interface {
-	SetPeer(userId, ip string, peer *Peer) error
-	GetPeer(userId, ip string) (*Peer, error)
-	ListPeers(userId string) PeerMap
-}
-
-type cache struct {
+type local struct {
 	lock  sync.Mutex
 	peers map[string]PeerMap //userId: map[cidr]*Peer
 }
 
-var (
-	_ CacheFunc = (*cache)(nil)
-)
-
 type PeerMap map[string]*Peer
 
-func NewCache() CacheFunc {
-	return &cache{
+func newLocal() Interface {
+	return &local{
 		peers: make(map[string]PeerMap, 1),
 	}
 }
 
-func (c *cache) SetPeer(userId, ip string, peer *Peer) error {
+var (
+	_ Interface = (*local)(nil)
+)
+
+func (c *local) SetPeer(userId, ip string, peer *Peer) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	peerMap := c.peers[userId]
@@ -60,7 +54,7 @@ func (c *cache) SetPeer(userId, ip string, peer *Peer) error {
 	return nil
 }
 
-func (c *cache) GetPeer(userId, ip string) (*Peer, error) {
+func (c *local) GetPeer(userId, ip string) (*Peer, error) {
 	if userId == "" {
 		userId = util.UCTL.UserId
 	}
@@ -78,6 +72,6 @@ func (c *cache) GetPeer(userId, ip string) (*Peer, error) {
 	return peer, nil
 }
 
-func (c *cache) ListPeers(userId string) PeerMap {
+func (c *local) ListPeers(userId string) PeerMap {
 	return c.peers[userId]
 }

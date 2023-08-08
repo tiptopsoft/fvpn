@@ -40,5 +40,5 @@ func runSuper(opts *RegStarOptions) error {
 		RegistryCfg: config.RegistryCfg,
 	}
 
-	return s.Start(config.RegistryCfg.Listen)
+	return s.Start()
 }

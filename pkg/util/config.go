@@ -51,6 +51,7 @@ type NodeCfg struct {
 	Auth    Auth    `mapstructure:"auth"`
 	Relay   Relay   `mapstructure:"relay"`
 	Log     LogCfg  `mapstructure:"log"`
+	Driver  string  `mapstructure:"driver"`
 }
 
 type LogCfg struct {
@@ -113,6 +114,7 @@ type RegistryCfg struct {
 	Listen     string `mapstructure:"Listen"`
 	HttpListen string `mapstructure:"HttpListen"`
 	Redis      Redis  `json:redis`
+	Driver     string `mapstructure:"driver"`
 }
 
 func InitConfig() (config *Config, err error) {

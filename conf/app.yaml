@@ -1,14 +1,14 @@
 node:
   listen: :3000
   #  server: 127.0.0.1:4000
-  registry: 127.0.0.1:4000
-#  offset: 1
-#  relay:
-#    enable: true
-#  encrypt:
-#    enable: true
-#  auth:
-#    enable: true
+  registry: tiptopsoft.cn
+  #  offset: 1
+  #  relay:
+  #    enable: true
+  #  encrypt:
+  #    enable: true
+  #  auth:
+  #    enable: true
   log:
     debug: true
 

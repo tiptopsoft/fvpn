@@ -130,7 +130,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 	}
 }
 
-func CachePeers(privateKey security.NoisePrivateKey, frame *Frame, cache CacheFunc, node *Node) (*Peer, error) {
+func CachePeers(privateKey security.NoisePrivateKey, frame *Frame, cache Interface, node *Node) (*Peer, error) {
 	hpkt, err := handshake.Decode(util.HandShakeMsgTypeAck, frame.Buff)
 	if err != nil {
 		logger.Errorf("invalid handshake packet: %v", err)

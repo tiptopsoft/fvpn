@@ -67,7 +67,7 @@ type Node struct {
 	relay      *Peer
 	wg         sync.WaitGroup
 	userId     [8]byte
-	cache      CacheFunc
+	cache      Interface
 }
 
 func (n *Node) PutPktToOutbound(pkt *Frame) {
@@ -82,7 +82,7 @@ func NewNode(iface tun.Device, bind nets.Bind, cfg *util.NodeCfg) (*Node, error)
 	n := &Node{
 		device: iface,
 		net:    struct{ bind nets.Bind }{bind: bind},
-		cache:  NewCache(),
+		cache:  NewCache(cfg.Driver),
 		mode:   1,
 		cfg:    cfg,
 	}
