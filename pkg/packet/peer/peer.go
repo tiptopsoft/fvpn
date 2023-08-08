@@ -37,7 +37,7 @@ type PeerPacket struct {
 }
 
 func NewPeerPacket(userId string) PeerPacket {
-	h, _ := packet.NewHeader(util.MsgTypeQueryPeer, util.UCTL.UserId)
+	h, _ := packet.NewHeader(util.MsgTypeQueryPeer, userId)
 	return PeerPacket{
 		Header: h,
 		Peers:  nil,
