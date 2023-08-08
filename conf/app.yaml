@@ -1,7 +1,7 @@
 node:
   listen: :3000
   #  server: 127.0.0.1:4000
-  registry: tiptopsoft.cn
+  registry: 127.0.0.1:4000
 #  offset: 1
 #  relay:
 #    enable: true

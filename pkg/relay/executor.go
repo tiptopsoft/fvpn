@@ -94,7 +94,7 @@ func (r *RegServer) serverUdpHandler() node.HandlerFunc {
 			r.PutPktToOutbound(frame)
 		case util.MsgTypeQueryPeer:
 			peers := r.cache.ListPeers(frame.UidString())
-			peerAck := peer.NewPeerPacket()
+			peerAck := peer.NewPeerPacket(frame.UidString())
 
 			for ip, p := range peers {
 				info := peer.PeerInfo{
@@ -113,7 +113,8 @@ func (r *RegServer) serverUdpHandler() node.HandlerFunc {
 			newFrame.Size = len(buff)
 			r.PutPktToOutbound(newFrame)
 		case util.HandShakeMsgType:
-			if _, err := node.CachePeerToLocal(r.key.privateKey, frame, r.cache, nil); err != nil {
+			n := new(node.Node)
+			if _, err := node.CachePeers(r.key.privateKey, frame, r.cache, n); err != nil {
 				return err
 			}
 			//build handshake resp
