@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/tiptopsoft/fvpn/pkg/node"
+	"github.com/tiptopsoft/fvpn/pkg/device"
 	"github.com/tiptopsoft/fvpn/pkg/util"
 )
 
@@ -41,5 +41,5 @@ func runNode(opts *upOptions) error {
 		return err
 	}
 
-	return node.Start(config)
+	return device.Start(config)
 }

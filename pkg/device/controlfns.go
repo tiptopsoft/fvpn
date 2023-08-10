@@ -12,25 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package node
+package device
 
 import (
-	"fmt"
-	"testing"
+	"golang.org/x/sys/unix"
+	"net"
+	"syscall"
 )
 
-func TestNewFrame(t *testing.T) {
-	f := NewFrame()
-	s := "abc"
-	buff := []byte(s)
-	size := len(buff)
-	copy(f.Packet, buff)
+const socketBufferSize = 7 << 20
 
-	fmt.Println("packet: ", f.Packet)
+func listenConfig() *net.ListenConfig {
+	return &net.ListenConfig{
+		Control: func(network, address string, c syscall.RawConn) error {
 
-	b := "cde"
-	buff1 := []byte(b)
-
-	copy(f.Packet[size:], buff1)
-	fmt.Println("packet1: ", f.Packet)
+			return c.Control(func(fd uintptr) {
+				// Set up to *mem_max
+				_ = unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_RCVBUF, socketBufferSize)
+				_ = unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_SNDBUF, socketBufferSize)
+			})
+		},
+	}
 }

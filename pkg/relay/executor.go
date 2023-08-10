@@ -17,7 +17,7 @@ package relay
 import (
 	"context"
 	"fmt"
-	"github.com/tiptopsoft/fvpn/pkg/node"
+	"github.com/tiptopsoft/fvpn/pkg/device"
 	"github.com/tiptopsoft/fvpn/pkg/packet"
 	"github.com/tiptopsoft/fvpn/pkg/packet/handshake"
 	"github.com/tiptopsoft/fvpn/pkg/packet/peer"
@@ -30,7 +30,7 @@ func (r *RegServer) ReadFromUdp() {
 	for {
 		ctx := context.Background()
 		ctx = context.WithValue(ctx, "cache", r.cache)
-		frame := node.NewFrame()
+		frame := device.NewFrame()
 		frame.Ctx = ctx
 		n, addr, err := r.conn.ReadFromUDP(frame.Buff[:])
 		if err != nil || n < 0 {
@@ -57,8 +57,8 @@ func (r *RegServer) ReadFromUdp() {
 	}
 }
 
-func (r *RegServer) writeUdpHandler() node.HandlerFunc {
-	return func(ctx context.Context, pkt *node.Frame) error {
+func (r *RegServer) writeUdpHandler() device.HandlerFunc {
+	return func(ctx context.Context, pkt *device.Frame) error {
 		n, err := r.conn.WriteToUDP(pkt.Packet[:pkt.Size], pkt.RemoteAddr)
 		if err != nil {
 			return err
@@ -69,8 +69,8 @@ func (r *RegServer) writeUdpHandler() node.HandlerFunc {
 }
 
 // serverUdpHandler  core self handler
-func (r *RegServer) serverUdpHandler() node.HandlerFunc {
-	return func(ctx context.Context, frame *node.Frame) error {
+func (r *RegServer) serverUdpHandler() device.HandlerFunc {
+	return func(ctx context.Context, frame *device.Frame) error {
 		logger.Infof("server got packet size:%d, data type: [%v]", frame.Size, util.GetFrameTypeName(util.MsgTypePacket))
 		switch frame.FrameType {
 		case util.MsgTypeRegisterSuper:
@@ -104,7 +104,7 @@ func (r *RegServer) serverUdpHandler() node.HandlerFunc {
 			}
 			buff, _ := peer.Encode(peerAck)
 
-			newFrame := node.NewFrame()
+			newFrame := device.NewFrame()
 			copy(newFrame.Packet, buff)
 			newFrame.UserId = frame.UserId
 			newFrame.RemoteAddr = frame.RemoteAddr
@@ -112,7 +112,7 @@ func (r *RegServer) serverUdpHandler() node.HandlerFunc {
 			newFrame.Size = len(buff)
 			r.PutPktToOutbound(newFrame)
 		case util.HandShakeMsgType:
-			if _, err := node.CachePeers(r.key.privateKey, frame, r.cache, 2, nil, nil); err != nil {
+			if _, err := device.CachePeers(r.key.privateKey, frame, r.cache, 2, nil, nil); err != nil {
 				return err
 			}
 			//build handshake resp
@@ -125,7 +125,7 @@ func (r *RegServer) serverUdpHandler() node.HandlerFunc {
 				return err
 			}
 
-			newFrame := node.NewFrame()
+			newFrame := device.NewFrame()
 			newFrame.Size = len(buff)
 			newFrame.RemoteAddr = frame.RemoteAddr
 			copy(newFrame.Packet[:newFrame.Size], buff)
@@ -136,9 +136,9 @@ func (r *RegServer) serverUdpHandler() node.HandlerFunc {
 	}
 }
 
-func (r *RegServer) register(frame *node.Frame) (err error) {
-	p := new(node.Peer)
-	ep := node.NewEndpoint(frame.RemoteAddr.String())
+func (r *RegServer) register(frame *device.Frame) (err error) {
+	p := new(device.Peer)
+	ep := device.NewEndpoint(frame.RemoteAddr.String())
 	//ep.SetSrcIP(frame.SrcIP)
 	p.SetEndpoint(ep)
 	err = r.cache.SetPeer(frame.UidString(), frame.SrcIP.String(), p)

@@ -49,26 +49,7 @@ func init() {
 	}
 
 	logger = zap.New(core)
-	//if err != nil {
-	//	logger, err = zap.NewProduction()
-	//}
-	//
-	//if config.NodeCfg.Log.EnableDebug {
-	//	logger, err = zap.NewDevelopment()
-	//} else {
-	//	logger, err = zap.NewProduction()
-	//}
-	//
-	//if err != nil {
-	//	log.Println(err)
-	//}
-	//
-	//if err != nil {
-	//	log.Println(err)
-	//}
-	//
 	defer logger.Sync()
-	//zapLogger = logger.Sugar()
 	zaplogger = logger.Sugar()
 }
 

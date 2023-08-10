@@ -17,7 +17,6 @@ package security
 import (
 	"crypto/rand"
 	"fmt"
-	"github.com/tiptopsoft/fvpn/pkg/node"
 	"github.com/tiptopsoft/fvpn/pkg/packet"
 	"github.com/tiptopsoft/fvpn/pkg/util"
 	"golang.org/x/crypto/curve25519"
@@ -62,7 +61,7 @@ func TestCurve(t *testing.T) {
 
 	s := "hello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworld"
 	sBuff := []byte(s)
-	frame := node.NewFrame()
+	frame := device.NewFrame()
 	h, _ := packet.NewHeader(util.MsgTypePacket, "123456")
 	headerBuff, _ := packet.Encode(h)
 	copy(frame.Packet, headerBuff)

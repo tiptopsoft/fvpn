@@ -12,32 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package node
+package device
 
 import (
 	"fmt"
-	"github.com/tiptopsoft/fvpn/pkg/util"
-	"net"
+	"testing"
 )
 
-func (r *router) AddRouter(cidr string) error {
-	//first remove
-	if err := r.RemoveRouter(cidr); err != nil {
-		return err
-	}
-	return r.action(cidr, "add")
-}
+func TestNewFrame(t *testing.T) {
+	f := NewFrame()
+	s := "abc"
+	buff := []byte(s)
+	size := len(buff)
+	copy(f.Packet, buff)
 
-func (r *router) RemoveRouter(cidr string) error {
-	return r.action(cidr, "delete")
-}
+	fmt.Println("packet: ", f.Packet)
 
-func (r *router) action(cidr, action string) error {
-	_, ipNet, err := net.ParseCIDR(cidr)
-	if err != nil {
-		return err
-	}
-	rule := fmt.Sprintf("route %s -net %v dev %s", action, ipNet, r.name)
-	//example: route add -net 5.244.24.0/24 dev fvpn0
-	return util.ExecCommand("/bin/sh", "-c", rule)
+	b := "cde"
+	buff1 := []byte(b)
+
+	copy(f.Packet[size:], buff1)
+	fmt.Println("packet1: ", f.Packet)
 }

@@ -12,23 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package node
+package device
 
 import (
 	"fmt"
-	"github.com/tiptopsoft/fvpn/pkg/util"
+	"net/http"
+	"testing"
 )
 
-func (r *router) AddRouter(cidr string) error {
-	return r.action(cidr, "add")
-}
+func TestNode_RunJoinNetwork(t *testing.T) {
 
-func (r *router) RemoveRouter(cidr string) error {
-	return r.action(cidr, "delete")
-}
+	//c04d6b84fd4fc978
+	//node := new(Peer)
+	//err := node.RunJoinNetwork("c04d6b84fd4fc978")
+	//if err != nil {
+	//	t.Fail()
+	//}
 
-func (r *router) action(cidr, action string) error {
-	//example: sudo route -nv add -net 192.168.10.1 -netmask 255.255.255.0 -interface en0
-	rule := fmt.Sprintf("route -nv %s -net %s -interface %s", action, cidr, r.name)
-	return util.ExecCommand("/bin/sh", "-c", rule)
+	destUrl := fmt.Sprintf("%s/api/v1/users/user/%s/network/%s/join", "", "1", "dfc82f28aa6dcebc")
+	resp, err := http.Post(destUrl, "application/json", nil)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(resp)
 }

@@ -16,7 +16,7 @@ package relay
 
 import (
 	"context"
-	"github.com/tiptopsoft/fvpn/pkg/node"
+	"github.com/tiptopsoft/fvpn/pkg/device"
 	"github.com/tiptopsoft/fvpn/pkg/security"
 	"github.com/tiptopsoft/fvpn/pkg/util"
 	"net"
@@ -33,13 +33,13 @@ var (
 type RegServer struct {
 	*util.RegistryCfg
 	conn         *net.UDPConn
-	cache        node.Interface
+	cache        device.Interface
 	ws           sync.WaitGroup
-	readHandler  node.Handler
-	writeHandler node.Handler
+	readHandler  device.Handler
+	writeHandler device.Handler
 	queue        struct {
-		outBound *node.OutBoundQueue
-		inBound  *node.InBoundQueue
+		outBound *device.OutBoundQueue
+		inBound  *device.InBoundQueue
 	}
 
 	key struct {
@@ -53,8 +53,8 @@ type RegServer struct {
 
 func (r *RegServer) Start() error {
 	var err error
-	r.queue.outBound = node.NewOutBoundQueue()
-	r.queue.inBound = node.NewInBoundQueue()
+	r.queue.outBound = device.NewOutBoundQueue()
+	r.queue.inBound = device.NewInBoundQueue()
 	if r.key.privateKey, err = security.NewPrivateKey(); err != nil {
 		return err
 	}
@@ -62,9 +62,9 @@ func (r *RegServer) Start() error {
 		return err
 	}
 
-	r.readHandler = node.WithMiddlewares(r.serverUdpHandler(), node.Decode())
-	r.writeHandler = node.WithMiddlewares(r.writeUdpHandler(), node.Encode())
-	r.cache = node.NewCache(r.RegistryCfg.Driver)
+	r.readHandler = device.WithMiddlewares(r.serverUdpHandler(), device.Decode())
+	r.writeHandler = device.WithMiddlewares(r.writeUdpHandler(), device.Encode())
+	r.cache = device.NewCache(r.RegistryCfg.Driver)
 	r.ws.Wait()
 	return nil
 }
@@ -90,7 +90,7 @@ func (r *RegServer) start(address string) error {
 	return nil
 }
 
-func (r *RegServer) PutPktToOutbound(frame *node.Frame) {
+func (r *RegServer) PutPktToOutbound(frame *device.Frame) {
 	r.queue.outBound.PutPktToOutbound(frame)
 }
 
@@ -98,7 +98,7 @@ func (r *RegServer) PutPktToOutbound(frame *node.Frame) {
 //	return r.queue.outBound.GetPktFromOutbound()
 //}
 
-func (r *RegServer) PutPktToInbound(frame *node.Frame) {
+func (r *RegServer) PutPktToInbound(frame *device.Frame) {
 	r.queue.inBound.PutPktToInbound(frame)
 }
 
@@ -116,7 +116,7 @@ func (r *RegServer) RoutineInBound(id int) {
 	}
 }
 
-func (r *RegServer) handleInPackets(pkt *node.Frame, id int) {
+func (r *RegServer) handleInPackets(pkt *device.Frame, id int) {
 	//pkt.Lock()
 	defer func() {
 		logger.Debugf("handing in packet success in %d routine finished", id)
@@ -141,7 +141,7 @@ func (r *RegServer) RoutineOutBound(id int) {
 	}
 }
 
-func (r *RegServer) handleOutPackets(ctx context.Context, pkt *node.Frame, id int) {
+func (r *RegServer) handleOutPackets(ctx context.Context, pkt *device.Frame, id int) {
 	//pkt.Lock()
 	defer func() {
 		logger.Debugf("handing out packet success in %d routine finished", id)

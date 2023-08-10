@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
-	"github.com/tiptopsoft/fvpn/pkg/node"
+	"github.com/tiptopsoft/fvpn/pkg/device"
 	"github.com/tiptopsoft/fvpn/pkg/util"
 )
 
@@ -46,7 +46,7 @@ func runJoin(args []string) error {
 	if err != nil {
 		return err
 	}
-	if err := node.RunJoinNetwork(cfg, args[0]); err != nil {
+	if err := device.RunJoinNetwork(cfg, args[0]); err != nil {
 		return err
 	}
 
