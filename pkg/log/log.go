@@ -17,37 +17,61 @@ package log
 import (
 	"github.com/tiptopsoft/fvpn/pkg/util"
 	"go.uber.org/zap"
-	"log"
+	"go.uber.org/zap/zapcore"
+	"os"
 )
 
-var zapLogger *zap.SugaredLogger
+var zaplogger *zap.SugaredLogger
 
 func init() {
 	var logger *zap.Logger
-	//var local *util.LocalConfig
 	config, err := util.InitConfig()
 	if err != nil {
-		logger, err = zap.NewProduction()
+		panic(err)
 	}
 
+	encoderConfig := zap.NewProductionEncoderConfig()
+	// 设置日志记录中时间的格式
+	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	// 日志Encoder 还是JSONEncoder，把日志行格式化成JSON格式的
+	encoder := zapcore.NewConsoleEncoder(encoderConfig)
+	var core zapcore.Core
 	if config.NodeCfg.Log.EnableDebug {
-		logger, err = zap.NewDevelopment()
+		core = zapcore.NewTee(
+			// 同时向控制台和文件写日志， 生产环境记得把控制台写入去掉，日志记录的基本是Debug 及以上，生产环境记得改成Info
+			zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), zapcore.DebugLevel),
+		)
 	} else {
-		logger, err = zap.NewProduction()
+		core = zapcore.NewTee(
+			// 同时向控制台和文件写日志， 生产环境记得把控制台写入去掉，日志记录的基本是Debug 及以上，生产环境记得改成Info
+			zapcore.NewCore(encoder, zapcore.AddSync(os.Stdout), zapcore.InfoLevel),
+		)
 	}
 
-	if err != nil {
-		log.Println(err)
-	}
-
-	if err != nil {
-		log.Println(err)
-	}
-
+	logger = zap.New(core)
+	//if err != nil {
+	//	logger, err = zap.NewProduction()
+	//}
+	//
+	//if config.NodeCfg.Log.EnableDebug {
+	//	logger, err = zap.NewDevelopment()
+	//} else {
+	//	logger, err = zap.NewProduction()
+	//}
+	//
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	//
+	//if err != nil {
+	//	log.Println(err)
+	//}
+	//
 	defer logger.Sync()
-	zapLogger = logger.Sugar()
+	//zapLogger = logger.Sugar()
+	zaplogger = logger.Sugar()
 }
 
 func Log() *zap.SugaredLogger {
-	return zapLogger
+	return zaplogger
 }
