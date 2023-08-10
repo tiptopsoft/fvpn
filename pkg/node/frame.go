@@ -20,10 +20,12 @@ import (
 	"github.com/tiptopsoft/fvpn/pkg/packet"
 	"net"
 	"sync"
+	"time"
 )
 
 type Frame struct {
 	Ctx context.Context
+	ST  time.Time
 	sync.Mutex
 	Buff       []byte
 	Packet     []byte
@@ -48,6 +50,7 @@ func NewFrame() *Frame {
 		Buff:    make([]byte, packet.FvpnPktBuffSize),
 		Packet:  make([]byte, packet.FvpnPktBuffSize),
 		Encrypt: true,
+		ST:      time.Now(),
 	}
 }
 

@@ -132,7 +132,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 
 func (n *Node) handleQueryPeers(frame *Frame) {
 	peers, _ := peer.Decode(frame.Packet[:])
-	logger.Debugf("got peers from remote: %v", peers.Peers)
+	logger.Debugf("list peers from registry: %v", peers.Peers)
 	for _, info := range peers.Peers {
 		ip := info.IP
 		if ip.String() == n.device.IPToString() {
@@ -144,7 +144,6 @@ func (n *Node) handleQueryPeers(frame *Frame) {
 		if p.GetEndpoint() == nil {
 			p.SetEndpoint(NewEndpoint(addr.String()))
 		}
-		logger.Debugf("print now endpoint: [%v]", p.GetEndpoint().DstToString())
 		err := n.cache.SetPeer(frame.UidString(), ip.String(), p)
 		if err != nil {
 			return

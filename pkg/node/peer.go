@@ -99,7 +99,7 @@ func (p *Peer) Start() {
 	}
 
 	if p.GetStatus() {
-		logger.Debugf("peers [%v] started", p.ip)
+		logger.Debugf("peers [%v] started, use p2p: [%v]", p.ip, p.p2p)
 		return
 	}
 
@@ -197,7 +197,6 @@ func (p *Peer) Handshake(dstIP net.IP) {
 
 func (p *Peer) PutPktToOutbound(pkt *Frame) {
 	p.queue.outBound.c <- pkt
-	logger.Debugf("Adding pkt to peer: [%v], data type: [%v]", p.id, util.GetFrameTypeName(pkt.FrameType))
 }
 
 func (p *Peer) SendPackets() {
@@ -211,7 +210,8 @@ func (p *Peer) SendPackets() {
 				logger.Error(err)
 				continue
 			}
-			logger.Debugf("node [%v] has send %d packets to %s, data type: [%v]", p.id, send, p.GetEndpoint().DstToString(), util.GetFrameTypeName(pkt.FrameType))
+			t := time.Since(pkt.ST)
+			logger.Debugf("node [%v] has send %d packets to %s, data type: [%v], cost: [%v]", p.id, send, p.GetEndpoint().DstToString(), util.GetFrameTypeName(pkt.FrameType), t)
 		default:
 
 		}

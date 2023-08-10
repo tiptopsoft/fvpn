@@ -208,6 +208,7 @@ func (n *Node) ReadFromTun() {
 		frame.UserId = n.userId
 		frame.FrameType = util.MsgTypePacket
 		size, err := n.device.Read(frame.Buff[:])
+		frame.ST = time.Now()
 		if err != nil {
 			logger.Error(err)
 			continue
@@ -344,9 +345,7 @@ func (n *Node) WriteToUDP() {
 	for {
 		select {
 		case pkt := <-n.queue.outBound.c:
-			ip := pkt.DstIP
 			pkt.Peer.PutPktToOutbound(pkt)
-			logger.Debugf("userId: %v, dst cidr: %v, dst peer: %v, data type: [%v]", pkt.UidString(), ip, pkt.Peer.GetEndpoint().DstToString(), util.GetFrameTypeName(pkt.FrameType))
 		default:
 
 		}
@@ -362,7 +361,9 @@ func (n *Node) WriteToDevice() {
 				if err != nil {
 					return
 				}
-				logger.Debugf("node write %d byte to %s", size, n.device.Name())
+
+				t := time.Since(pkt.ST)
+				logger.Debugf("node write %d byte to %s, cost: [%v]", size, n.device.Name(), t)
 			}
 
 		}
