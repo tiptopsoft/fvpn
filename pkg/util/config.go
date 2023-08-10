@@ -131,6 +131,7 @@ func InitConfig() (config *Config, err error) {
 	viper.SetDefault("node.HttpListen", ":6662")
 	viper.SetDefault("node.Registry", "tiptopsoft.cn:4000")
 	viper.SetDefault("node.Relay.Enable", true)
+	viper.SetDefault("node.log.debug", false)
 	viper.SetDefault("node.Udp", "udp4")
 	viper.SetDefault("node.Encrypt.Enable", true)
 	viper.SetDefault("node.Auth.Enable", true)
@@ -144,7 +145,7 @@ func InitConfig() (config *Config, err error) {
 		//} else {
 		//	return nil, errors.New("invalid config")
 		//}
-		return nil, err
+
 	}
 
 	if err = viper.UnmarshalExact(&config); err != nil {

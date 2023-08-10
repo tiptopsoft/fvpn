@@ -24,6 +24,7 @@ var (
 )
 
 func (n *Node) HttpServer() error {
+	gin.SetMode(gin.ReleaseMode)
 	server := gin.Default()
 	server.POST(PREFIX+"join", n.joinNet())
 	server.POST(PREFIX+"leave", n.leaveNet())
