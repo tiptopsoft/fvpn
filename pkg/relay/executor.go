@@ -17,7 +17,6 @@ package relay
 import (
 	"context"
 	"fmt"
-	"github.com/tiptopsoft/fvpn/pkg/nets"
 	"github.com/tiptopsoft/fvpn/pkg/node"
 	"github.com/tiptopsoft/fvpn/pkg/packet"
 	"github.com/tiptopsoft/fvpn/pkg/packet/handshake"
@@ -113,7 +112,7 @@ func (r *RegServer) serverUdpHandler() node.HandlerFunc {
 			newFrame.Size = len(buff)
 			r.PutPktToOutbound(newFrame)
 		case util.HandShakeMsgType:
-			if _, err := node.CachePeers(r.key.privateKey, frame, r.cache, nil); err != nil {
+			if _, err := node.CachePeers(r.key.privateKey, frame, r.cache, 2, nil, nil); err != nil {
 				return err
 			}
 			//build handshake resp
@@ -139,7 +138,7 @@ func (r *RegServer) serverUdpHandler() node.HandlerFunc {
 
 func (r *RegServer) register(frame *node.Frame) (err error) {
 	p := new(node.Peer)
-	ep := nets.NewEndpoint(frame.RemoteAddr.String())
+	ep := node.NewEndpoint(frame.RemoteAddr.String())
 	//ep.SetSrcIP(frame.SrcIP)
 	p.SetEndpoint(ep)
 	err = r.cache.SetPeer(frame.UidString(), frame.SrcIP.String(), p)

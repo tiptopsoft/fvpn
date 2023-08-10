@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package nets
+package node
 
 import (
-	"fmt"
 	"net"
 )
 
@@ -50,8 +49,6 @@ func (s *StdNetBind) Open(port uint16) (uint16, *net.UDPConn, error) {
 	if err != nil {
 		return 0, nil, err
 	}
-
-	fmt.Println(">>>>>>>>>>>>>>>>>>listenAddr", listenAddr)
 
 	s.v4conn = conn
 	s.v6conn = conn

@@ -21,10 +21,37 @@ import (
 	"github.com/tiptopsoft/fvpn/pkg/util"
 )
 
+// AuthCheck Middleware auth handler to check user login, if not, return an error tell user to login first.
+func AuthCheck() func(handler Handler) Handler {
+	return func(next Handler) Handler {
+		return HandlerFunc(func(ctx context.Context, frame *Frame) error {
+			//username, password, err := util.GetUserInfo()
+			//if err != nil {
+			//	return err
+			//}
+			//
+			//client := http.New("http://211.159.225.186:443")
+			//req := new(http.LoginRequest)
+			//req.Username = username
+			//req.Password = password
+			//loginResp, err := client.Login(*req)
+			//if err != nil {
+			//	return errors.New("user should login first")
+			//}
+			//
+			//if loginResp.Token == "" {
+			//	return errors.New("token is nil, please login again")
+			//}
+
+			return next.Handle(ctx, frame)
+		})
+	}
+}
+
 func Decode() func(Handler) Handler {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx context.Context, frame *Frame) error {
-			if frame.FrameType == util.MsgTypePacket {
+			if frame.FrameType == util.MsgTypePacket && frame.Encrypt {
 				offset := packet.HeaderBuffSize
 				buff := frame.Packet[offset:frame.Size]
 				//cache := ctx.Value("cache").(CacheFunc)
@@ -33,7 +60,7 @@ func Decode() func(Handler) Handler {
 					return fmt.Errorf("dst ip: %v peer not found", frame.DstIP.String())
 				}
 
-				logger.Debugf("use src peer: [%v] to decode", peer.endpoint.DstIP().String())
+				logger.Debugf("use src peer: [%v] to decode", peer.GetEndpoint().DstIP().String())
 
 				logger.Debugf("data before decode: %v", buff)
 				decoded, err := peer.GetCodec().Decode(buff)
@@ -55,16 +82,9 @@ func Decode() func(Handler) Handler {
 func Encode() func(Handler) Handler {
 	return func(next Handler) Handler {
 		return HandlerFunc(func(ctx context.Context, frame *Frame) error {
-			if frame.FrameType == util.MsgTypePacket {
+			if frame.FrameType == util.MsgTypePacket && frame.Encrypt {
 				offset := packet.HeaderBuffSize
 				buff := frame.Packet[offset:frame.Size]
-				//cache := ctx.Value("cache").(CacheFunc)
-
-				//peer, err := cache.NewPeer(UCTL.UserId, frame.DstIP.String())
-				//if err != nil  {
-				//	return errors.New("peer not found, if you want to use relay, please to put relay true")
-				//}
-
 				peer := frame.GetPeer()
 				logger.Debugf("peer is :%v, data before encode: %v", peer.GetEndpoint().DstIP(), buff)
 				encoded, err := peer.GetCodec().Encode(buff)
@@ -91,7 +111,7 @@ func (n *Node) AllowNetwork() func(Handler) Handler {
 				ip := frame.DstIP.String()
 				b := n.netCtl.Access(frame.UidString(), ip)
 				if !b {
-					return fmt.Errorf("has no access to IP: %v", ip)
+					return fmt.Errorf("no access to destination: [%v]", ip)
 				}
 			}
 			return next.Handle(ctx, frame)

@@ -35,20 +35,14 @@ type (
 	NoiseSharedKey  [NoiseKeySize]byte
 )
 
-type CipherFunc interface {
+type Codec interface {
 	Encode(content []byte) ([]byte, error)
 	Decode(cipherBuff []byte) ([]byte, error)
 }
 
-func NewCipher(privateKey NoisePrivateKey, pubKey NoisePublicKey) CipherFunc {
+func New(privateKey NoisePrivateKey, pubKey NoisePublicKey) Codec {
 	shareKey := privateKey.NewSharedKey(pubKey)
-
-	logger.Debugf("generate shared key: %v", shareKey)
 	nonce := make([]byte, chacha20poly1305.NonceSize)
-
-	//if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-	//	return nil
-	//}
 	copy(nonce, shareKey[:chacha20poly1305.NonceSize])
 	return &cipher{
 		key:   shareKey,
@@ -62,26 +56,26 @@ type cipher struct {
 }
 
 func (c *cipher) Encode(content []byte) ([]byte, error) {
-	logger.Debugf(">>>>>>==before encode: %v, key: %v", content, c.key)
+	logger.Debugf("---before encode: %v, key: %v", content, c.key)
 	cip, err := chacha20poly1305.New(c.key[:])
 	if err != nil {
 		return nil, err
 	}
 
 	encoded := cip.Seal(nil, c.nonce, content, nil)
-	logger.Debugf(">>>>>>==after encode: %v", encoded)
+	logger.Debugf("---after encode: %v", encoded)
 	return encoded, nil
 }
 
 func (c *cipher) Decode(cipherBuff []byte) ([]byte, error) {
-	logger.Debugf(">>>>>before decode: %v, key: %v", cipherBuff, c.key)
+	logger.Debugf("---before decode: %v, key: %v", cipherBuff, c.key)
 	cip, err := chacha20poly1305.New(c.key[:])
 	if err != nil {
 		return nil, err
 	}
 
 	decoded, err := cip.Open(nil, c.nonce, cipherBuff, nil)
-	logger.Debugf(">>>>after decode: %v", decoded)
+	logger.Debugf("---after decode: %v", decoded)
 	return decoded, err
 }
 

@@ -21,6 +21,10 @@ import (
 )
 
 func (r *router) AddRouter(cidr string) error {
+	//first remove
+	if err := r.RemoveRouter(cidr); err != nil {
+		return err
+	}
 	return r.action(cidr, "add")
 }
 

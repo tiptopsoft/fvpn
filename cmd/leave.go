@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"github.com/spf13/cobra"
+	"github.com/tiptopsoft/fvpn/pkg/node"
 	"github.com/tiptopsoft/fvpn/pkg/util"
 )
 
@@ -41,5 +42,9 @@ func leaveCmd() *cobra.Command {
 // runJoin join a network cmd
 func runLeave(args []string) error {
 
-	return nil
+	cfg, err := util.InitConfig()
+	if err != nil {
+		return err
+	}
+	return node.RunLeaveNetwork(cfg, args[0])
 }

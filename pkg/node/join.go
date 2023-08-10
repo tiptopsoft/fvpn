@@ -15,14 +15,13 @@
 package node
 
 import (
-	"github.com/tiptopsoft/fvpn/pkg/http"
 	"github.com/tiptopsoft/fvpn/pkg/util"
 )
 
 func RunJoinNetwork(cfg *util.Config, networkId string) error {
-	logger.Infof("start join to network: %s", networkId)
+	logger.Debugf("start join to network: %s", networkId)
 
-	cm := http.NewManager(cfg.NodeCfg)
+	cm := NewManager(cfg.NodeCfg)
 	resp, err := cm.JoinNetwork(networkId)
 	if err != nil {
 		return err
@@ -31,7 +30,15 @@ func RunJoinNetwork(cfg *util.Config, networkId string) error {
 	return NewRouter(resp.CIDR, resp.Name).AddRouter(resp.CIDR)
 }
 
-func (p *Peer) RunLeaveNetwork(networkId string) error {
+func RunLeaveNetwork(cfg *util.Config, networkId string) error {
 
-	return nil
+	logger.Infof("start leave network: %s", networkId)
+
+	cm := NewManager(cfg.NodeCfg)
+	resp, err := cm.LeaveNetwork(networkId)
+	if err != nil {
+		return err
+	}
+
+	return NewRouter(resp.CIDR, resp.Name).RemoveRouter(resp.CIDR)
 }

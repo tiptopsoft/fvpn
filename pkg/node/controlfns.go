@@ -14,19 +14,23 @@
 
 package node
 
-import "errors"
-
-var (
-	ErrNotImplemented = errors.New("not implement yet")
-	ErrUnsupported    = errors.New("unsupported")
-	ErrUnknow         = errors.New("unknown")
-	ErrGetMac         = errors.New("invalid mac addr")
-	ErrPacket         = errors.New("invalid packet")
-	NoSuchInterface   = errors.New("route cidr+net: no such network interface")
-	ErrInvalieCIDR    = errors.New("invalid cidr")
-	ErrNotFound       = errors.New("not found")
+import (
+	"golang.org/x/sys/unix"
+	"net"
+	"syscall"
 )
 
-func New(msg string) error {
-	return errors.New(msg)
+const socketBufferSize = 7 << 20
+
+func listenConfig() *net.ListenConfig {
+	return &net.ListenConfig{
+		Control: func(network, address string, c syscall.RawConn) error {
+
+			return c.Control(func(fd uintptr) {
+				// Set up to *mem_max
+				_ = unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_RCVBUF, socketBufferSize)
+				_ = unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_SNDBUF, socketBufferSize)
+			})
+		},
+	}
 }

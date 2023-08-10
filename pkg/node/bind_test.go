@@ -12,23 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package peer
+package node
 
-import (
-	"fmt"
-	"net"
-	"testing"
-)
+import "testing"
 
-func TestEncode1(t *testing.T) {
-
-	p := NewPeerPacket()
-	p.Header.SrcIP = net.ParseIP("121.1.1.1")
-	buff, err := Encode(p)
-	if err != nil {
-		panic(buff)
-	}
-
-	p1, _ := Decode(buff)
-	fmt.Println(p1.Header.SrcIP)
+func TestListen(t *testing.T) {
 }

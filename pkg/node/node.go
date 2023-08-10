@@ -19,10 +19,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
-	"fmt"
-	"github.com/tiptopsoft/fvpn/pkg/http"
 	"github.com/tiptopsoft/fvpn/pkg/log"
-	"github.com/tiptopsoft/fvpn/pkg/nets"
 	"github.com/tiptopsoft/fvpn/pkg/packet"
 	"github.com/tiptopsoft/fvpn/pkg/packet/register"
 	"github.com/tiptopsoft/fvpn/pkg/security"
@@ -34,8 +31,7 @@ import (
 )
 
 var (
-	logger    = log.Log()
-	relayPeer *Peer
+	logger = log.Log()
 )
 
 // Node is a dev in any os.
@@ -47,7 +43,7 @@ type Node struct {
 	pubKey     security.NoisePublicKey
 	device     tun.Device
 	net        struct {
-		bind nets.Bind
+		bind Bind
 	}
 
 	//peers is all peers releated to this device
@@ -78,10 +74,10 @@ func (n *Node) PutPktToInbound(pkt *Frame) {
 	n.queue.inBound.c <- pkt
 }
 
-func NewNode(iface tun.Device, bind nets.Bind, cfg *util.NodeCfg) (*Node, error) {
+func NewNode(iface tun.Device, bind Bind, cfg *util.NodeCfg) (*Node, error) {
 	n := &Node{
 		device: iface,
-		net:    struct{ bind nets.Bind }{bind: bind},
+		net:    struct{ bind Bind }{bind: bind},
 		cache:  NewCache(cfg.Driver),
 		mode:   1,
 		cfg:    cfg,
@@ -105,42 +101,16 @@ func NewNode(iface tun.Device, bind nets.Bind, cfg *util.NodeCfg) (*Node, error)
 }
 
 func (n *Node) initRelay() {
-	n.relay = NewPeer(util.UCTL.UserId, n.cfg.RegistryUrl(), security.NoisePublicKey{}, n.cache, n)
+	n.relay = NewPeer(util.UCTL.UserId, n.cfg.RegistryUrl(), n.privateKey.NewPubicKey(), n.cache, n.mode, n.net.bind, n.device)
 	n.relay.isRelay = true
-	n.relay.endpoint = nets.NewEndpoint(n.cfg.RegistryUrl())
-	n.relay.start()
-	n.relay.handshake(n.relay.endpoint.DstIP().IP)
-	relayPeer = n.relay
-	err := n.cache.SetPeer(util.UCTL.UserId, n.relay.endpoint.DstIP().IP.String(), n.relay)
+	n.relay.SetEndpoint(NewEndpoint(n.cfg.RegistryUrl()))
+	n.relay.Start()
+	n.relay.Handshake(n.relay.GetEndpoint().DstIP().IP)
+	err := n.cache.SetPeer(util.UCTL.UserId, n.relay.GetEndpoint().DstIP().IP.String(), n.relay)
 	if err != nil {
 		return
 	}
 }
-
-//func (n *Node) NewPeer(uid, srcIP string, pk security.NoisePublicKey) *Peer {
-//	n.lock.Lock()
-//	defer n.lock.Unlock()
-//	logger.Debugf("will create peer for userId: %v, ip: %v", uid, srcIP)
-//	peer, _ := n.cache.GetPeer(uid, srcIP)
-//	if peer != nil {
-//		return peer
-//	}
-//
-//	p := new(Peer)
-//	p.id = uint64(time.Now().Nanosecond())
-//	p.st = time.Now()
-//	p.checkCh = make(chan int, 1)
-//	p.sendCh = make(chan int, 1)
-//	p.keepaliveCh = make(chan int, 1)
-//	p.PubKey = pk
-//	p.queue.outBound = NewOutBoundQueue()
-//	p.queue.inBound = NewInBoundQueue()
-//	p.node = n
-//
-//	n.cache.SetPeer(uid, srcIP, p)
-//	logger.Debugf("created peer for : %v", srcIP)
-//	return p
-//}
 
 func (n *Node) nodeRegister() error {
 	rPkt := register.NewPacket()
@@ -166,16 +136,17 @@ func Start(cfg *util.Config) error {
 	}
 
 	//send http to get cidr
-	client := http.NewClient(cfg.NodeCfg.ControlUrl())
+	client := NewClient(cfg.NodeCfg.ControlUrl())
 	appId, err := appId()
 	if err != nil {
 		return err
 	}
 	resp, err := client.Init(appId)
 	if err != nil {
+		logger.Error("timeout to init!")
 		return err
 	}
-	d, err := NewNode(iface, nets.NewStdBind(), cfg.NodeCfg)
+	d, err := NewNode(iface, NewStdBind(), cfg.NodeCfg)
 	if err != nil {
 		return err
 	}
@@ -198,8 +169,8 @@ func (n *Node) up() error {
 	//init first
 	n.initRelay()
 
-	go n.ReadFromUdp()
 	go n.ReadFromTun()
+	go n.ReadFromUdp()
 	go n.WriteToUDP()
 	go n.WriteToDevice()
 	go func() {
@@ -233,13 +204,10 @@ func (n *Node) ReadFromTun() {
 	for {
 		ctx := context.Background()
 		frame := NewFrame()
-		//frame.Lock()
 		ctx = context.WithValue(ctx, "cache", n.cache)
 		frame.UserId = n.userId
 		frame.FrameType = util.MsgTypePacket
-		//st1 := time.Now()
 		size, err := n.device.Read(frame.Buff[:])
-		//st := time.Now()
 		if err != nil {
 			logger.Error(err)
 			continue
@@ -263,14 +231,14 @@ func (n *Node) ReadFromTun() {
 				continue
 			}
 		} else {
-			if !peer.p2p {
+			if !peer.GetP2P() {
 				frame.Peer = n.relay
 			} else {
 				frame.Peer = peer
 			}
 		}
 
-		logger.Debugf("frame's peer is :%v", frame.Peer.endpoint.DstToString())
+		logger.Debugf("frame's peer is :%v", frame.Peer.GetEndpoint().DstToString())
 		frame.SrcIP = n.device.Addr()
 		frame.DstIP = ipHeader.DstIP
 
@@ -287,12 +255,11 @@ func (n *Node) ReadFromTun() {
 		copy(frame.Packet[:packet.HeaderBuffSize], headerBuff)
 		copy(frame.Packet[packet.HeaderBuffSize:], frame.Buff[:])
 		frame.Size = size + packet.HeaderBuffSize
+		if !n.cfg.Encrypt.Enable {
+			frame.Encrypt = false
+		}
 
 		err = n.tunHandler.Handle(ctx, frame)
-		//et := time.Since(st)
-		//et2 := time.Since(st1)
-		//logger.Debugf("================encode cost: %v, from read: %v", et, et2)
-
 		if err != nil {
 			logger.Error(err)
 			continue
@@ -302,23 +269,24 @@ func (n *Node) ReadFromTun() {
 }
 
 func (n *Node) ReadFromUdp() {
+	logger.Debugf("start thread to handle udp packet")
 	defer func() {
-		fmt.Println("ReadFromUDP has exit.....")
+		logger.Debugf("udp thread exited")
 	}()
 	for {
 		ctx := context.Background()
 		ctx = context.WithValue(ctx, "cache", n.cache)
-		f := NewFrame()
-		size, remoteAddr, err := n.net.bind.Conn().ReadFromUDP(f.Buff[:])
-		copy(f.Packet[:size], f.Buff[:size])
+		frame := NewFrame()
+		size, remoteAddr, err := n.net.bind.Conn().ReadFromUDP(frame.Buff[:])
+		copy(frame.Packet[:size], frame.Buff[:size])
 		if err != nil {
 			logger.Error(err)
 			continue
 		}
-		f.Size = size
-		f.RemoteAddr = remoteAddr
+		frame.Size = size
+		frame.RemoteAddr = remoteAddr
 
-		hpkt, err := util.GetPacketHeader(f.Buff[:])
+		hpkt, err := util.GetPacketHeader(frame.Buff[:])
 		if err != nil {
 			logger.Error(err)
 			continue
@@ -329,19 +297,23 @@ func (n *Node) ReadFromUdp() {
 			logger.Debugf("got invalid data. size: %d", size)
 			continue
 		}
-		logger.Debugf("udp receive %d byte from %s, data type: [%v]", size, remoteAddr.IP, dataType)
+		logger.Debugf("udp receive %d byte from %s, data type: [%v]", size, remoteAddr, dataType)
 
-		f.SrcIP = hpkt.SrcIP //192.168.0.1->192.168.0.2 srcIP =1, dstIP =2
-		f.DstIP = hpkt.DstIP
-		f.UserId = hpkt.UserId
-		f.FrameType = hpkt.Flags
+		frame.SrcIP = hpkt.SrcIP //192.168.0.1->192.168.0.2 srcIP =1, dstIP =2
+		frame.DstIP = hpkt.DstIP
+		frame.UserId = hpkt.UserId
+		frame.FrameType = hpkt.Flags
 
-		f.Peer, err = n.cache.GetPeer(f.UidString(), f.SrcIP.String())
-		if err != nil || !f.Peer.p2p {
-			f.Peer = n.relay
+		frame.Peer, err = n.cache.GetPeer(frame.UidString(), frame.SrcIP.String())
+		if err != nil || !frame.Peer.GetP2P() {
+			frame.Peer = n.relay
 		}
 
-		err = n.udpHandler.Handle(ctx, f)
+		if !n.cfg.Encrypt.Enable {
+			frame.Encrypt = false
+		}
+
+		err = n.udpHandler.Handle(ctx, frame)
 		if err != nil {
 			logger.Error(err)
 			continue
@@ -360,7 +332,7 @@ func (n *Node) sendListPackets() {
 	}
 	frame := NewFrame()
 	frame.Peer = n.relay
-	frame.DstIP = n.relay.endpoint.DstIP().IP
+	frame.DstIP = n.relay.GetEndpoint().DstIP().IP
 	copy(frame.Packet, hpkt)
 	frame.Size = len(hpkt)
 	frame.UserId = h.UserId
@@ -374,7 +346,7 @@ func (n *Node) WriteToUDP() {
 		case pkt := <-n.queue.outBound.c:
 			ip := pkt.DstIP
 			pkt.Peer.PutPktToOutbound(pkt)
-			logger.Debugf("userId: %v, dst cidr: %v, dst peer: %v, data type: [%v]", pkt.UidString(), ip, pkt.Peer.endpoint.DstToString(), util.GetFrameTypeName(pkt.FrameType))
+			logger.Debugf("userId: %v, dst cidr: %v, dst peer: %v, data type: [%v]", pkt.UidString(), ip, pkt.Peer.GetEndpoint().DstToString(), util.GetFrameTypeName(pkt.FrameType))
 		default:
 
 		}

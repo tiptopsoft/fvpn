@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"errors"
+	"fmt"
 	"github.com/tiptopsoft/fvpn/pkg/packet"
 	"github.com/tiptopsoft/fvpn/pkg/security"
 	"github.com/tiptopsoft/fvpn/pkg/util"
@@ -29,6 +30,10 @@ type PeerInfo struct {
 	NatIP      net.IP
 	RemoteAddr net.UDPAddr
 	PubKey     security.NoisePublicKey
+}
+
+func (p PeerInfo) String() string {
+	return fmt.Sprintf("ip:[%v],addr:[%v]", p.IP, p.RemoteAddr)
 }
 
 type PeerPacket struct {

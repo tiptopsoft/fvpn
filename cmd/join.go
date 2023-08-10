@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/tiptopsoft/fvpn/pkg/node"
 	"github.com/tiptopsoft/fvpn/pkg/util"
@@ -45,5 +46,10 @@ func runJoin(args []string) error {
 	if err != nil {
 		return err
 	}
-	return node.RunJoinNetwork(cfg, args[0])
+	if err := node.RunJoinNetwork(cfg, args[0]); err != nil {
+		return err
+	}
+
+	fmt.Println(fmt.Sprintf("Join to network: %s successed", args[0]))
+	return nil
 }

@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,21 +15,23 @@
 package node
 
 import (
-	"github.com/tiptopsoft/fvpn/pkg/nets"
 	"github.com/tiptopsoft/fvpn/pkg/packet"
 	"github.com/tiptopsoft/fvpn/pkg/packet/handshake"
 	"github.com/tiptopsoft/fvpn/pkg/security"
+	"github.com/tiptopsoft/fvpn/pkg/tun"
 	"github.com/tiptopsoft/fvpn/pkg/util"
-	"go.uber.org/atomic"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
-// Peer a destination will have a peer in fvpn, can connect to each other.
-// a RegServer also is a peer
 type Peer struct {
 	id          uint64
+	isTry       atomic.Bool
+	ip          string
+	mode        int //1 node 2 registry
+	device      tun.Device
 	isRelay     bool
 	index       atomic.Int32
 	st          time.Time
@@ -39,41 +41,71 @@ type Peer struct {
 	p2p         bool
 	lock        sync.Mutex
 	status      bool
-	PubKey      security.NoisePublicKey
-	node        *Node
-	endpoint    nets.Endpoint //
+	pubKey      security.NoisePublicKey
+	bind        Bind
+	endpoint    Endpoint //
+	cache       Interface
 
 	queue struct {
 		outBound *OutBoundQueue // data to write to dst peer
 		inBound  *InBoundQueue  // data write to tun
 	}
-	cipher security.CipherFunc
+	cipher security.Codec
 }
 
-func (p *Peer) GetCodec() security.CipherFunc {
+func (p *Peer) SetIP(ip string) {
+	p.ip = ip
+}
+
+func (p *Peer) GetIP() string {
+	return p.ip
+}
+
+func (p *Peer) GetCodec() security.Codec {
 	return p.cipher
 }
 
-func (p *Peer) start() {
-	//p.lock.Lock()
-	//defer p.lock.Unlock()
-	if p.index.Load() > 3 {
-		logger.Debugf("peer %v have try too much times", p.endpoint.DstToString())
+func (p *Peer) SetCodec(cipherFunc security.Codec) {
+	p.cipher = cipherFunc
+}
+
+func (p *Peer) GetStatus() bool {
+	return p.status
+}
+
+func (p *Peer) SetStatus(status bool) {
+	p.status = status
+}
+
+func (p *Peer) GetEndpoint() Endpoint {
+	return p.endpoint
+}
+
+func (p *Peer) SetP2P(p2p bool) {
+	p.p2p = p2p
+}
+
+func (p *Peer) GetP2P() bool {
+	return p.p2p
+}
+
+func (p *Peer) Start() {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	if !p.isTry.Load() {
+		logger.Debugf("peer has tried p2p, but failed. peer: %v", p.GetEndpoint().DstToString())
 		return
-	}
-	p.index.Inc()
-	if p.status == true {
-		logger.Debugf("peer has started: %v", p.endpoint.DstToString())
-		return
-	} else {
-		logger.Debugf("peer starting......")
 	}
 
-	p.status = true
-	if p.node != nil && p.node.mode == 1 {
-		p.PubKey = p.node.privateKey.NewPubicKey() //use to send to remote for exchange pubKey
+	if p.GetStatus() {
+		logger.Debugf("peers [%v] started", p.ip)
+		return
+	}
+
+	p.SetStatus(true)
+	if p.mode == 1 {
 		go p.SendPackets()
-		//go p.WriteToDevice()
 
 		go func() {
 			timer := time.NewTimer(time.Second * 10)
@@ -109,44 +141,45 @@ func (p *Peer) start() {
 	}
 }
 
-func (p *Peer) SetEndpoint(ep nets.Endpoint) {
+func (p *Peer) SetEndpoint(ep Endpoint) {
 	p.endpoint = ep
 }
 
-func (p *Peer) GetEndpoint() nets.Endpoint {
-	return p.endpoint
-}
-
-func NewPeer(uid, srcIP string, pk security.NoisePublicKey, cache Interface, node *Node) *Peer {
-	logger.Debugf("will create peer for userId: %v, ip: %v", uid, srcIP)
+func NewPeer(uid, srcIP string, pk security.NoisePublicKey, cache Interface, mode int, bind Bind, device tun.Device) *Peer {
 	peer, _ := cache.GetPeer(uid, srcIP)
 	if peer != nil {
 		return peer
 	}
 
+	logger.Debugf("will create peer for userId: %v, ip: %v", uid, srcIP)
 	p := new(Peer)
+	if bind != nil {
+		p.bind = bind
+	}
+	p.mode = mode
+	p.isTry.Store(true)
 	p.id = uint64(time.Now().Nanosecond())
 	p.st = time.Now()
+	p.device = device
+	p.cache = cache
+	p.ip = srcIP
 	p.checkCh = make(chan int, 1)
 	p.sendCh = make(chan int, 1)
 	p.keepaliveCh = make(chan int, 1)
-	p.PubKey = pk
+	p.pubKey = pk
 	p.queue.outBound = NewOutBoundQueue()
 	p.queue.inBound = NewInBoundQueue()
-	if node != nil {
-		p.node = node
-	}
 
 	cache.SetPeer(uid, srcIP, p)
-	logger.Debugf("created peer for : %v", srcIP)
+	logger.Debugf("created peer for : %v, peer: [%v]", srcIP, p.GetEndpoint())
 	return p
 }
 
-func (p *Peer) handshake(dstIP net.IP) {
+func (p *Peer) Handshake(dstIP net.IP) {
 	hpkt := handshake.NewPacket(util.HandShakeMsgType, util.UCTL.UserId)
-	hpkt.Header.SrcIP = p.node.device.Addr()
+	hpkt.Header.SrcIP = p.device.Addr()
 	hpkt.Header.DstIP = dstIP
-	hpkt.PubKey = p.PubKey
+	hpkt.PubKey = p.pubKey
 	buff, err := handshake.Encode(hpkt)
 	if err != nil {
 		return
@@ -158,7 +191,7 @@ func (p *Peer) handshake(dstIP net.IP) {
 	f.Size = size
 	f.FrameType = util.HandShakeMsgType
 	f.Peer = p
-	logger.Debugf("sending handshake pubkey to: %v, pubKey: %v, remote address: [%v], type: [%v]", dstIP.String(), p.PubKey, p.endpoint.DstToString(), util.GetFrameTypeName(util.HandShakeMsgType))
+	logger.Debugf("sending handshake pubkey to: %v, pubKey: %v, remote address: [%v], type: [%v]", dstIP.String(), p.pubKey, p.GetEndpoint().DstToString(), util.GetFrameTypeName(util.HandShakeMsgType))
 	p.PutPktToOutbound(f)
 }
 
@@ -173,12 +206,12 @@ func (p *Peer) SendPackets() {
 		case <-p.sendCh:
 			return
 		case pkt := <-p.queue.outBound.c:
-			send, err := p.node.net.bind.Send(pkt.Packet[:pkt.Size], p.endpoint)
+			send, err := p.bind.Send(pkt.Packet[:pkt.Size], p.GetEndpoint())
 			if err != nil {
 				logger.Error(err)
 				continue
 			}
-			logger.Debugf("node [%v] has send %d packets to %s, data type: [%v]", p.id, send, p.endpoint.DstToString(), util.GetFrameTypeName(pkt.FrameType))
+			logger.Debugf("node [%v] has send %d packets to %s, data type: [%v]", p.id, send, p.GetEndpoint().DstToString(), util.GetFrameTypeName(pkt.FrameType))
 		default:
 
 		}
@@ -221,5 +254,7 @@ func (p *Peer) close() {
 	p.sendCh <- 1
 	p.keepaliveCh <- 1
 	p.status = false
-	logger.Debug("================peer stop signal have send to peer: %v", p.endpoint.DstToString())
+	p.isTry.Store(false)
+	p.cache.SetPeer(util.UCTL.UserId, p.ip, p)
+	logger.Debugf("================peer stop signal have send to peer: %v", p.GetEndpoint().DstToString())
 }

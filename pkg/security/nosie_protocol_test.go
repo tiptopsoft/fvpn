@@ -57,8 +57,8 @@ func TestCurve(t *testing.T) {
 
 	fmt.Println(shared2)
 
-	cip1 := NewCipher(privateKey, pubKey2)
-	cip2 := NewCipher(privateKey2, pubKey)
+	cip1 := New(privateKey, pubKey2)
+	cip2 := New(privateKey2, pubKey)
 
 	s := "hello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworld"
 	sBuff := []byte(s)

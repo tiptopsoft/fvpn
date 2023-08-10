@@ -12,7 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package model
+package node
+
+type Instance struct {
+	UserId string `json:"userId"`
+	Addr   string `json:"addr"`
+	Status string `json:""` //live/died
+}
 
 type Response struct {
 	Code    int         `json:"code"`
@@ -30,6 +36,14 @@ type JoinResponse struct {
 	IP      string `json:"ip"`
 	Name    string `json:"name"`
 	Network string `json:"network"`
+}
+
+type LeaveRequest struct {
+	JoinRequest
+}
+
+type LeaveResponse struct {
+	JoinResponse
 }
 
 type InitResponse struct {

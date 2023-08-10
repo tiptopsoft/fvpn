@@ -16,10 +16,7 @@ package node
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/labstack/echo/v4"
-	"github.com/tiptopsoft/fvpn/pkg/model"
 	"github.com/tiptopsoft/fvpn/pkg/util"
-	"net/http"
 )
 
 var (
@@ -28,76 +25,68 @@ var (
 
 func (n *Node) HttpServer() error {
 	server := gin.Default()
-	//server := echo.New()
-	//server.Use(checkAuth())
-	//server.GET("/", hello)
 	server.POST(PREFIX+"join", n.joinNet())
+	server.POST(PREFIX+"leave", n.leaveNet())
 
 	return server.Run(n.cfg.HttpListenStr())
 }
 
-func hello(c echo.Context) error {
-	return c.String(http.StatusOK, "Hello, World!")
-}
-
 func (n *Node) joinNet() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var req model.JoinRequest
+		var req JoinRequest
 		err := ctx.Bind(&req)
 
 		if err != nil {
-			ctx.JSON(500, model.HttpError(err.Error()))
+			ctx.JSON(500, HttpError(err.Error()))
 			return
 		}
 
 		if req.CIDR != "" {
 			err = n.netCtl.JoinNet(util.UCTL.UserId, req.CIDR)
 			if err != nil {
-				ctx.JSON(500, model.HttpError(err.Error()))
+				ctx.JSON(500, HttpError(err.Error()))
 				return
 			}
 		} else {
-			ctx.JSON(500, model.HttpError("cidr is nil"))
+			ctx.JSON(500, HttpError("cidr is nil"))
 			return
 		}
 
-		resp := &model.JoinResponse{
+		resp := &JoinResponse{
 			IP:   n.device.IPToString(),
 			Name: n.device.Name(),
 		}
 
 		//userId替换
-		ctx.JSON(200, model.HttpOK(resp))
+		ctx.JSON(200, HttpOK(resp))
 	}
 }
 
 func (n *Node) leaveNet() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var req model.JoinRequest
+		var req JoinRequest
 		err := ctx.Bind(&req)
 
 		if err != nil {
-			ctx.JSON(500, model.HttpError(err.Error()))
+			ctx.JSON(500, HttpError(err.Error()))
 			return
 		}
 
 		if req.CIDR != "" {
 			err = n.netCtl.LeaveNet(util.UCTL.UserId, req.CIDR)
 			if err != nil {
-				ctx.JSON(500, model.HttpError(err.Error()))
+				ctx.JSON(500, HttpError(err.Error()))
 				return
 			}
 		} else {
-			ctx.JSON(500, model.HttpError("cidr is nil"))
+			ctx.JSON(500, HttpError("cidr is nil"))
 			return
 		}
 
-		//resp := &model.JoinResponse{
-		//	IP:   n.device.IPToString(),
-		//	Name: n.device.Name(),
-		//}
+		resp := new(LeaveResponse)
+		resp.IP = n.device.IPToString()
+		resp.Name = n.device.Name()
 
-		//userId替换
-		ctx.JSON(200, model.HttpOK(nil))
+		ctx.JSON(200, HttpOK(resp))
 	}
 }

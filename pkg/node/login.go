@@ -18,8 +18,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/tiptopsoft/fvpn/pkg/http"
-	"github.com/tiptopsoft/fvpn/pkg/model"
 	"github.com/tiptopsoft/fvpn/pkg/util"
 	"io"
 	"os"
@@ -27,8 +25,8 @@ import (
 )
 
 func Login(username, password string, cfg *util.NodeCfg) error {
-	client := http.NewClient(cfg.ControlUrl())
-	req := new(model.LoginRequest)
+	client := NewClient(cfg.ControlUrl())
+	req := new(LoginRequest)
 	req.Username = username
 	req.Password = password
 	resp, err := client.Login(*req)

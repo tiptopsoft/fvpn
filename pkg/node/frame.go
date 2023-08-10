@@ -35,6 +35,7 @@ type Frame struct {
 	DstIP      net.IP
 	FrameType  uint16
 	Peer       *Peer
+	Encrypt    bool
 }
 
 func (f *Frame) GetPeer() *Peer {
@@ -43,9 +44,10 @@ func (f *Frame) GetPeer() *Peer {
 
 func NewFrame() *Frame {
 	return &Frame{
-		Ctx:    context.Background(),
-		Buff:   make([]byte, packet.FvpnPktBuffSize),
-		Packet: make([]byte, packet.FvpnPktBuffSize),
+		Ctx:     context.Background(),
+		Buff:    make([]byte, packet.FvpnPktBuffSize),
+		Packet:  make([]byte, packet.FvpnPktBuffSize),
+		Encrypt: true,
 	}
 }
 
