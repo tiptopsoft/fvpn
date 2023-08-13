@@ -42,7 +42,7 @@ you should put app.yaml to /etc/fvpn or ~/.fvpn/, then some configurations will 
 ```shell
 node:
   listen: :3000
-  registry: www.efvpn.com:4000
+  registry: tiptopsoft.cn
 registry:
   listen: :4000
 ```
@@ -60,4 +60,6 @@ use make command:
 ```shell
 cd fvpn && make build
 ```
+
+## Contributions
 
