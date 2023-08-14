@@ -92,6 +92,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 			p := n.NewPeer(util.UCTL.UserId, frame.SrcIP.String(), headerPkt.PubKey, n.cache)
 			p.node = n
 
+			//if just a node behind Symmetric nat, also update endpoint to build p2p
 			if p.GetEndpoint() == nil || p.GetEndpoint().DstToString() != frame.RemoteAddr.String() {
 				logger.Debugf("this is a symetric nat device: %s", frame.RemoteAddr.String())
 				//更新peer

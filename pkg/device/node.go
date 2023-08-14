@@ -108,8 +108,8 @@ func (n *Node) initRelay() {
 	n.relay.isRelay = true
 	n.relay.node = n
 	n.relay.SetEndpoint(NewEndpoint(n.cfg.RegistryUrl()))
-	n.relay.Start()
 	n.relay.Handshake(n.relay.GetEndpoint().DstIP().IP)
+	n.relay.Start()
 	err := n.cache.SetPeer(util.UCTL.UserId, n.relay.GetEndpoint().DstIP().IP.String(), n.relay)
 	if err != nil {
 		return
@@ -129,7 +129,7 @@ func (n *Node) nodeRegister() error {
 	f := NewFrame()
 	f.Peer = n.relay
 	copy(f.Packet[:size], buff)
-	n.relay.PutPktToOutbound(f)
+	n.PutPktToOutbound(f)
 	return nil
 }
 
