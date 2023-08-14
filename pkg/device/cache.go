@@ -14,13 +14,6 @@
 
 package device
 
-import (
-	"github.com/tiptopsoft/fvpn/pkg/packet/handshake"
-	"github.com/tiptopsoft/fvpn/pkg/security"
-	"github.com/tiptopsoft/fvpn/pkg/tun"
-	"github.com/tiptopsoft/fvpn/pkg/util"
-)
-
 type Interface interface {
 	SetPeer(userId, ip string, peer *Peer) error
 	GetPeer(userId, ip string) (*Peer, error)
@@ -40,27 +33,28 @@ func NewCache(driver string) Interface {
 	return nil
 }
 
-func CachePeers(privateKey security.NoisePrivateKey, frame *Frame, cache Interface, mode int, bind Bind, device tun.Device) (*Peer, error) {
-	hpkt, err := handshake.Decode(util.HandShakeMsgTypeAck, frame.Buff)
-	if err != nil {
-		logger.Errorf("invalid handshake packet: %v", err)
-		return nil, err
-	}
-	uid := frame.UidString()
-	srcIP := frame.SrcIP.String()
-	logger.Debugf("got remote peer: %v, pubKey: %v", srcIP, hpkt.PubKey)
-
-	p := NewPeer(uid, srcIP, hpkt.PubKey, cache, mode, bind, device)
-	p.SetIP(srcIP)
-	ep := NewEndpoint(frame.RemoteAddr.String())
-	p.SetEndpoint(ep)
-	p.SetCodec(security.New(privateKey, hpkt.PubKey))
-	err = cache.SetPeer(uid, srcIP, p)
-	p.Start()
-
-	if err != nil {
-		return nil, err
-	}
-
-	return p, nil
-}
+//
+//func CachePeers(privateKey security.NoisePrivateKey, frame *Frame, cache Interface, mode int, bind Bind, node *Node) (*Peer, error) {
+//	hpkt, err := handshake.Decode(util.HandShakeMsgTypeAck, frame.Buff)
+//	if err != nil {
+//		logger.Errorf("invalid handshake packet: %v", err)
+//		return nil, err
+//	}
+//	uid := frame.UidString()
+//	srcIP := frame.SrcIP.String()
+//	logger.Debugf("got remote peer: %v, pubKey: %v", srcIP, hpkt.PubKey)
+//
+//	p := NewPeer(uid, srcIP, hpkt.PubKey, cache)
+//	p.SetIP(srcIP)
+//	ep := NewEndpoint(frame.RemoteAddr.String())
+//	p.SetEndpoint(ep)
+//	p.SetCodec(security.New(privateKey, hpkt.PubKey))
+//	err = cache.SetPeer(uid, srcIP, p)
+//	//p.Start()
+//
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	return p, nil
+//}

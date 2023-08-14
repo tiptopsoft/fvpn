@@ -31,7 +31,8 @@ import (
 )
 
 var (
-	logger = log.Log()
+	logger    = log.Log()
+	limitChan = make(chan bool, 1000)
 )
 
 // Node is a dev in any os.
@@ -84,6 +85,8 @@ func NewNode(iface tun.Device, bind Bind, cfg *util.NodeCfg) (*Node, error) {
 	}
 	n.netCtl = NewNetworkManager(util.UCTL.UserId)
 	privateKey, err := security.NewPrivateKey()
+
+	n.peers.peers = make(map[security.NoisePublicKey]*Peer, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -101,8 +104,9 @@ func NewNode(iface tun.Device, bind Bind, cfg *util.NodeCfg) (*Node, error) {
 }
 
 func (n *Node) initRelay() {
-	n.relay = NewPeer(util.UCTL.UserId, n.cfg.RegistryUrl(), n.privateKey.NewPubicKey(), n.cache, n.mode, n.net.bind, n.device)
+	n.relay = n.NewPeer(util.UCTL.UserId, n.cfg.RegistryUrl(), n.privateKey.NewPubicKey(), n.cache)
 	n.relay.isRelay = true
+	n.relay.node = n
 	n.relay.SetEndpoint(NewEndpoint(n.cfg.RegistryUrl()))
 	n.relay.Start()
 	n.relay.Handshake(n.relay.GetEndpoint().DstIP().IP)
@@ -275,52 +279,55 @@ func (n *Node) ReadFromUdp() {
 		logger.Debugf("udp thread exited")
 	}()
 	for {
-		ctx := context.Background()
-		ctx = context.WithValue(ctx, "cache", n.cache)
-		frame := NewFrame()
-		size, remoteAddr, err := n.net.bind.Conn().ReadFromUDP(frame.Buff[:])
-		copy(frame.Packet[:size], frame.Buff[:size])
-		if err != nil {
-			logger.Error(err)
-			continue
-		}
-		frame.Size = size
-		frame.RemoteAddr = remoteAddr
-
-		hpkt, err := util.GetPacketHeader(frame.Buff[:])
-		if err != nil {
-			logger.Error(err)
-			continue
-		}
-		dataType := util.GetFrameTypeName(hpkt.Flags)
-		if dataType == "" {
-			//drop
-			logger.Debugf("got invalid data. size: %d", size)
-			continue
-		}
-		logger.Debugf("udp receive %d byte from %s, data type: [%v]", size, remoteAddr, dataType)
-
-		frame.SrcIP = hpkt.SrcIP //192.168.0.1->192.168.0.2 srcIP =1, dstIP =2
-		frame.DstIP = hpkt.DstIP
-		frame.UserId = hpkt.UserId
-		frame.FrameType = hpkt.Flags
-
-		frame.Peer, err = n.cache.GetPeer(frame.UidString(), frame.SrcIP.String())
-		if err != nil || !frame.Peer.GetP2P() {
-			frame.Peer = n.relay
-		}
-
-		if !n.cfg.Encrypt.Enable {
-			frame.Encrypt = false
-		}
-
-		err = n.udpHandler.Handle(ctx, frame)
-		if err != nil {
-			logger.Error(err)
-			continue
-		}
-
+		limitChan <- true
+		go n.udpProcess()
 	}
+}
+
+func (n *Node) udpProcess() {
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, "cache", n.cache)
+	frame := NewFrame()
+	size, remoteAddr, err := n.net.bind.Conn().ReadFromUDP(frame.Buff[:])
+	frame.ST = time.Now()
+	copy(frame.Packet[:size], frame.Buff[:size])
+	if err != nil {
+		logger.Error(err)
+	}
+	frame.Size = size
+	frame.RemoteAddr = remoteAddr
+
+	hpkt, err := util.GetPacketHeader(frame.Buff[:])
+	if err != nil {
+		logger.Error(err)
+	}
+	dataType := util.GetFrameTypeName(hpkt.Flags)
+	if dataType == "" {
+		//drop
+		logger.Debugf("got invalid data. size: %d", size)
+	}
+	logger.Debugf("udp receive %d byte from %s, data type: [%v]", size, remoteAddr, dataType)
+
+	frame.SrcIP = hpkt.SrcIP //192.168.0.1->192.168.0.2 srcIP =1, dstIP =2
+	frame.DstIP = hpkt.DstIP
+	frame.UserId = hpkt.UserId
+	frame.FrameType = hpkt.Flags
+
+	frame.Peer, err = n.cache.GetPeer(frame.UidString(), frame.SrcIP.String())
+	if err != nil || !frame.Peer.GetP2P() {
+		frame.Peer = n.relay
+	}
+
+	if !n.cfg.Encrypt.Enable {
+		frame.Encrypt = false
+	}
+
+	err = n.udpHandler.Handle(ctx, frame)
+	if err != nil {
+		logger.Error(err)
+	}
+	dt := time.Since(frame.ST)
+	logger.Debugf("udp receive process finished, dataType: [%v], cost: [%v]", dataType, dt)
 }
 
 // sendListPackets send a packet list all nodes in current user
@@ -345,7 +352,18 @@ func (n *Node) WriteToUDP() {
 	for {
 		select {
 		case pkt := <-n.queue.outBound.c:
-			pkt.Peer.PutPktToOutbound(pkt)
+			dt := time.Since(pkt.ST)
+			dataType := util.GetFrameTypeName(pkt.FrameType)
+			logger.Debugf("before give to peer, data type: [%v], cost: [%v]", dataType, dt)
+			//pkt.Peer.PutPktToOutbound(pkt)
+			peer := pkt.Peer
+			send, err := pkt.Peer.node.net.bind.Send(pkt.Packet[:pkt.Size], pkt.Peer.GetEndpoint())
+			if err != nil {
+				logger.Error(err)
+				continue
+			}
+			t := time.Since(pkt.ST)
+			logger.Debugf("node has send [%v] packets to %s from p2p: [%v], data type: [%v], cost: [%v]", send, peer.GetEndpoint().DstToString(), peer.p2p, util.GetFrameTypeName(pkt.FrameType), t)
 		default:
 
 		}
@@ -391,4 +409,31 @@ func appId() (string, error) {
 	}
 
 	return l.AppId, nil
+}
+
+func (n *Node) NewPeer(uid, ip string, pk security.NoisePublicKey, cache Interface) *Peer {
+	n.peers.lock.Lock()
+	defer n.peers.lock.Unlock()
+	peer, _ := cache.GetPeer(uid, ip)
+	if peer != nil {
+		return peer
+	}
+
+	logger.Debugf("will create peer for userId: %v, ip: %v", uid, ip)
+
+	p := new(Peer)
+	p.isTry.Store(true)
+	p.st = time.Now()
+	p.ip = ip
+	p.checkCh = make(chan int, 1)
+	p.sendCh = make(chan int, 1)
+	p.keepaliveCh = make(chan int, 1)
+	p.pubKey = pk
+	p.cache = cache
+	p.queue.outBound = NewOutBoundQueue()
+	p.queue.inBound = NewInBoundQueue()
+
+	cache.SetPeer(uid, ip, p)
+	logger.Debugf("created peer for : %v, peer: [%v]", ip, p.GetEndpoint())
+	return p
 }

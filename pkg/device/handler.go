@@ -20,6 +20,7 @@ import (
 	"github.com/tiptopsoft/fvpn/pkg/packet/handshake"
 	"github.com/tiptopsoft/fvpn/pkg/packet/peer"
 	"github.com/tiptopsoft/fvpn/pkg/packet/register/ack"
+	"github.com/tiptopsoft/fvpn/pkg/security"
 	"github.com/tiptopsoft/fvpn/pkg/util"
 )
 
@@ -88,9 +89,11 @@ func (n *Node) udpInHandler() HandlerFunc {
 				return err
 			}
 
-			p := NewPeer(util.UCTL.UserId, frame.SrcIP.String(), headerPkt.PubKey, n.cache, n.mode, n.net.bind, n.device)
+			p := n.NewPeer(util.UCTL.UserId, frame.SrcIP.String(), headerPkt.PubKey, n.cache)
+			p.node = n
 
 			if p.GetEndpoint() == nil || p.GetEndpoint().DstToString() != frame.RemoteAddr.String() {
+				logger.Debugf("this is a symetric nat device: %s", frame.RemoteAddr.String())
 				//更新peer
 				ep := NewEndpoint(frame.RemoteAddr.String())
 				p.SetEndpoint(ep)
@@ -116,13 +119,24 @@ func (n *Node) udpInHandler() HandlerFunc {
 			copy(newFrame.Packet[:newFrame.Size], buff)
 			n.PutPktToOutbound(newFrame)
 		case util.HandShakeMsgTypeAck: //use for relay
-			_, err = CachePeers(n.privateKey, frame, n.cache, n.mode, n.net.bind, n.device)
+			//_, err = CachePeers(n.privateKey, frame, n.cache, n.mode, n.net.bind, n)
 			p, err := n.cache.GetPeer(frame.UidString(), frame.SrcIP.String())
+			hpkt, err := handshake.Decode(util.HandShakeMsgTypeAck, frame.Buff)
+			if err != nil {
+				return err
+			}
+			uid := frame.UidString()
+			srcIP := frame.SrcIP.String()
+			ep := NewEndpoint(frame.RemoteAddr.String())
+			p.SetEndpoint(ep)
 			p.SetP2P(true)
+			p.SetCodec(security.New(n.privateKey, hpkt.PubKey))
+			err = n.cache.SetPeer(uid, srcIP, p)
 			n.cache.SetPeer(frame.UidString(), frame.SrcIP.String(), p)
 			if err != nil {
 				return err
 			}
+			logger.Infof("node [%v] build a p2p to node [%v]", frame.DstIP, frame.SrcIP)
 		case util.KeepaliveMsgType:
 		}
 
@@ -136,22 +150,27 @@ func (n *Node) handleQueryPeers(frame *Frame) {
 	for _, info := range peers.Peers {
 		ip := info.IP
 		if ip.String() == n.device.IPToString() {
+			//go over if ip is local ip
 			continue
 		}
 
 		addr := info.RemoteAddr
-		p := NewPeer(frame.UidString(), ip.String(), n.privateKey.NewPubicKey(), n.cache, n.mode, n.net.bind, n.device) //now has no pubKey
+		p := n.NewPeer(frame.UidString(), ip.String(), n.privateKey.NewPubicKey(), n.cache) //now has no pubKey
 		if p.GetEndpoint() == nil {
 			p.SetEndpoint(NewEndpoint(addr.String()))
 		}
+		p.node = n
+		p.mode = 1
 		err := n.cache.SetPeer(frame.UidString(), ip.String(), p)
 		if err != nil {
 			return
 		}
 
-		p.Start()
-		if p.GetStatus() {
+		if !p.GetStatus() {
+			p.Start()
+		} else {
 			p.Handshake(ip)
 		}
+
 	}
 }

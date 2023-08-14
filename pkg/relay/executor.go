@@ -112,9 +112,8 @@ func (r *RegServer) serverUdpHandler() device.HandlerFunc {
 			newFrame.Size = len(buff)
 			r.PutPktToOutbound(newFrame)
 		case util.HandShakeMsgType:
-			if _, err := device.CachePeers(r.key.privateKey, frame, r.cache, 2, nil, nil); err != nil {
-				return err
-			}
+			node := new(device.Node)
+			node.NewPeer(frame.UidString(), frame.SrcIP.String(), r.key.privateKey.NewPubicKey(), r.cache)
 			//build handshake resp
 			hpkt := handshake.NewPacket(util.HandShakeMsgTypeAck, frame.UidString())
 			hpkt.Header.SrcIP = frame.DstIP

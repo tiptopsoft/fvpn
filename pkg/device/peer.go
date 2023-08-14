@@ -27,10 +27,10 @@ import (
 )
 
 type Peer struct {
-	id          uint64
 	isTry       atomic.Bool
+	node        *Node
+	mode        int
 	ip          string
-	mode        int //1 node 2 registry
 	device      tun.Device
 	isRelay     bool
 	index       atomic.Int32
@@ -92,21 +92,8 @@ func (p *Peer) GetP2P() bool {
 func (p *Peer) Start() {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-
-	if !p.isTry.Load() {
-		logger.Debugf("peer has tried p2p, but failed. peer: %v", p.GetEndpoint().DstToString())
-		return
-	}
-
-	if p.GetStatus() {
-		logger.Debugf("peers [%v] started, use p2p: [%v]", p.ip, p.p2p)
-		return
-	}
-
 	p.SetStatus(true)
 	if p.mode == 1 {
-		go p.SendPackets()
-
 		go func() {
 			timer := time.NewTimer(time.Second * 10)
 			defer timer.Stop()
@@ -133,6 +120,7 @@ func (p *Peer) Start() {
 					if b {
 						//shutdown this peer
 						p.close()
+						logger.Warnf("build p2p to node [%v] failed,exit now", p.ip)
 					}
 					timer.Reset(time.Second * 30)
 				}
@@ -145,39 +133,9 @@ func (p *Peer) SetEndpoint(ep Endpoint) {
 	p.endpoint = ep
 }
 
-func NewPeer(uid, srcIP string, pk security.NoisePublicKey, cache Interface, mode int, bind Bind, device tun.Device) *Peer {
-	peer, _ := cache.GetPeer(uid, srcIP)
-	if peer != nil {
-		return peer
-	}
-
-	logger.Debugf("will create peer for userId: %v, ip: %v", uid, srcIP)
-	p := new(Peer)
-	if bind != nil {
-		p.bind = bind
-	}
-	p.mode = mode
-	p.isTry.Store(true)
-	p.id = uint64(time.Now().Nanosecond())
-	p.st = time.Now()
-	p.device = device
-	p.cache = cache
-	p.ip = srcIP
-	p.checkCh = make(chan int, 1)
-	p.sendCh = make(chan int, 1)
-	p.keepaliveCh = make(chan int, 1)
-	p.pubKey = pk
-	p.queue.outBound = NewOutBoundQueue()
-	p.queue.inBound = NewInBoundQueue()
-
-	cache.SetPeer(uid, srcIP, p)
-	logger.Debugf("created peer for : %v, peer: [%v]", srcIP, p.GetEndpoint())
-	return p
-}
-
 func (p *Peer) Handshake(dstIP net.IP) {
 	hpkt := handshake.NewPacket(util.HandShakeMsgType, util.UCTL.UserId)
-	hpkt.Header.SrcIP = p.device.Addr()
+	hpkt.Header.SrcIP = p.node.device.Addr()
 	hpkt.Header.DstIP = dstIP
 	hpkt.PubKey = p.pubKey
 	buff, err := handshake.Encode(hpkt)
@@ -192,31 +150,31 @@ func (p *Peer) Handshake(dstIP net.IP) {
 	f.FrameType = util.HandShakeMsgType
 	f.Peer = p
 	logger.Debugf("sending handshake pubkey to: %v, pubKey: %v, remote address: [%v], type: [%v]", dstIP.String(), p.pubKey, p.GetEndpoint().DstToString(), util.GetFrameTypeName(util.HandShakeMsgType))
-	p.PutPktToOutbound(f)
+	p.node.PutPktToOutbound(f)
 }
 
 func (p *Peer) PutPktToOutbound(pkt *Frame) {
 	p.queue.outBound.c <- pkt
 }
 
-func (p *Peer) SendPackets() {
-	for {
-		select {
-		case <-p.sendCh:
-			return
-		case pkt := <-p.queue.outBound.c:
-			send, err := p.bind.Send(pkt.Packet[:pkt.Size], p.GetEndpoint())
-			if err != nil {
-				logger.Error(err)
-				continue
-			}
-			t := time.Since(pkt.ST)
-			logger.Debugf("node [%v] has send %d packets to %s, data type: [%v], cost: [%v]", p.id, send, p.GetEndpoint().DstToString(), util.GetFrameTypeName(pkt.FrameType), t)
-		default:
-
-		}
-	}
-}
+//func (p *Peer) SendPackets() {
+//	for {
+//		select {
+//		case <-p.sendCh:
+//			return
+//		case pkt := <-p.queue.outBound.c:
+//			send, err := p.bind.Send(pkt.Packet[:pkt.Size], p.GetEndpoint())
+//			if err != nil {
+//				logger.Error(err)
+//				continue
+//			}
+//			t := time.Since(pkt.ST)
+//			logger.Debugf("node [%v] has send %d packets to %s, data type: [%v], cost: [%v]", p.id, send, p.GetEndpoint().DstToString(), util.GetFrameTypeName(pkt.FrameType), t)
+//		default:
+//
+//		}
+//	}
+//}
 
 func (p *Peer) keepalive() {
 	pkt, err := packet.NewHeader(util.KeepaliveMsgType, "")
@@ -234,7 +192,7 @@ func (p *Peer) keepalive() {
 	f.Size = size
 	f.FrameType = util.KeepaliveMsgType
 
-	p.PutPktToOutbound(f)
+	p.node.PutPktToOutbound(f)
 }
 
 func (p *Peer) check() bool {
