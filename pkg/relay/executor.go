@@ -71,7 +71,6 @@ func (r *RegServer) writeUdpHandler() device.HandlerFunc {
 // serverUdpHandler  core self handler
 func (r *RegServer) serverUdpHandler() device.HandlerFunc {
 	return func(ctx context.Context, frame *device.Frame) error {
-		logger.Infof("server got packet size:%d, data type: [%v]", frame.Size, util.GetFrameTypeName(util.MsgTypePacket))
 		switch frame.FrameType {
 		case util.MsgTypeRegisterSuper:
 			err := r.register(frame)
@@ -95,13 +94,16 @@ func (r *RegServer) serverUdpHandler() device.HandlerFunc {
 			peers := r.cache.ListPeers(frame.UidString())
 			peerAck := peer.NewPeerPacket(frame.UidString())
 
-			for ip, p := range peers {
-				info := peer.PeerInfo{
-					IP:         net.ParseIP(ip),
-					RemoteAddr: *p.GetEndpoint().DstIP(),
+			if len(peers) > 0 {
+				for ip, p := range peers {
+					info := peer.PeerInfo{
+						IP:         net.ParseIP(ip),
+						RemoteAddr: *p.GetEndpoint().DstIP(),
+					}
+					peerAck.Peers = append(peerAck.Peers, info)
 				}
-				peerAck.Peers = append(peerAck.Peers, info)
 			}
+
 			buff, _ := peer.Encode(peerAck)
 
 			newFrame := device.NewFrame()
@@ -112,9 +114,10 @@ func (r *RegServer) serverUdpHandler() device.HandlerFunc {
 			newFrame.Size = len(buff)
 			r.PutPktToOutbound(newFrame)
 		case util.HandShakeMsgType:
-			if _, err := device.CachePeers(r.key.privateKey, frame, r.cache, 2, nil, nil); err != nil {
-				return err
-			}
+			node := new(device.Node)
+			peer := node.NewPeer(frame.UidString(), frame.SrcIP.String(), r.key.privateKey.NewPubicKey(), r.cache)
+			peer.SetEndpoint(device.NewEndpoint(frame.RemoteAddr.String()))
+			r.cache.SetPeer(frame.UidString(), frame.SrcIP.String(), peer)
 			//build handshake resp
 			hpkt := handshake.NewPacket(util.HandShakeMsgTypeAck, frame.UidString())
 			hpkt.Header.SrcIP = frame.DstIP
