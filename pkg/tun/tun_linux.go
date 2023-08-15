@@ -34,7 +34,7 @@ type Ifreq struct {
 	Flags uint16
 }
 
-func New() (*NativeTun, error) {
+func New() (Device, error) {
 	name := fmt.Sprintf("%s%d", DefaultNamePrefix, 0)
 	var f = "/dev/net/tun"
 

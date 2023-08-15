@@ -19,7 +19,7 @@ ARCH = amd64
 
 
 build:
-	bash ${shell pwd}/hack/build.sh
+	bash ${shell pwd}/hack/build_all.sh
 build-m1:
 	GOPROXY=https://goproxy.cn,direct go build -v -o bin/fvpn main.go
 
