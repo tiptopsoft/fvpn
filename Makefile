@@ -25,5 +25,9 @@ build-m1:
 
 image: build
 	docker build -t registry.cn-hangzhou.aliyuncs.com/fvpn/fvpn:${tags} -f ${shell pwd}/docker/Dockerfile ${shell pwd}/bin/linux/amd64
+
+image-m1: build
+	docker build -t  registry.cn-hangzhou.aliyuncs.com/fvpn/fvpn:${tags} -f ${shell pwd}/docker/Dockerfile ${shell pwd}/bin/darwin/arm64
+
 image-push: image
 	docker push registry.cn-hangzhou.aliyuncs.com/fvpn/fvpn:${tags}
