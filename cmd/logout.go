@@ -9,7 +9,8 @@ import (
 func logout() *cobra.Command {
 	var opts loginOptions
 	cmd := &cobra.Command{
-		Use: "logout",
+		Use:  "logout",
+		Long: `logout out fvpn, once you logout, packet will be invalid, because fvpn check each packet`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return nil
 		},

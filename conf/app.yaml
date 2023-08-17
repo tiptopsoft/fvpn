@@ -1,5 +1,4 @@
 node:
-  listen: :3000
   registry: 127.0.0.1:4000
   #  registry: tiptopsoft.cn
   log:

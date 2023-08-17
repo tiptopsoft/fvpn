@@ -21,7 +21,7 @@ import (
 	"strings"
 )
 
-// Interface a Interface listens a port for IPV6 and IPv4 UDP packets. Also send packets to destination peer.
+// Interface an Interface listens a port for IPV6 and IPv4 UDP packets. Also send packets to destination peer.
 type Interface interface {
 	// Open listen a port using a given port, if not success, a random port will return, which is actualPort
 	Open(port uint16) (actualPort uint16, err error)

@@ -166,7 +166,7 @@ func Start(cfg *util.Config) error {
 
 func (n *Node) up() error {
 	defer n.wg.Done()
-	port, err := n.net.conn.Open(6061)
+	port, err := n.net.conn.Open(uint16(n.cfg.Listen))
 	logger.Infof("fvpn started at: %d", port)
 	if err != nil {
 		return err

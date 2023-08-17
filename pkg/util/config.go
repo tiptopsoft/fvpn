@@ -42,7 +42,7 @@ type Config struct {
 type NodeCfg struct {
 	Registry   string `mapstructure:"registry"`
 	Udp        string `mapstructure:"udp"`
-	Listen     string `mapstructure:"listen"`
+	Listen     int    `mapstructure:"listen"`
 	HttpListen string `mapstructure:"httpListen"`
 	ConsoleUrl string `mapstructure:"consoleUrl"`
 	//Protocol   Protocol `mapstructure:"type"`
@@ -141,7 +141,7 @@ func InitConfig() (config *Config, err error) {
 	viper.SetDefault("node.Udp", "udp4")
 	viper.SetDefault("node.Encrypt.Enable", true)
 	viper.SetDefault("node.Auth.Enable", true)
-	viper.SetDefault("node.Listen", ":3000")
+	viper.SetDefault("node.Listen", 6061)
 	viper.SetDefault("registry.Listen", ":4000")
 	viper.SetDefault("registry.HttpListen", ":4001")
 	viper.SetDefault("registry.redis.enable", false)

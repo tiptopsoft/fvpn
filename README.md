@@ -2,7 +2,8 @@
 
 Fvpn is a smart vpn software inspired by wireguard. Its aim is allowing all kinds devices, like cell phones,vms,pcs and
 so
-on to communicate with each other, as if they all reside in the same physical data center or cloud region.
+on to communicate with each other, as if they all reside in the same physical data center or cloud region,
+default each pair node will build p2p connection, all your node will compose a private network mesh.
 
 ## Quick start
 

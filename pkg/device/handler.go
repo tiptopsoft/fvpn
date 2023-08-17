@@ -54,7 +54,6 @@ func WithMiddlewares(handler Handler, middlewares ...Middleware) Handler {
 
 func (n *Node) tunInHandler() HandlerFunc {
 	return func(ctx context.Context, frame *Frame) error {
-		//defer frame.Unlock()
 		n.PutPktToOutbound(frame)
 		return nil
 	}
@@ -93,7 +92,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 			p := n.NewPeer(util.UCTL.UserId, frame.SrcIP.String(), headerPkt.PubKey, n.cache)
 			p.node = n
 
-			//if just a node behind Symmetric nat, also update endpoint to build p2p
+			//if just one node behind Symmetric nat, also update endpoint to build p2p
 			if p.GetEndpoint() == nil || p.GetEndpoint().DstToString() != frame.RemoteAddr.String() {
 				logger.Debugf("this is a symetric nat device: %s", frame.RemoteAddr.String())
 				//更新peer
@@ -102,7 +101,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 				n.cache.SetPeer(frame.UidString(), frame.SrcIP.String(), p)
 			}
 
-			//build handshake resp
+			//build handshake ack
 			hpkt := handshake.NewPacket(util.HandShakeMsgTypeAck, frame.UidString())
 			hpkt.Header.SrcIP = frame.DstIP
 			hpkt.Header.DstIP = frame.SrcIP
@@ -121,7 +120,6 @@ func (n *Node) udpInHandler() HandlerFunc {
 			copy(newFrame.Packet[:newFrame.Size], buff)
 			n.PutPktToOutbound(newFrame)
 		case util.HandShakeMsgTypeAck: //use for relay
-			//_, err = CachePeers(n.privateKey, frame, n.cache, n.mode, n.net.conn, n)
 			p, err := n.cache.GetPeer(frame.UidString(), frame.SrcIP.String())
 			hpkt, err := handshake.Decode(util.HandShakeMsgTypeAck, frame.Buff)
 			if err != nil {
@@ -131,14 +129,16 @@ func (n *Node) udpInHandler() HandlerFunc {
 			srcIP := frame.SrcIP.String()
 			ep := conn.NewEndpoint(frame.RemoteAddr.String())
 			p.SetEndpoint(ep)
-			p.SetP2P(true)
+			if !p.p2p {
+				p.SetP2P(true)
+				logger.Infof("node [%v] build a p2p to node [%v]", frame.DstIP, frame.SrcIP)
+			}
 			p.SetCodec(security.New(n.privateKey, hpkt.PubKey))
 			err = n.cache.SetPeer(uid, srcIP, p)
 			n.cache.SetPeer(frame.UidString(), frame.SrcIP.String(), p)
 			if err != nil {
 				return err
 			}
-			logger.Infof("node [%v] build a p2p to node [%v]", frame.DstIP, frame.SrcIP)
 		case util.KeepaliveMsgType:
 		}
 

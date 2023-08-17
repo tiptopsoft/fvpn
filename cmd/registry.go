@@ -15,7 +15,7 @@ func RegCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "serve",
 		Short: "s",
-		Long:  `fvpn start a registry, a relay server for node to node mesh.`,
+		Long:  `fvpn start a registry, a data center/relay server, is our core service`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return nil
 		},

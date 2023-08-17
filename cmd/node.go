@@ -18,7 +18,7 @@ func EdgeCmd() *cobra.Command {
 		Aliases:      []string{"n"},
 		SilenceUsage: true,
 		Short:        "start up a node, for private network proxy",
-		Long:         `Start up a node, for private network proxy`,
+		Long:         `start up a node is start a private network proxy, use fvpn, you can use any device visit your private network from any place`,
 
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return nil

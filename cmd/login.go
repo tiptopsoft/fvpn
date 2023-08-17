@@ -23,7 +23,7 @@ func loginCmd() *cobra.Command {
 		Use:          "login",
 		SilenceUsage: true,
 		Short:        "login fvpn",
-		Long:         `login fvpn use username and password which registered on our site`,
+		Long:         `when you are using fvpn, you should logon first, login fvpn use username and password which registered on our site, if you did not logon, you can not join any networks.`,
 
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return nil

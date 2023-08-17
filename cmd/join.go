@@ -8,7 +8,6 @@ import (
 	"github.com/tiptopsoft/fvpn/pkg/util"
 )
 
-// Join a networkId will be created tun device. and will be assigned a IP which can be found in our website.
 type joinOptions struct {
 	*util.NodeCfg
 	StarConfigFilePath string
@@ -21,7 +20,7 @@ func joinCmd() *cobra.Command {
 		Use:          "join",
 		SilenceUsage: true,
 		Short:        "join a network",
-		Long:         `join a network which created by user, network after created will show on our site`,
+		Long:         `join a network which created by user, networkId could be found on our site after user registered, use free services or pay services`,
 
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return nil
