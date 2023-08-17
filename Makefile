@@ -8,5 +8,8 @@ build-m1:
 image: build
 	docker build -t registry.cn-hangzhou.aliyuncs.com/fvpn/fvpn:${tags} -f ${shell pwd}/docker/Dockerfile ${shell pwd}/bin/linux/amd64
 
+dist:
+	bash ${shell pwd}/hack/dist.sh
+
 image-push: image
 	docker push registry.cn-hangzhou.aliyuncs.com/fvpn/fvpn:${tags}

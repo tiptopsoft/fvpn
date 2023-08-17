@@ -42,10 +42,7 @@ you should put app.yaml to /etc/fvpn or ~/.fvpn/, then some configurations will 
 
 ```shell
 node:
-  listen: :3000
   registry: tiptopsoft.cn
-registry:
-  listen: :4000
 ```
 
 ## Build
