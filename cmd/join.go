@@ -12,6 +12,7 @@ type joinOptions struct {
 	*util.NodeCfg
 	StarConfigFilePath string
 	addr               string
+	networkId          string
 }
 
 func joinCmd() *cobra.Command {
@@ -20,7 +21,9 @@ func joinCmd() *cobra.Command {
 		Use:          "join",
 		SilenceUsage: true,
 		Short:        "join a network",
-		Long:         `join a network which created by user, networkId could be found on our site after user registered, use free services or pay services`,
+		Long: `join a network which created by user, 
+networkId could be found on our site after user registered, 
+use free services or pay services`,
 
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return nil
@@ -30,25 +33,36 @@ func joinCmd() *cobra.Command {
 			if len(args) < 1 {
 				return errors.New("networkId should be given")
 			}
-			return runJoin(args)
+			return runJoin(args, &opts)
 		},
 	}
 	fs := cmd.Flags()
-	fs.StringVarP(&opts.addr, "config", "", "", "config file for fvpn")
+	fs.StringVarP(&opts.networkId, "id", "id", "", "private network id")
 
 	return cmd
 }
 
 // runJoin join a network cmd
-func runJoin(args []string) error {
+func runJoin(args []string, opts *joinOptions) error {
 	cfg, err := util.InitConfig()
 	if err != nil {
 		return err
 	}
-	if err := device.RunJoinNetwork(cfg, args[0]); err != nil {
+
+	var networkId string
+	if args[0] != "" {
+		networkId = args[0]
+	} else {
+		networkId = opts.networkId
+	}
+
+	if networkId == "" {
+		return errors.New("networkId is empty")
+	}
+	if err := device.RunJoinNetwork(cfg, networkId); err != nil {
 		return err
 	}
 
-	fmt.Println(fmt.Sprintf("Join to network: %s successed", args[0]))
+	fmt.Println(fmt.Sprintf("Join to network: %s successed", networkId))
 	return nil
 }

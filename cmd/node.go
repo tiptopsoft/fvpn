@@ -8,10 +8,10 @@ import (
 
 type upOptions struct {
 	*util.NodeCfg
-	StarConfigFilePath string
+	Daemon bool
 }
 
-func EdgeCmd() *cobra.Command {
+func nodeCmd() *cobra.Command {
 	var opts upOptions
 	var cmd = &cobra.Command{
 		Use:          "node",
@@ -28,8 +28,6 @@ func EdgeCmd() *cobra.Command {
 			return runNode(&opts)
 		},
 	}
-	fs := cmd.Flags()
-	fs.StringVarP(&opts.StarConfigFilePath, "config", "", "", "config file for fvpn")
 
 	return cmd
 }

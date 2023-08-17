@@ -1,17 +1,18 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/tiptopsoft/fvpn/pkg/relay"
 	"github.com/tiptopsoft/fvpn/pkg/util"
 )
 
-type RegStarOptions struct {
+type RegOptions struct {
 	Listen int
 }
 
-func RegCmd() *cobra.Command {
-	var opts RegStarOptions
+func registryCmd() *cobra.Command {
+	var opts RegOptions
 	cmd := &cobra.Command{
 		Use:   "serve",
 		Short: "s",
@@ -25,12 +26,12 @@ func RegCmd() *cobra.Command {
 	}
 
 	fs := cmd.Flags()
-	fs.IntVarP(&opts.Listen, "port", "p", 3000, "tun server port")
+	fs.IntVarP(&opts.Listen, "port", "p", 0, "registry server port")
 
 	return cmd
 }
 
-func runSuper(opts *RegStarOptions) error {
+func runSuper(opts *RegOptions) error {
 
 	config, err := util.InitConfig()
 	if err != nil {
@@ -38,6 +39,10 @@ func runSuper(opts *RegStarOptions) error {
 	}
 	s := relay.RegServer{
 		RegistryCfg: config.RegistryCfg,
+	}
+
+	if opts.Listen != 0 {
+		s.RegistryCfg.Listen = fmt.Sprintf(":%d", opts.Listen)
 	}
 
 	return s.Start()

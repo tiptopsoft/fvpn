@@ -14,7 +14,7 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() {
-	rootCmd.AddCommand(EdgeCmd(), RegCmd(), joinCmd(), loginCmd(), logout(), leaveCmd())
+	rootCmd.AddCommand(nodeCmd(), registryCmd(), joinCmd(), loginCmd(), logout(), leaveCmd())
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(-1)
 	}

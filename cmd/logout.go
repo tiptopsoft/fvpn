@@ -7,7 +7,6 @@ import (
 )
 
 func logout() *cobra.Command {
-	var opts loginOptions
 	cmd := &cobra.Command{
 		Use:  "logout",
 		Long: `logout out fvpn, once you logout, packet will be invalid, because fvpn check each packet`,
@@ -15,14 +14,14 @@ func logout() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runLogout(&opts)
+			return runLogout()
 		},
 	}
 
 	return cmd
 }
 
-func runLogout(opts *loginOptions) error {
+func runLogout() error {
 	localCfg, err := util.GetLocalConfig()
 	if err != nil {
 		return fmt.Errorf("logout failed, %v", err)

@@ -20,7 +20,10 @@ func leaveCmd() *cobra.Command {
 		Use:          "leave",
 		SilenceUsage: true,
 		Short:        "leave a network",
-		Long:         `leave a joined network, once use leave a network, fvpn can not route any frame to dst node, if you want continue your destination routing, you can join it again`,
+		Long: `leave a joined network, once use leave a network, 
+fvpn can not route any frame to dst node, 
+if you want continue your destination routing, 
+you can join it again`,
 
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return nil
@@ -34,7 +37,7 @@ func leaveCmd() *cobra.Command {
 		},
 	}
 	fs := cmd.Flags()
-	fs.StringVarP(&opts.addr, "config", "", "", "config file for fvpn")
+	fs.StringVarP(&opts.networkId, "id", "id", "", "network id")
 
 	return cmd
 }
