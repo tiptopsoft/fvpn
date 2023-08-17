@@ -151,7 +151,7 @@ func Start(cfg *util.Config) error {
 		logger.Error("timeout to init!")
 		return err
 	}
-	d, err := NewNode(iface, conn.New(), cfg.NodeCfg)
+	d, err := NewNode(iface, conn.New(cfg.NodeCfg.IPV6.Enable), cfg.NodeCfg)
 	if err != nil {
 		return err
 	}

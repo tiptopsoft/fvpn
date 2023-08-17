@@ -20,6 +20,7 @@ import (
 	"github.com/tiptopsoft/fvpn/pkg/security"
 	"github.com/tiptopsoft/fvpn/pkg/util"
 	"net"
+	"runtime"
 	"sync"
 
 	"github.com/tiptopsoft/fvpn/pkg/log"
@@ -69,22 +70,20 @@ func (r *RegServer) Start() error {
 	return nil
 }
 
-// Peer register cache for net, and for user create client
 func (r *RegServer) start(address string) error {
-	conn, err := net.ListenUDP("udp", &net.UDPAddr{
-		IP: net.IPv4zero, Port: 4000})
+	c, err := net.ListenPacket("udp", address)
 	if err != nil {
 		return err
 	}
-	r.conn = conn
+	r.conn = c.(*net.UDPConn)
 	logger.Debugf("server start at: %s", address)
 
-	//nums := runtime.NumCPU()
-	//for i := 0; i < nums/2; i++ {
-	r.ws.Add(1)
-	go r.RoutineInBound(1)
-	go r.RoutineOutBound(2)
-	//}
+	nums := runtime.NumCPU()
+	for i := 0; i < nums/2; i++ {
+		r.ws.Add(1)
+		go r.RoutineInBound(i)
+		go r.RoutineOutBound(i)
+	}
 
 	go r.ReadFromUdp()
 	return nil
@@ -93,10 +92,6 @@ func (r *RegServer) start(address string) error {
 func (r *RegServer) PutPktToOutbound(frame *device.Frame) {
 	r.queue.outBound.PutPktToOutbound(frame)
 }
-
-//func (r *RegServer) GetPktFromOutbound() *packet.Frame {
-//	return r.queue.outBound.GetPktFromOutbound()
-//}
 
 func (r *RegServer) PutPktToInbound(frame *device.Frame) {
 	r.queue.inBound.PutPktToInbound(frame)
@@ -117,10 +112,8 @@ func (r *RegServer) RoutineInBound(id int) {
 }
 
 func (r *RegServer) handleInPackets(pkt *device.Frame, id int) {
-	//pkt.Lock()
 	defer func() {
 		logger.Debugf("handing in packet success in %d routine finished", id)
-		//defer pkt.Unlock()
 	}()
 
 	err := r.readHandler.Handle(pkt.Context(), pkt)
@@ -142,7 +135,6 @@ func (r *RegServer) RoutineOutBound(id int) {
 }
 
 func (r *RegServer) handleOutPackets(ctx context.Context, pkt *device.Frame, id int) {
-	//pkt.Lock()
 	defer func() {
 		logger.Debugf("handing out packet success in %d routine finished", id)
 	}()

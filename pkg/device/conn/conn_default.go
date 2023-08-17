@@ -22,14 +22,17 @@ import (
 type Default struct {
 	v4conn *net.UDPConn
 	v6conn *net.UDPConn
+	ipv6   bool
 }
 
 var (
 	_ Interface = (*Default)(nil)
 )
 
-func New() Interface {
-	return &Default{}
+func New(enable bool) Interface {
+	return &Default{
+		ipv6: enable,
+	}
 }
 
 func (s *Default) Open(port uint16) (uint16, error) {
@@ -64,8 +67,7 @@ func (s *Default) Open(port uint16) (uint16, error) {
 }
 
 func (s *Default) Send(buff []byte, ep Endpoint) (int, error) {
-	var enable bool
-	if enable {
+	if s.ipv6 {
 		return s.send6(buff, ep)
 	}
 
