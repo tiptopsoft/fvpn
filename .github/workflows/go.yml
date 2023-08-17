@@ -5,9 +5,9 @@ name: Go
 
 on:
   push:
-    branches: [ "develop" ]
+    branches: [ "dev" ]
   pull_request:
-    branches: [ "develop" ]
+    branches: [ "dev" ]
 
 env:
   tags: v0.1
