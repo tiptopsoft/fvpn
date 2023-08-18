@@ -148,7 +148,7 @@ func Start(cfg *util.Config) error {
 	}
 	resp, err := client.Init(appId)
 	if err != nil {
-		logger.Error("timeout to init!")
+		logger.Error(err)
 		return err
 	}
 	d, err := NewNode(iface, conn.New(cfg.NodeCfg.IPV6.Enable), cfg.NodeCfg)

@@ -48,10 +48,6 @@ type Device interface {
 	Addr() net.IP
 }
 
-var (
-	_ Device = (*NativeTun)(nil)
-)
-
 // NativeTun a tuntap for net
 type NativeTun struct {
 	lock      sync.Mutex

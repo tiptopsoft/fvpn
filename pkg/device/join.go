@@ -26,8 +26,9 @@ func RunJoinNetwork(cfg *util.Config, networkId string) error {
 	if err != nil {
 		return err
 	}
+	router := NewRouter(resp.CIDR, resp.Name, resp.IP)
 
-	return NewRouter(resp.CIDR, resp.Name).AddRouter(resp.CIDR)
+	return router.AddRouter(resp.CIDR)
 }
 
 func RunLeaveNetwork(cfg *util.Config, networkId string) error {
@@ -40,5 +41,5 @@ func RunLeaveNetwork(cfg *util.Config, networkId string) error {
 		return err
 	}
 
-	return NewRouter(resp.CIDR, resp.Name).RemoveRouter(resp.CIDR)
+	return NewRouter(resp.CIDR, resp.Name, resp.IP).RemoveRouter(resp.CIDR)
 }

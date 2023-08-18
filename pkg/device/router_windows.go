@@ -14,21 +14,31 @@
 
 package device
 
-type RouterManager interface {
-	AddRouter(cidr string) error
-	RemoveRouter(cidr string) error
-}
+import (
+	"fmt"
+	"github.com/tiptopsoft/fvpn/pkg/util"
+	"net"
+)
 
-type router struct {
-	cidr     string
-	name     string
-	deviceIP string
-}
-
-func NewRouter(cidr, name, deviceIP string) RouterManager {
-	return &router{
-		cidr:     cidr,
-		name:     name,
-		deviceIP: deviceIP,
+func (r *router) AddRouter(cidr string) error {
+	//first remove
+	if err := r.RemoveRouter(cidr); err != nil {
+		return err
 	}
+	return r.action(cidr, "add")
+}
+
+func (r *router) RemoveRouter(cidr string) error {
+	return r.action(cidr, "delete")
+}
+
+func (r *router) action(cidr, action string) error {
+	_, ipNet, err := net.ParseCIDR(cidr)
+	if err != nil {
+		return err
+	}
+
+	rule := fmt.Sprintf("route %s %v mask %s %s", action, ipNet.IP, "255.255.255.0", r.deviceIP)
+	//example: route add -net 5.244.24.0/24 dev fvpn0
+	return util.ExecCommand("cmd", "/C", rule)
 }
