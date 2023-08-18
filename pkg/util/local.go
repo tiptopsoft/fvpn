@@ -3,6 +3,7 @@ package util
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -45,6 +46,10 @@ func getLocal(mode int) (*Local, error) {
 func (l *Local) ReadFile() (config *LocalConfig, err error) {
 	decoder := json.NewDecoder(l.file)
 	err = decoder.Decode(&config)
+
+	if errors.Is(err, io.EOF) {
+		return &LocalConfig{}, nil
+	}
 	return
 }
 

@@ -37,7 +37,7 @@ use free services or pay services`,
 		},
 	}
 	fs := cmd.Flags()
-	fs.StringVarP(&opts.networkId, "id", "id", "", "private network id")
+	fs.StringVarP(&opts.networkId, "id", "", "", "private network id")
 
 	return cmd
 }

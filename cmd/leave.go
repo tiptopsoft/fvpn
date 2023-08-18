@@ -37,7 +37,7 @@ you can join it again`,
 		},
 	}
 	fs := cmd.Flags()
-	fs.StringVarP(&opts.networkId, "id", "id", "", "network id")
+	fs.StringVarP(&opts.networkId, "id", "", "", "network id")
 
 	return cmd
 }

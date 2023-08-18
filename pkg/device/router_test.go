@@ -1,7 +1,6 @@
 package device
 
 import (
-	"fmt"
 	"net"
 	"testing"
 )
@@ -13,5 +12,4 @@ func TestEncode(t *testing.T) {
 		panic(err)
 	}
 
-	fmt.Println(ipNet.String())
 }

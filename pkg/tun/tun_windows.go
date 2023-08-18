@@ -9,8 +9,10 @@ import (
 	"net"
 	"net/netip"
 	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
+	_ "unsafe"
 )
 
 func New() (Device, error) {
@@ -21,13 +23,20 @@ func (tun *adapter) Name() string {
 	return tun.name
 }
 
-func (tun *adapter) SetIP(net, ip string) error {
+func (tun *adapter) SetIP(net1, ip string) error {
+	var err error
+	var ipp netip.Prefix
+	tun.ip = net.ParseIP(ip)
 	link := winipcfg.LUID(tun.wt.LUID())
-	ipp, err := netip.ParsePrefix(ip)
+	if !strings.Contains(ip, "/") {
+		ip = fmt.Sprintf("%s/24", ip)
+		ipp, err = netip.ParsePrefix(ip)
+	}
 	if err != nil {
 		return err
 	}
 	err = link.SetIPAddresses([]netip.Prefix{ipp})
+
 	return err
 }
 
@@ -113,12 +122,9 @@ func (tun *adapter) Read(buff []byte) (int, error) {
 			copy(buff[:], packet)
 			tun.session.ReleaseReceivePacket(packet)
 			return size, nil
-		//case windows.ERROR_NO_MORE_ITEMS:
-		//	if !shouldSpin || uint64(nanotime()-start) >= spinloopDuration {
-		//		windows.WaitForSingleObject(tun.readWait, windows.INFINITE)
-		//		goto retry
-		//	}
-		//	continue
+		case windows.ERROR_NO_MORE_ITEMS:
+			windows.WaitForSingleObject(tun.readWait, windows.INFINITE)
+			continue
 		case windows.ERROR_HANDLE_EOF:
 			return 0, os.ErrClosed
 		case windows.ERROR_INVALID_DATA:
@@ -151,3 +157,6 @@ func (tun *adapter) Write(buff []byte) (int, error) {
 	}
 	return len(buff), nil
 }
+
+//go:linkname nanotime runtime.nanotime
+func nanotime() int64
