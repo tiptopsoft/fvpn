@@ -6,6 +6,7 @@ require (
 	github.com/dghubble/sling v1.4.1
 	github.com/gin-gonic/gin v1.9.1
 	github.com/moby/term v0.5.0
+	github.com/sevlyar/go-daemon v0.1.6
 	github.com/spf13/cobra v1.6.0
 	github.com/spf13/viper v1.13.0
 	go.uber.org/zap v1.17.0
@@ -29,6 +30,7 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect

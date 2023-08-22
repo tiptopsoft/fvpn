@@ -1,3 +1,5 @@
 .idea
 bin
 .vscode
+fvpn.log
+fvpn.pid
