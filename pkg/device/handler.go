@@ -135,6 +135,9 @@ func (n *Node) udpInHandler() HandlerFunc {
 			}
 			p.SetCodec(security.New(n.privateKey, hpkt.PubKey))
 			err = n.cache.SetPeer(uid, srcIP, p)
+			if !p.GetStatus() {
+				p.Start()
+			}
 			n.cache.SetPeer(frame.UidString(), frame.SrcIP.String(), p)
 			if err != nil {
 				return err

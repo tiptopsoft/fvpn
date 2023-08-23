@@ -18,18 +18,61 @@ import (
 	"errors"
 	"github.com/tiptopsoft/fvpn/pkg/util"
 	"sync"
+	"time"
 )
 
 type local struct {
-	lock  sync.Mutex
-	peers map[string]PeerMap //userId: map[cidr]*Peer
+	lock    sync.Mutex
+	peers   map[string]PeerMap //userId: map[cidr]*Peer
+	timeMap sync.Map
 }
 
-type PeerMap map[string]*Peer
+const (
+	expire = 1 * time.Minute
+)
+
+type PeerMap map[string]*Value
+
+type Value struct {
+	cidr string
+	peer *Peer
+	Time time.Time
+}
+
+func newValue(cidr string, peer *Peer) *Value {
+	return &Value{
+		cidr: cidr,
+		peer: peer,
+		Time: time.Now(),
+	}
+}
 
 func newLocal() Interface {
-	return &local{
+
+	local := &local{
 		peers: make(map[string]PeerMap, 1),
+	}
+	go func() {
+		local.checkExpire()
+	}()
+	return local
+}
+
+func (c *local) checkExpire() {
+	timer := time.NewTimer(time.Minute * 2)
+	defer timer.Stop()
+	for {
+		select {
+		case <-timer.C:
+			for _, peerMap := range c.peers {
+				for key, value := range peerMap {
+					if time.Now().Sub(value.Time) > 0 {
+						peerMap[key] = nil
+					}
+				}
+			}
+			timer.Reset(time.Minute * 2)
+		}
 	}
 }
 
@@ -45,7 +88,12 @@ func (c *local) SetPeer(userId, ip string, peer *Peer) error {
 		peerMap = make(PeerMap, 1)
 		c.peers[userId] = peerMap
 	}
-	peerMap[ip] = peer
+	peerMap[ip] = newValue(ip, peer)
+	//expt := time.Now().Add(expire)
+	//c.timeMap.Store(ip, expire)
+	//time.AfterFunc(expire, func() {
+	//
+	//})
 	//print
 	//for ip, p := range peerMap {
 	//	logger.Debugf("========================peer in cache,ip: [%v], peer: [%v], cipher: %v ", ip, p.endpoint.DstToString(), p.cipher)
@@ -60,16 +108,16 @@ func (c *local) GetPeer(userId, ip string) (*Peer, error) {
 	}
 
 	peerMap := c.peers[userId]
-	peer := peerMap[ip]
+	value := peerMap[ip]
 
 	// if peer not exists use relay
 	//if peer == nil {
 	//	return relayPeer, nil
 	//}
-	if peer == nil {
+	if value == nil {
 		return nil, errors.New("peer is nil")
 	}
-	return peer, nil
+	return value.peer, nil
 }
 
 func (c *local) ListPeers(userId string) PeerMap {
