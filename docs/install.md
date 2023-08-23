@@ -4,10 +4,11 @@ Download fvpn package from [download](https://tiptopsoft.cn)
 
 ## MAC OS & linux
 
-extract files to ~/fvpn
+extract files to '/usr/local/bin/'
 
 ```shell
-cd ~/fvpn && mv fvpn /usr/local/bin
+tar -xvf fvpn-xxx-fvpn-amd64.tar.gz .
+copy linux/amd64/fvpn /usr/local/bin
 ```
 
 ### start:
@@ -16,7 +17,7 @@ cd ~/fvpn && mv fvpn /usr/local/bin
 fvpn node
 ```
 
-once if you want to run fvpn in daemon in unix like os, use command below:
+once if you want to run fvpn daemon on unix like os, use command below:
 
 ```shell
 fvpn node -d
@@ -37,9 +38,9 @@ if you run in daemon, a log file named fvpn.log will be generated. contents in i
 ![img.png](images/log.png)
 
 - as you can see "no access to destination", because you have not joined any network. once we joined a networkId whose
-  cidr is "10.0.1.0", network can be connected together.
+  cidr is "10.0.1.0", network will reach.
 
-Now you can check your device on [dashboard](https://www.tiptopsoft.cn)
+Now you can check your device status on [dashboard](https://www.tiptopsoft.cn)
 
 ## windows
 
