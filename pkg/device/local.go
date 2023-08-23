@@ -23,7 +23,7 @@ import (
 
 type local struct {
 	lock    sync.Mutex
-	peers   map[string]PeerMap //userId: map[cidr]*Peer
+	peers   map[string]PeerMap //userId: map[Cidr]*Peer
 	timeMap sync.Map
 }
 
@@ -34,15 +34,15 @@ const (
 type PeerMap map[string]*Value
 
 type Value struct {
-	cidr string
-	peer *Peer
+	Cidr string
+	Peer *Peer
 	Time time.Time
 }
 
 func newValue(cidr string, peer *Peer) *Value {
 	return &Value{
-		cidr: cidr,
-		peer: peer,
+		Cidr: cidr,
+		Peer: peer,
 		Time: time.Now(),
 	}
 }
@@ -96,9 +96,9 @@ func (c *local) SetPeer(userId, ip string, peer *Peer) error {
 	//})
 	//print
 	//for ip, p := range peerMap {
-	//	logger.Debugf("========================peer in cache,ip: [%v], peer: [%v], cipher: %v ", ip, p.endpoint.DstToString(), p.cipher)
+	//	logger.Debugf("========================Peer in cache,ip: [%v], Peer: [%v], cipher: %v ", ip, p.endpoint.DstToString(), p.cipher)
 	//}
-	//every add a peer will print current peers in cache
+	//every add a Peer will print current peers in cache
 	return nil
 }
 
@@ -110,14 +110,14 @@ func (c *local) GetPeer(userId, ip string) (*Peer, error) {
 	peerMap := c.peers[userId]
 	value := peerMap[ip]
 
-	// if peer not exists use relay
-	//if peer == nil {
+	// if Peer not exists use relay
+	//if Peer == nil {
 	//	return relayPeer, nil
 	//}
 	if value == nil {
-		return nil, errors.New("peer is nil")
+		return nil, errors.New("Peer is nil")
 	}
-	return value.peer, nil
+	return value.Peer, nil
 }
 
 func (c *local) ListPeers(userId string) PeerMap {

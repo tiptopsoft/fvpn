@@ -57,10 +57,10 @@ func Decode() func(Handler) Handler {
 				//cache := ctx.Value("cache").(CacheFunc)
 				peer := frame.GetPeer()
 				if peer == nil {
-					return fmt.Errorf("dst ip: %v peer not found", frame.DstIP.String())
+					return fmt.Errorf("dst ip: %v Peer not found", frame.DstIP.String())
 				}
 
-				logger.Debugf("use src peer: [%v] to decode", peer.GetEndpoint().DstIP().String())
+				logger.Debugf("use src Peer: [%v] to decode", peer.GetEndpoint().DstIP().String())
 
 				logger.Debugf("data before decode: %v", buff)
 				decoded, err := peer.GetCodec().Decode(buff)
@@ -86,7 +86,7 @@ func Encode() func(Handler) Handler {
 				offset := packet.HeaderBuffSize
 				buff := frame.Packet[offset:frame.Size]
 				peer := frame.GetPeer()
-				logger.Debugf("peer is :%v, data before encode: %v", peer.GetEndpoint().DstIP(), buff)
+				logger.Debugf("Peer is :%v, data before encode: %v", peer.GetEndpoint().DstIP(), buff)
 				encoded, err := peer.GetCodec().Encode(buff)
 				if err != nil {
 					return err

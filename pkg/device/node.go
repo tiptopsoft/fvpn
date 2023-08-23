@@ -140,7 +140,7 @@ func Start(cfg *util.Config) error {
 		return err
 	}
 
-	//send http to get cidr
+	//send http to get Cidr
 	client := NewClient(cfg.NodeCfg.ControlUrl())
 	appId, err := appId()
 	if err != nil {
@@ -159,7 +159,7 @@ func Start(cfg *util.Config) error {
 	if err != nil {
 		return err
 	}
-	logger.Debugf("device name: %s, cidr: %s", d.device.Name(), d.device.IPToString())
+	logger.Debugf("device name: %s, Cidr: %s", d.device.Name(), d.device.IPToString())
 
 	return d.up()
 }
@@ -244,7 +244,7 @@ func (n *Node) ReadFromTun() {
 			}
 		}
 
-		logger.Debugf("frame's peer is :%v", frame.Peer.GetEndpoint().DstToString())
+		logger.Debugf("frame's Peer is :%v", frame.Peer.GetEndpoint().DstToString())
 		frame.SrcIP = n.device.Addr()
 		frame.DstIP = ipHeader.DstIP
 
@@ -355,7 +355,7 @@ func (n *Node) WriteToUDP() {
 		case pkt := <-n.queue.outBound.c:
 			dt := time.Since(pkt.ST)
 			dataType := util.GetFrameTypeName(pkt.FrameType)
-			logger.Debugf("before give to peer, data type: [%v], cost: [%v]", dataType, dt)
+			logger.Debugf("before give to Peer, data type: [%v], cost: [%v]", dataType, dt)
 			//pkt.Peer.PutPktToOutbound(pkt)
 			peer := pkt.Peer
 			send, err := pkt.Peer.node.net.conn.Send(pkt.Packet[:pkt.Size], pkt.Peer.GetEndpoint())
@@ -420,7 +420,7 @@ func (n *Node) NewPeer(uid, ip string, pk security.NoisePublicKey, cache Interfa
 		return peer
 	}
 
-	logger.Debugf("will create peer for userId: %v, ip: %v", uid, ip)
+	logger.Debugf("will create Peer for userId: %v, ip: %v", uid, ip)
 
 	p := new(Peer)
 	p.isTry.Store(true)
@@ -435,6 +435,6 @@ func (n *Node) NewPeer(uid, ip string, pk security.NoisePublicKey, cache Interfa
 	p.queue.inBound = NewInBoundQueue()
 
 	cache.SetPeer(uid, ip, p)
-	logger.Debugf("created peer for : %v, peer: [%v]", ip, p.GetEndpoint())
+	logger.Debugf("created Peer for : %v, Peer: [%v]", ip, p.GetEndpoint())
 	return p
 }

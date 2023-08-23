@@ -28,11 +28,11 @@ type Response struct {
 
 type JoinRequest struct {
 	NetWorkId string `json:"networkId"`
-	CIDR      string `json:"cidr"`
+	CIDR      string `json:"Cidr"`
 }
 
 type JoinResponse struct {
-	CIDR    string `json:"cidr"`
+	CIDR    string `json:"Cidr"`
 	IP      string `json:"ip"`
 	Name    string `json:"name"`
 	Network string `json:"network"`

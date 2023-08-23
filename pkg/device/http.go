@@ -49,7 +49,7 @@ func (n *Node) joinNet() gin.HandlerFunc {
 				return
 			}
 		} else {
-			ctx.JSON(500, HttpError("cidr is nil"))
+			ctx.JSON(500, HttpError("Cidr is nil"))
 			return
 		}
 
@@ -80,7 +80,7 @@ func (n *Node) leaveNet() gin.HandlerFunc {
 				return
 			}
 		} else {
-			ctx.JSON(500, HttpError("cidr is nil"))
+			ctx.JSON(500, HttpError("Cidr is nil"))
 			return
 		}
 

@@ -96,10 +96,10 @@ func (r *RegServer) serverUdpHandler() device.HandlerFunc {
 			peerAck := peer.NewPeerPacket(frame.UidString())
 
 			if len(peers) > 0 {
-				for ip, p := range peers {
+				for ip, value := range peers {
 					info := peer.PeerInfo{
 						IP:         net.ParseIP(ip),
-						RemoteAddr: *p.GetEndpoint().DstIP(),
+						RemoteAddr: *value.Peer.GetEndpoint().DstIP(),
 					}
 					peerAck.Peers = append(peerAck.Peers, info)
 				}

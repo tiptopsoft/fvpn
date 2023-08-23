@@ -82,7 +82,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 		case util.MsgTypePacket:
 			n.PutPktToInbound(frame)
 		case util.HandShakeMsgType:
-			//cache dst peer when receive a handshake
+			//cache dst Peer when receive a handshake
 			headerPkt, err := handshake.Decode(util.HandShakeMsgType, frame.Buff)
 			if err != nil {
 				logger.Errorf("invalid handshake packet: %v", err)

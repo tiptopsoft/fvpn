@@ -53,7 +53,7 @@ func newNodeNet(userId string) *nodeNet {
 	return m
 }
 
-// JoinIP will add an cidr or cidr, if you only give a cidr, cidr is: cidr.24, default 24 given
+// JoinIP will add an Cidr or Cidr, if you only give a Cidr, Cidr is: Cidr.24, default 24 given
 func (n *nodeNet) JoinIP(userId, ip string) {
 	IP := net.ParseIP(ip)
 	networks := n.networks[userId]

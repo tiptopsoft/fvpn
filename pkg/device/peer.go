@@ -48,7 +48,7 @@ type Peer struct {
 	cache       Interface
 
 	queue struct {
-		outBound *OutBoundQueue // data to write to dst peer
+		outBound *OutBoundQueue // data to write to dst Peer
 		inBound  *InBoundQueue  // data write to tun
 	}
 	cipher security.Codec
@@ -119,7 +119,7 @@ func (p *Peer) Start() {
 				case <-timer.C:
 					b := p.check()
 					if b {
-						//shutdown this peer
+						//shutdown this Peer
 						p.close()
 						logger.Warnf("build p2p to node [%v] failed,exit now", p.ip)
 					}
@@ -215,5 +215,5 @@ func (p *Peer) close() {
 	p.status = false
 	p.isTry.Store(false)
 	p.cache.SetPeer(util.UCTL.UserId, p.ip, p)
-	logger.Debugf("================peer stop signal have send to peer: %v", p.GetEndpoint().DstToString())
+	logger.Debugf("================Peer stop signal have send to Peer: %v", p.GetEndpoint().DstToString())
 }
