@@ -225,7 +225,7 @@ func (c *client) Tokens(req LoginRequest) (*LoginResponse, error) {
 	resp := new(Response)
 	_, err := c.sling.New().Post("api/v1/tokens").BodyJSON(req).Receive(resp, resp)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if resp.Code != 200 {
 		return nil, errors.New(resp.Message)
