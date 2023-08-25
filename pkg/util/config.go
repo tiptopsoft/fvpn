@@ -35,10 +35,9 @@ type Star struct {
 type Config struct {
 	NodeCfg     *NodeCfg     `mapstructure:"node"`
 	RegistryCfg *RegistryCfg `mapstructure:"registry"`
-	//OpenAuth  bool          `mapstructure:"openAuth"`
 }
 
-// NodeCfg read from a config file or cmd flags, or can be assgined from a server after got the server ack.
+// NodeCfg read from a config file or cmd flags, node and registry configurations are here.
 type NodeCfg struct {
 	Registry   string `mapstructure:"registry"`
 	Udp        string `mapstructure:"udp"`

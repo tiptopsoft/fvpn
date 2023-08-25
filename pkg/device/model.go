@@ -52,6 +52,15 @@ type InitResponse struct {
 	AppId string `json:"appId"`
 }
 
+type StatusResponse struct {
+	Status  string `json:"status"`
+	Version string `json:"version"`
+}
+
+type StopResponse struct {
+	Result string `json:"result"`
+}
+
 type LoginRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`

@@ -17,6 +17,7 @@ package security
 import (
 	"crypto/rand"
 	"fmt"
+	"github.com/tiptopsoft/fvpn/pkg/device"
 	"github.com/tiptopsoft/fvpn/pkg/packet"
 	"github.com/tiptopsoft/fvpn/pkg/util"
 	"golang.org/x/crypto/curve25519"

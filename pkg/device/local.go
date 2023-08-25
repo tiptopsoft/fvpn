@@ -52,9 +52,9 @@ func newLocal() Interface {
 	local := &local{
 		peers: make(map[string]PeerMap, 1),
 	}
-	go func() {
-		local.checkExpire()
-	}()
+	//go func() {
+	//local.checkExpire()
+	//}()
 	return local
 }
 

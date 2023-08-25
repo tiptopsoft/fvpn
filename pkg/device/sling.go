@@ -226,15 +226,6 @@ func (c *client) Tokens(req LoginRequest) (*LoginResponse, error) {
 	return &tokenResp, nil
 }
 
-//func (c *client) Logout(req model.LoginRequest) (*model.LoginResponse, error) {
-//	resp := new(model.Response)
-//	c.sling.New().Post("api/v1/logout").BodyJSON(req).Receive(resp, resp)
-//	if resp.Code != 200 {
-//		return nil, errors.New(resp.Message)
-//	}
-//	return resp.Result.(*model.LoginResponse), nil
-//}
-
 func (c *client) Init(appId string) (*InitResponse, error) {
 	resp := new(Response)
 	//First, read the config.json to get username and password to get token
@@ -272,15 +263,43 @@ func (c *client) Init(appId string) (*InitResponse, error) {
 	return &initResp, nil
 }
 
-//
-//func (c *client) Report() error {
-//	resp := new(util.Response)
-//	info, err := util.GetLocalInfo()
-//
-//	loginRequest := util.LoginRequest{
-//		Username: info.Username,
-//		Password: info.Password,
-//	}
-//
-//	err = util.UCTL.SetUserId(info.UserId)
-//}
+// Status check node status
+func (c *client) Status() (*StatusResponse, error) {
+	resp := new(Response)
+	_, err := c.sling.New().Get("/api/v1/status").Receive(resp, resp)
+	if err != nil {
+		return nil, errors.New("check status failed, please check if fvpn is running or not")
+	}
+	var statusResp StatusResponse
+	buff, err := json.Marshal(resp.Result)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(buff, &statusResp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &statusResp, nil
+}
+
+func (c *client) Stop() (*StopResponse, error) {
+	resp := new(Response)
+	_, err := c.sling.New().Post("/api/v1/stop").Receive(resp, resp)
+	if err != nil {
+		return nil, errors.New("stop failed, please check if fvpn is running or not")
+	}
+	var stopResp StopResponse
+	buff, err := json.Marshal(resp.Result)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(buff, &stopResp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &stopResp, nil
+}

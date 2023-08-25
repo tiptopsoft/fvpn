@@ -17,6 +17,8 @@ package device
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/tiptopsoft/fvpn/pkg/util"
+	"os"
+	"time"
 )
 
 var (
@@ -28,6 +30,8 @@ func (n *Node) HttpServer() error {
 	server := gin.Default()
 	server.POST(PREFIX+"join", n.joinNet())
 	server.POST(PREFIX+"leave", n.leaveNet())
+	server.GET(PREFIX+"status", n.status())
+	server.POST(PREFIX+"stop", n.stop())
 
 	return server.Run(n.cfg.HttpListenStr())
 }
@@ -89,5 +93,26 @@ func (n *Node) leaveNet() gin.HandlerFunc {
 		resp.Name = n.device.Name()
 
 		ctx.JSON(200, HttpOK(resp))
+	}
+}
+
+func (n *Node) status() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		resp := StatusResponse{
+			Status:  "Running",
+			Version: "0.1.0",
+		}
+		ctx.JSON(200, HttpOK(resp))
+	}
+}
+
+func (n *Node) stop() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		stop := StopResponse{
+			Result: "fvpn closed",
+		}
+		ctx.JSON(200, HttpOK(stop))
+		time.Sleep(time.Second * 3)
+		os.Exit(0)
 	}
 }

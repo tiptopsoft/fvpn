@@ -4,7 +4,7 @@ node:
   log:
     debug: true
   ipv6:
-    enable: true
+    enable: false
 
 #-------------------分害线
 registry:

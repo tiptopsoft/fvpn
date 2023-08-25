@@ -59,6 +59,6 @@ use make command:
 cd fvpn && make build
 ```
 
-
 ## Contributions
 
+All kind of contributions are welcome, issues,PR and so on.

@@ -119,7 +119,7 @@ func (r *RegServer) serverUdpHandler() device.HandlerFunc {
 			peer := node.NewPeer(frame.UidString(), frame.SrcIP.String(), r.key.privateKey.NewPubicKey(), r.cache)
 			peer.SetEndpoint(conn.NewEndpoint(frame.RemoteAddr.String()))
 			r.cache.SetPeer(frame.UidString(), frame.SrcIP.String(), peer)
-			//build handshake resp
+			//build handshakeAck resp
 			hpkt := handshake.NewPacket(util.HandShakeMsgTypeAck, frame.UidString())
 			hpkt.Header.SrcIP = frame.DstIP
 			hpkt.Header.DstIP = frame.SrcIP
@@ -143,7 +143,6 @@ func (r *RegServer) serverUdpHandler() device.HandlerFunc {
 func (r *RegServer) register(frame *device.Frame) (err error) {
 	p := new(device.Peer)
 	ep := conn.NewEndpoint(frame.RemoteAddr.String())
-	//ep.SetSrcIP(frame.SrcIP)
 	p.SetEndpoint(ep)
 	err = r.cache.SetPeer(frame.UidString(), frame.SrcIP.String(), p)
 	return
