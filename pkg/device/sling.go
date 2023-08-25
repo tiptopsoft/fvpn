@@ -69,7 +69,10 @@ func (c *ClientManager) JoinNetwork(networkId string) (*JoinResponse, error) {
 	req := new(JoinRequest)
 	req.NetWorkId = networkId
 
-	c.ConsoleClient.sling.New().Post("/api/v1/network/join").BodyJSON(req).Set("token", tokenResp.Token).Receive(resp, resp)
+	_, err = c.ConsoleClient.sling.New().Post("/api/v1/network/join").BodyJSON(req).Set("token", tokenResp.Token).Receive(resp, resp)
+	if err != nil {
+		return nil, err
+	}
 	if resp.Code != 200 {
 		return nil, errors.New(resp.Message)
 	}
@@ -115,7 +118,10 @@ func (c *ClientManager) LeaveNetwork(networkId string) (*LeaveResponse, error) {
 	req := new(LeaveRequest)
 	req.NetWorkId = networkId
 
-	c.ConsoleClient.sling.New().Post("/api/v1/network/join").BodyJSON(req).Set("token", tokenResp.Token).Receive(resp, resp)
+	_, err = c.ConsoleClient.sling.New().Post("/api/v1/network/join").BodyJSON(req).Set("token", tokenResp.Token).Receive(resp, resp)
+	if err != nil {
+		return nil, err
+	}
 	if resp.Code != 200 {
 		return nil, errors.New(resp.Message)
 	}
@@ -143,7 +149,10 @@ func (c *ClientManager) LeaveNetwork(networkId string) (*LeaveResponse, error) {
 // JoinLocalFvpn call fvpn to create device handle traffic
 func (c *ClientManager) JoinLocalFvpn(req JoinRequest) (*JoinResponse, error) {
 	resp := new(Response)
-	c.LocalClient.sling.New().Post("/api/v1/join").BodyJSON(req).Receive(&resp, &resp)
+	_, err := c.LocalClient.sling.New().Post("/api/v1/join").BodyJSON(req).Receive(&resp, &resp)
+	if err != nil {
+		return nil, err
+	}
 	if resp.Code == 500 {
 		return nil, errors.New(resp.Message)
 	}
@@ -165,7 +174,10 @@ func (c *ClientManager) JoinLocalFvpn(req JoinRequest) (*JoinResponse, error) {
 
 func (c *ClientManager) LeaveFvpnLocal(req LeaveRequest) (*LeaveResponse, error) {
 	resp := new(Response)
-	c.LocalClient.sling.New().Post("/api/v1/leave").BodyJSON(req).Receive(&resp, &resp)
+	_, err := c.LocalClient.sling.New().Post("/api/v1/leave").BodyJSON(req).Receive(&resp, &resp)
+	if err != nil {
+		return nil, err
+	}
 	if resp.Code == 500 {
 		return nil, errors.New(resp.Message)
 	}
@@ -188,7 +200,10 @@ func (c *ClientManager) LeaveFvpnLocal(req LeaveRequest) (*LeaveResponse, error)
 
 func (c *client) Login(req LoginRequest) (*LoginResponse, error) {
 	resp := new(Response)
-	c.sling.New().Post("api/v1/users/login").BodyJSON(req).Receive(resp, resp)
+	_, err := c.sling.New().Post("api/v1/users/login").BodyJSON(req).Receive(resp, resp)
+	if err != nil {
+		return nil, err
+	}
 	if resp.Code != 200 {
 		return nil, errors.New(resp.Message)
 	}
@@ -208,7 +223,10 @@ func (c *client) Login(req LoginRequest) (*LoginResponse, error) {
 
 func (c *client) Tokens(req LoginRequest) (*LoginResponse, error) {
 	resp := new(Response)
-	c.sling.New().Post("api/v1/tokens").BodyJSON(req).Receive(resp, resp)
+	_, err := c.sling.New().Post("api/v1/tokens").BodyJSON(req).Receive(resp, resp)
+	if err != nil {
+		return err
+	}
 	if resp.Code != 200 {
 		return nil, errors.New(resp.Message)
 	}
@@ -248,7 +266,10 @@ func (c *client) Init(appId string) (*InitResponse, error) {
 		return nil, err
 	}
 
-	c.sling.New().Post("/api/v1/network/init/"+appId).Set("token", tokenResp.Token).Receive(resp, resp)
+	_, err = c.sling.New().Post("/api/v1/network/init/"+appId).Set("token", tokenResp.Token).Receive(resp, resp)
+	if err != nil {
+		return nil, err
+	}
 
 	var initResp InitResponse
 	buff, err := json.Marshal(resp.Result)
