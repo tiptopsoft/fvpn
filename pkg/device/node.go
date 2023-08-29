@@ -109,7 +109,7 @@ func (n *Node) initRelay() {
 	n.relay.isRelay = true
 	n.relay.node = n
 	n.relay.SetEndpoint(conn.NewEndpoint(n.cfg.RegistryUrl()))
-	//n.relay.Handshake(n.relay.GetEndpoint().DstIP().IP)
+	n.relay.SetMode(1)
 	n.relay.Start()
 	err := n.cache.Set(util.UCTL.UserId, n.relay.GetEndpoint().DstIP().IP.String(), n.relay)
 	if err != nil {

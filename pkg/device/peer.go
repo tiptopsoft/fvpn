@@ -90,6 +90,10 @@ func (p *Peer) GetP2P() bool {
 	return p.p2p
 }
 
+func (p *Peer) SetMode(mode int) {
+	p.mode = mode
+}
+
 func (p *Peer) Start() {
 	p.lock.Lock()
 	defer p.lock.Unlock()
@@ -103,8 +107,8 @@ func (p *Peer) Start() {
 				case <-p.keepaliveCh:
 					return
 				case <-timer.C:
+					p.handshake(p.endpoint.DstIP().IP)
 					p.keepalive()
-					p.Handshake(p.endpoint.DstIP().IP)
 					timer.Reset(time.Second * 10)
 				}
 			}
@@ -135,7 +139,7 @@ func (p *Peer) SetEndpoint(ep conn.Endpoint) {
 	p.endpoint = ep
 }
 
-func (p *Peer) Handshake(dstIP net.IP) {
+func (p *Peer) handshake(dstIP net.IP) {
 	hpkt := handshake.NewPacket(util.HandShakeMsgType, util.UCTL.UserId)
 	hpkt.Header.SrcIP = p.node.device.Addr()
 	hpkt.Header.DstIP = dstIP
