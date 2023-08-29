@@ -36,11 +36,10 @@ func Status(cfg *util.NodeCfg) error {
 
 func Stop(cfg *util.NodeCfg) error {
 	client := NewClient(cfg.HostUrl())
-	resp, err := client.Stop()
+	_, err := client.Stop()
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(resp.Result)
 	return nil
 }

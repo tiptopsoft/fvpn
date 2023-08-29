@@ -19,6 +19,7 @@ import (
 	"errors"
 	"github.com/dghubble/sling"
 	"github.com/tiptopsoft/fvpn/pkg/util"
+	"io"
 	"net/http"
 )
 
@@ -308,7 +309,7 @@ func (c *client) Status() (*StatusResponse, error) {
 func (c *client) Stop() (*StopResponse, error) {
 	resp := new(Response)
 	_, err := c.sling.New().Post("/api/v1/stop").Receive(resp, resp)
-	if err != nil {
+	if err != nil && err != io.EOF {
 		return nil, errors.New("stop failed, please check if fvpn is running or not")
 	}
 	var stopResp StopResponse

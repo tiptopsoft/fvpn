@@ -44,6 +44,6 @@ func runStop() error {
 		return err
 	}
 
-	fmt.Println("closed fvpn success.")
+	fmt.Println("fvpn closed success.")
 	return nil
 }

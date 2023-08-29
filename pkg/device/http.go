@@ -18,7 +18,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/tiptopsoft/fvpn/pkg/util"
 	"os"
-	"time"
 )
 
 var (
@@ -108,11 +107,15 @@ func (n *Node) status() gin.HandlerFunc {
 
 func (n *Node) stop() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		ch := make(chan int, 1)
 		stop := StopResponse{
 			Result: "fvpn closed",
 		}
 		ctx.JSON(200, HttpOK(stop))
-		time.Sleep(time.Second * 3)
-		os.Exit(0)
+		ch <- 1
+		go func() {
+			<-ch
+			os.Exit(0)
+		}()
 	}
 }
