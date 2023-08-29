@@ -109,9 +109,9 @@ func (n *Node) initRelay() {
 	n.relay.isRelay = true
 	n.relay.node = n
 	n.relay.SetEndpoint(conn.NewEndpoint(n.cfg.RegistryUrl()))
-	n.relay.Handshake(n.relay.GetEndpoint().DstIP().IP)
+	//n.relay.Handshake(n.relay.GetEndpoint().DstIP().IP)
 	n.relay.Start()
-	err := n.cache.SetPeer(util.UCTL.UserId, n.relay.GetEndpoint().DstIP().IP.String(), n.relay)
+	err := n.cache.Set(util.UCTL.UserId, n.relay.GetEndpoint().DstIP().IP.String(), n.relay)
 	if err != nil {
 		return
 	}
@@ -228,7 +228,7 @@ func (n *Node) ReadFromTun() {
 		}
 		logger.Debugf("node %s receive %d byte, srcIP: %v, dstIP: %v", n.device.Name(), size, ipHeader.SrcIP, ipHeader.DstIP)
 
-		peer, err := n.cache.GetPeer(util.UCTL.UserId, ipHeader.DstIP.String())
+		peer, err := n.cache.Get(util.UCTL.UserId, ipHeader.DstIP.String())
 		if err != nil || peer == nil {
 			if n.cfg.EnableRelay() {
 				frame.Peer = n.relay
@@ -314,7 +314,7 @@ func (n *Node) udpProcess() {
 	frame.UserId = hpkt.UserId
 	frame.FrameType = hpkt.Flags
 
-	frame.Peer, err = n.cache.GetPeer(frame.UidString(), frame.SrcIP.String())
+	frame.Peer, err = n.cache.Get(frame.UidString(), frame.SrcIP.String())
 	if err != nil || !frame.Peer.GetP2P() {
 		frame.Peer = n.relay
 	}
@@ -329,6 +329,7 @@ func (n *Node) udpProcess() {
 	}
 	dt := time.Since(frame.ST)
 	logger.Debugf("udp receive process finished, dataType: [%v], cost: [%v]", dataType, dt)
+	<-limitChan
 }
 
 // sendListPackets send a packet list all nodes in current user
@@ -415,7 +416,7 @@ func appId() (string, error) {
 func (n *Node) NewPeer(uid, ip string, pk security.NoisePublicKey, cache Interface) *Peer {
 	n.peers.lock.Lock()
 	defer n.peers.lock.Unlock()
-	peer, _ := cache.GetPeer(uid, ip)
+	peer, _ := cache.Get(uid, ip)
 	if peer != nil {
 		return peer
 	}
@@ -434,7 +435,7 @@ func (n *Node) NewPeer(uid, ip string, pk security.NoisePublicKey, cache Interfa
 	p.queue.outBound = NewOutBoundQueue()
 	p.queue.inBound = NewInBoundQueue()
 
-	cache.SetPeer(uid, ip, p)
+	cache.Set(uid, ip, p)
 	logger.Debugf("created Peer for : %v, Peer: [%v]", ip, p.GetEndpoint())
 	return p
 }

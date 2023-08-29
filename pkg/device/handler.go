@@ -98,7 +98,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 				//更新peer
 				ep := conn.NewEndpoint(frame.RemoteAddr.String())
 				p.SetEndpoint(ep)
-				n.cache.SetPeer(frame.UidString(), frame.SrcIP.String(), p)
+				n.cache.Set(frame.UidString(), frame.SrcIP.String(), p)
 			}
 
 			//build handshake ack
@@ -120,7 +120,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 			copy(newFrame.Packet[:newFrame.Size], buff)
 			n.PutPktToOutbound(newFrame)
 		case util.HandShakeMsgTypeAck: //use for relay
-			p, err := n.cache.GetPeer(frame.UidString(), frame.SrcIP.String())
+			p, err := n.cache.Get(frame.UidString(), frame.SrcIP.String())
 			hpkt, err := handshake.Decode(util.HandShakeMsgTypeAck, frame.Buff)
 			if err != nil {
 				return err
@@ -134,11 +134,11 @@ func (n *Node) udpInHandler() HandlerFunc {
 				logger.Infof("node [%v] build a p2p to node [%v]", frame.DstIP, frame.SrcIP)
 			}
 			p.SetCodec(security.New(n.privateKey, hpkt.PubKey))
-			err = n.cache.SetPeer(uid, srcIP, p)
+			err = n.cache.Set(uid, srcIP, p)
 			if !p.GetStatus() {
 				p.Start()
 			}
-			n.cache.SetPeer(frame.UidString(), frame.SrcIP.String(), p)
+			n.cache.Set(frame.UidString(), frame.SrcIP.String(), p)
 			if err != nil {
 				return err
 			}
@@ -166,16 +166,13 @@ func (n *Node) handleQueryPeers(frame *Frame) {
 		}
 		p.node = n
 		p.mode = 1
-		err := n.cache.SetPeer(frame.UidString(), ip.String(), p)
+		err := n.cache.Set(frame.UidString(), ip.String(), p)
 		if err != nil {
 			return
 		}
 
 		if !p.GetStatus() {
 			p.Start()
-		} else {
-			p.Handshake(ip)
 		}
-
 	}
 }

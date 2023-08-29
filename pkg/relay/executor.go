@@ -53,7 +53,7 @@ func (r *RegServer) ReadFromUdp() {
 		frame.DstIP = packetHeader.DstIP
 		frame.UserId = packetHeader.UserId
 		//decode use origin peer
-		frame.Peer, _ = r.cache.GetPeer(frame.UidString(), frame.SrcIP.String())
+		frame.Peer, _ = r.cache.Get(frame.UidString(), frame.SrcIP.String())
 		r.PutPktToInbound(frame)
 	}
 }
@@ -83,7 +83,7 @@ func (r *RegServer) serverUdpHandler() device.HandlerFunc {
 			frame.Packet = f
 			break
 		case util.MsgTypePacket:
-			p, err := r.cache.GetPeer(frame.UidString(), frame.DstIP.String())
+			p, err := r.cache.Get(frame.UidString(), frame.DstIP.String())
 			if err != nil || p == nil {
 				return fmt.Errorf("peer %v is not found", frame.DstIP.String())
 			}
@@ -92,7 +92,7 @@ func (r *RegServer) serverUdpHandler() device.HandlerFunc {
 			frame.Peer = p //change peer to dst peer
 			r.PutPktToOutbound(frame)
 		case util.MsgTypeQueryPeer:
-			peers := r.cache.ListPeers(frame.UidString())
+			peers := r.cache.Lists(frame.UidString())
 			peerAck := peer.NewPeerPacket(frame.UidString())
 
 			if len(peers) > 0 {
@@ -118,7 +118,7 @@ func (r *RegServer) serverUdpHandler() device.HandlerFunc {
 			node := new(device.Node)
 			peer := node.NewPeer(frame.UidString(), frame.SrcIP.String(), r.key.privateKey.NewPubicKey(), r.cache)
 			peer.SetEndpoint(conn.NewEndpoint(frame.RemoteAddr.String()))
-			r.cache.SetPeer(frame.UidString(), frame.SrcIP.String(), peer)
+			r.cache.Set(frame.UidString(), frame.SrcIP.String(), peer)
 			//build handshakeAck resp
 			hpkt := handshake.NewPacket(util.HandShakeMsgTypeAck, frame.UidString())
 			hpkt.Header.SrcIP = frame.DstIP
@@ -144,6 +144,6 @@ func (r *RegServer) register(frame *device.Frame) (err error) {
 	p := new(device.Peer)
 	ep := conn.NewEndpoint(frame.RemoteAddr.String())
 	p.SetEndpoint(ep)
-	err = r.cache.SetPeer(frame.UidString(), frame.SrcIP.String(), p)
+	err = r.cache.Set(frame.UidString(), frame.SrcIP.String(), p)
 	return
 }

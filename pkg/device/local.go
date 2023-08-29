@@ -80,7 +80,7 @@ var (
 	_ Interface = (*local)(nil)
 )
 
-func (c *local) SetPeer(userId, ip string, peer *Peer) error {
+func (c *local) Set(userId, ip string, peer *Peer) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	peerMap := c.peers[userId]
@@ -102,7 +102,7 @@ func (c *local) SetPeer(userId, ip string, peer *Peer) error {
 	return nil
 }
 
-func (c *local) GetPeer(userId, ip string) (*Peer, error) {
+func (c *local) Get(userId, ip string) (*Peer, error) {
 	if userId == "" {
 		userId = util.UCTL.UserId
 	}
@@ -120,6 +120,6 @@ func (c *local) GetPeer(userId, ip string) (*Peer, error) {
 	return value.Peer, nil
 }
 
-func (c *local) ListPeers(userId string) PeerMap {
+func (c *local) Lists(userId string) PeerMap {
 	return c.peers[userId]
 }

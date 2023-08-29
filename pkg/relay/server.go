@@ -142,7 +142,7 @@ func (r *RegServer) handleOutPackets(ctx context.Context, pkt *device.Frame, id 
 	var err error
 	switch pkt.FrameType {
 	case util.MsgTypePacket:
-		peer, err := r.cache.GetPeer(pkt.UidString(), pkt.DstIP.String())
+		peer, err := r.cache.Get(pkt.UidString(), pkt.DstIP.String())
 		if err != nil || peer == nil {
 			logger.Errorf("peer %v is not found", pkt.DstIP.String())
 		}

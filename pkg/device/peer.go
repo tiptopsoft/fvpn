@@ -104,6 +104,7 @@ func (p *Peer) Start() {
 					return
 				case <-timer.C:
 					p.keepalive()
+					p.Handshake(p.endpoint.DstIP().IP)
 					timer.Reset(time.Second * 10)
 				}
 			}
@@ -158,25 +159,6 @@ func (p *Peer) PutPktToOutbound(pkt *Frame) {
 	p.queue.outBound.c <- pkt
 }
 
-//func (p *Peer) SendPackets() {
-//	for {
-//		select {
-//		case <-p.sendCh:
-//			return
-//		case pkt := <-p.queue.outBound.c:
-//			send, err := p.conn.Send(pkt.Packet[:pkt.Size], p.GetEndpoint())
-//			if err != nil {
-//				logger.Error(err)
-//				continue
-//			}
-//			t := time.Since(pkt.ST)
-//			logger.Debugf("node [%v] has send %d packets to %s, data type: [%v], cost: [%v]", p.id, send, p.GetEndpoint().DstToString(), util.GetFrameTypeName(pkt.FrameType), t)
-//		default:
-//
-//		}
-//	}
-//}
-
 func (p *Peer) keepalive() {
 	pkt, err := packet.NewHeader(util.KeepaliveMsgType, "")
 	if err != nil {
@@ -214,6 +196,6 @@ func (p *Peer) close() {
 	p.keepaliveCh <- 1
 	p.status = false
 	p.isTry.Store(false)
-	p.cache.SetPeer(util.UCTL.UserId, p.ip, p)
+	p.cache.Set(util.UCTL.UserId, p.ip, p)
 	logger.Debugf("================Peer stop signal have send to Peer: %v", p.GetEndpoint().DstToString())
 }

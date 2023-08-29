@@ -15,9 +15,9 @@
 package device
 
 type Interface interface {
-	SetPeer(userId, ip string, peer *Peer) error
-	GetPeer(userId, ip string) (*Peer, error)
-	ListPeers(userId string) PeerMap
+	Set(userId, ip string, peer *Peer) error
+	Get(userId, ip string) (*Peer, error)
+	Lists(userId string) PeerMap
 }
 
 func NewCache(driver string) Interface {
