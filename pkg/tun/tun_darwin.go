@@ -109,6 +109,7 @@ func (tun *NativeTun) Read(buff []byte) (n int, err error) {
 func (tun *NativeTun) Write(buff []byte) (int, error) {
 	size := len(buff) + 4
 	buf := make([]byte, size)
+	copy(buf[4:], buff[:])
 	buf[0] = 0x00
 	buf[1] = 0x00
 	buf[2] = 0x00
@@ -120,7 +121,6 @@ func (tun *NativeTun) Write(buff []byte) (int, error) {
 	default:
 		return 0, unix.EAFNOSUPPORT
 	}
-	copy(buf[4:], buff[:])
 
 	n, err := tun.file.Write(buf[:size])
 	return n, err

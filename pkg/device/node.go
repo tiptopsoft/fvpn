@@ -408,7 +408,8 @@ func (n *Node) WriteToDevice() {
 			if pkt.FrameType == util.MsgTypePacket {
 				size, err := n.device.Write(pkt.Packet[packet.HeaderBuffSize:pkt.Size])
 				if err != nil {
-					return
+					logger.Error(err)
+					continue
 				}
 
 				t := time.Since(pkt.ST)
