@@ -116,15 +116,15 @@ func (r *RegServer) serverUdpHandler() device.HandlerFunc {
 			r.PutPktToOutbound(newFrame)
 		case util.HandShakeMsgType:
 			node := new(device.Node)
-			peer := node.NewPeer(frame.UidString(), frame.SrcIP.String(), r.key.privateKey.NewPubicKey(), r.cache)
-			peer.SetEndpoint(conn.NewEndpoint(frame.RemoteAddr.String()))
-			r.cache.Set(frame.UidString(), frame.SrcIP.String(), peer)
+			p := node.NewPeer(frame.UidString(), frame.SrcIP.String(), r.key.privateKey.NewPubicKey(), r.cache)
+			p.SetEndpoint(conn.NewEndpoint(frame.RemoteAddr.String()))
+			r.cache.Set(frame.UidString(), frame.SrcIP.String(), p)
 			//build handshakeAck resp
-			hpkt := handshake.NewPacket(util.HandShakeMsgTypeAck, frame.UidString())
-			hpkt.Header.SrcIP = frame.DstIP
-			hpkt.Header.DstIP = frame.SrcIP
-			hpkt.PubKey = r.key.privateKey.NewPubicKey()
-			buff, err := handshake.Encode(hpkt)
+			pkt := handshake.NewPacket(util.HandShakeMsgTypeAck, frame.UidString())
+			pkt.Header.SrcIP = frame.DstIP
+			pkt.Header.DstIP = frame.SrcIP
+			pkt.PubKey = r.key.privateKey.NewPubicKey()
+			buff, err := handshake.Encode(pkt)
 			if err != nil {
 				return err
 			}

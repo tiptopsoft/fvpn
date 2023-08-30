@@ -15,10 +15,8 @@
 package conn
 
 import (
-	"fmt"
 	"github.com/tiptopsoft/fvpn/pkg/log"
 	"net"
-	"strings"
 )
 
 // Interface an Interface listens a port for IPV6 and IPv4 UDP packets. Also send packets to destination peer.
@@ -48,9 +46,6 @@ var (
 )
 
 func NewEndpoint(dstip string) Endpoint {
-	if !strings.Contains(dstip, ":") {
-		dstip = fmt.Sprintf("%s:%d", dstip, 4000)
-	}
 	addr, err := net.ResolveUDPAddr("udp4", dstip)
 	if err != nil {
 		return nil

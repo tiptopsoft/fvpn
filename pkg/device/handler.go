@@ -20,7 +20,6 @@ import (
 	"github.com/tiptopsoft/fvpn/pkg/packet"
 	"github.com/tiptopsoft/fvpn/pkg/packet/handshake"
 	"github.com/tiptopsoft/fvpn/pkg/packet/peer"
-	"github.com/tiptopsoft/fvpn/pkg/packet/register/ack"
 	"github.com/tiptopsoft/fvpn/pkg/security"
 	"github.com/tiptopsoft/fvpn/pkg/util"
 )
@@ -71,12 +70,6 @@ func (n *Node) udpInHandler() HandlerFunc {
 
 		//frame.FrameType = headerBuff.Flags
 		switch headerBuff.Flags {
-		case util.MsgTypeRegisterAck:
-			regAck, err := ack.Decode(buff)
-			if err != nil {
-				return err
-			}
-			logger.Debugf("register success, got server server ack: (%v)", regAck)
 		case util.MsgTypeQueryPeer:
 			n.handleQueryPeers(frame)
 		case util.MsgTypePacket:
@@ -102,11 +95,11 @@ func (n *Node) udpInHandler() HandlerFunc {
 			}
 
 			//build handshake ack
-			hpkt := handshake.NewPacket(util.HandShakeMsgTypeAck, frame.UidString())
-			hpkt.Header.SrcIP = frame.DstIP
-			hpkt.Header.DstIP = frame.SrcIP
-			hpkt.PubKey = n.privateKey.NewPubicKey()
-			buff, err := handshake.Encode(hpkt)
+			pkt := handshake.NewPacket(util.HandShakeMsgTypeAck, frame.UidString())
+			pkt.Header.SrcIP = frame.DstIP
+			pkt.Header.DstIP = frame.SrcIP
+			pkt.PubKey = n.privateKey.NewPubicKey()
+			buff, err := handshake.Encode(pkt)
 			if err != nil {
 				return err
 			}
@@ -119,26 +112,26 @@ func (n *Node) udpInHandler() HandlerFunc {
 			newFrame.DstIP = frame.SrcIP
 			copy(newFrame.Packet[:newFrame.Size], buff)
 			n.PutPktToOutbound(newFrame)
-		case util.HandShakeMsgTypeAck: //use for relay
-			p, err := n.cache.Get(frame.UidString(), frame.SrcIP.String())
-			hpkt, err := handshake.Decode(util.HandShakeMsgTypeAck, frame.Buff)
+		case util.HandShakeMsgTypeAck:
+			srcIP := frame.SrcIP.String()
+			uid := frame.UidString()
+			p, err := n.cache.Get(uid, srcIP)
+			pkt, err := handshake.Decode(util.HandShakeMsgTypeAck, frame.Buff)
 			if err != nil {
 				return err
 			}
-			uid := frame.UidString()
-			srcIP := frame.SrcIP.String()
 			ep := conn.NewEndpoint(frame.RemoteAddr.String())
 			p.SetEndpoint(ep)
 			if !p.p2p {
 				p.SetP2P(true)
 				logger.Infof("node [%v] build a p2p to node [%v]", frame.DstIP, frame.SrcIP)
 			}
-			p.SetCodec(security.New(n.privateKey, hpkt.PubKey))
+			p.SetCodec(security.New(n.privateKey, pkt.PubKey))
 			err = n.cache.Set(uid, srcIP, p)
 			if !p.GetStatus() {
 				p.Start()
 			}
-			n.cache.Set(frame.UidString(), frame.SrcIP.String(), p)
+			n.cache.Set(uid, srcIP, p)
 			if err != nil {
 				return err
 			}
@@ -153,20 +146,21 @@ func (n *Node) handleQueryPeers(frame *Frame) {
 	peers, _ := peer.Decode(frame.Packet[:])
 	logger.Debugf("list peers from registry: %v", peers.Peers)
 	for _, info := range peers.Peers {
-		ip := info.IP
-		if ip.String() == n.device.IPToString() {
+		ip := info.IP.String()
+		uid := frame.UidString()
+		if ip == n.device.IPToString() {
 			//go over if ip is local ip
 			continue
 		}
 
-		addr := info.RemoteAddr
-		p := n.NewPeer(frame.UidString(), ip.String(), n.privateKey.NewPubicKey(), n.cache) //now has no pubKey
+		addr := info.RemoteAddr.String()
+		p := n.NewPeer(uid, ip, n.privateKey.NewPubicKey(), n.cache) //now has no pubKey
 		if p.GetEndpoint() == nil {
-			p.SetEndpoint(conn.NewEndpoint(addr.String()))
+			p.SetEndpoint(conn.NewEndpoint(addr))
 		}
 		p.node = n
 		p.mode = 1
-		err := n.cache.Set(frame.UidString(), ip.String(), p)
+		err := n.cache.Set(uid, ip, p)
 		if err != nil {
 			return
 		}

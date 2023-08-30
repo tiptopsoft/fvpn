@@ -19,6 +19,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"github.com/tiptopsoft/fvpn/pkg/device/conn"
 	"github.com/tiptopsoft/fvpn/pkg/log"
 	"github.com/tiptopsoft/fvpn/pkg/packet"
@@ -27,6 +28,8 @@ import (
 	"github.com/tiptopsoft/fvpn/pkg/tun"
 	"github.com/tiptopsoft/fvpn/pkg/util"
 	"io"
+	"net"
+	"strings"
 	"sync"
 	"time"
 )
@@ -104,17 +107,41 @@ func NewNode(iface tun.Device, conn conn.Interface, cfg *util.NodeCfg) (*Node, e
 	return n, nil
 }
 
-func (n *Node) initRelay() {
-	n.relay = n.NewPeer(util.UCTL.UserId, n.cfg.RegistryUrl(), n.privateKey.NewPubicKey(), n.cache)
+func (n *Node) initRelay() error {
+	ip, endpoint, err := getRegistryUrl(n.cfg.RegistryUrl())
+	if err != nil {
+		return err
+	}
+
+	n.relay = n.NewPeer(util.UCTL.UserId, ip, n.privateKey.NewPubicKey(), n.cache)
 	n.relay.isRelay = true
 	n.relay.node = n
-	n.relay.SetEndpoint(conn.NewEndpoint(n.cfg.RegistryUrl()))
+	n.relay.SetEndpoint(conn.NewEndpoint(endpoint))
 	n.relay.SetMode(1)
 	n.relay.Start()
-	err := n.cache.Set(util.UCTL.UserId, n.relay.GetEndpoint().DstIP().IP.String(), n.relay)
-	if err != nil {
-		return
+	return n.cache.Set(util.UCTL.UserId, n.relay.GetEndpoint().DstIP().IP.String(), n.relay)
+
+}
+
+func getRegistryUrl(registryUrl string) (string, string, error) {
+	var ip string
+	var endpoint string
+	if !strings.Contains(registryUrl, ":") {
+		addr, err := net.ResolveIPAddr("ip4", registryUrl)
+		if err != nil {
+			return "", "", err
+		}
+		ip = addr.IP.String()
+		endpoint = fmt.Sprintf("%s:%d", ip, 4000)
+	} else {
+		addr, err := net.ResolveUDPAddr("udp", registryUrl)
+		if err != nil {
+			return "", "", err
+		}
+		ip = addr.IP.String()
+		endpoint = fmt.Sprintf("%s:%d", ip, addr.Port)
 	}
+	return ip, endpoint, nil
 }
 
 func (n *Node) nodeRegister() error {
@@ -172,7 +199,9 @@ func (n *Node) up() error {
 		return err
 	}
 	//init first
-	n.initRelay()
+	if err := n.initRelay(); err != nil {
+		return err
+	}
 
 	go n.ReadFromTun()
 	go n.ReadFromUdp()
@@ -426,6 +455,7 @@ func (n *Node) NewPeer(uid, ip string, pk security.NoisePublicKey, cache Interfa
 	p := new(Peer)
 	p.isTry.Store(true)
 	p.st = time.Now()
+
 	p.ip = ip
 	p.checkCh = make(chan int, 1)
 	p.sendCh = make(chan int, 1)

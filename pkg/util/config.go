@@ -133,7 +133,7 @@ func InitConfig() (config *Config, err error) {
 	//viper.ReadConfig(bytes.NewBuffer(defaultYaml))
 	viper.SetDefault("node.ConsoleUrl", "https://www.tiptopsoft.cn")
 	viper.SetDefault("node.HttpListen", ":6662")
-	viper.SetDefault("node.Registry", "tiptopsoft.cn:4000")
+	viper.SetDefault("node.Registry", "tiptopsoft.cn")
 	viper.SetDefault("node.Relay.Enable", true)
 	viper.SetDefault("node.log.debug", false)
 	viper.SetDefault("node.IPV6.Enable", false)

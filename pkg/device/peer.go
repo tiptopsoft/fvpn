@@ -54,10 +54,6 @@ type Peer struct {
 	cipher security.Codec
 }
 
-func (p *Peer) SetIP(ip string) {
-	p.ip = ip
-}
-
 func (p *Peer) GetIP() string {
 	return p.ip
 }
@@ -100,14 +96,14 @@ func (p *Peer) Start() {
 	p.SetStatus(true)
 	if p.mode == 1 {
 		go func() {
-			timer := time.NewTimer(time.Second * 10)
+			timer := time.NewTimer(time.Second * 0)
 			defer timer.Stop()
 			for {
 				select {
 				case <-p.keepaliveCh:
 					return
 				case <-timer.C:
-					p.handshake(p.endpoint.DstIP().IP)
+					p.handshake(net.ParseIP(p.ip))
 					p.keepalive()
 					timer.Reset(time.Second * 10)
 				}
