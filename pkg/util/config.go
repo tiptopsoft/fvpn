@@ -145,12 +145,7 @@ func InitConfig() (config *Config, err error) {
 	viper.SetDefault("registry.HttpListen", ":4001")
 	viper.SetDefault("registry.redis.enable", false)
 	if err = viper.ReadInConfig(); err != nil { // Handle errors reading the config file
-		//if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-		//	viper.ReadConfig(bytes.NewBuffer(defaultYaml))
-		//} else {
-		//	return nil, errors.New("invalid config")
-		//}
-
+		fmt.Println(err)
 	}
 
 	if err = viper.UnmarshalExact(&config); err != nil {

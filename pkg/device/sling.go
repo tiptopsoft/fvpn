@@ -23,10 +23,6 @@ import (
 	"net/http"
 )
 
-//type Interface interface {
-//	ListNodes(userId string)
-//}
-
 type client struct {
 	sling *sling.Sling
 }
