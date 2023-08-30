@@ -143,11 +143,12 @@ func (tun *adapter) Write(buff []byte) (int, error) {
 
 	packetSize := len(buff)
 
-	_, err := tun.session.AllocateSendPacket(packetSize)
+	packet, err := tun.session.AllocateSendPacket(packetSize)
 	switch err {
 	case nil:
 		// TODO: Explore options to eliminate this copy.
-		tun.session.SendPacket(buff)
+		copy(packet, buff[:])
+		tun.session.SendPacket(packet)
 		return len(buff), nil
 	case windows.ERROR_HANDLE_EOF:
 		return 0, os.ErrClosed
