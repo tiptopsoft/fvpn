@@ -7,6 +7,6 @@ do
       then
       mkdir bin/dist
       fi
-      tar -cvf bin/dist/fvpn-$goos-$arch-v0.1.tar.gz bin/$goos/$arch
+      tar -cvf bin/dist/fvpn.$goos-$arch-v0.0.1.tar.gz bin/$goos/$arch
     done
 done
