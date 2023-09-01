@@ -58,6 +58,7 @@ use make command:
 ```shell
 cd fvpn && make build
 ```
+will create exec file under bin folder.
 
 ## Contributions
 
