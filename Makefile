@@ -1,7 +1,7 @@
 VERSION ?= latest
 
 build:
-	bash ${shell pwd}/hack/build_all.sh
+	docker run --rm --env GOPROXY=https://goproxy.cn -v "$(shell pwd)":/root/fvpn -w /root/fvpn golang:1.20.6 bash /root/fvpn/hack/build_all.sh
 build-m1:
 	GOPROXY=https://goproxy.cn,direct go build -v -o bin/fvpn main.go
 
