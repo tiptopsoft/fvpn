@@ -70,7 +70,7 @@ func (tun *NativeTun) Addr() net.IP {
 	return tun.IP
 }
 
-// Close close the device
+// Close this method close the device
 func (tun *NativeTun) Close() error {
 	return tun.file.Close()
 }

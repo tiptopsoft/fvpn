@@ -25,31 +25,31 @@ import (
 	"net"
 )
 
-type PeerInfo struct {
+type Info struct {
 	IP         net.IP
 	NatIP      net.IP
 	RemoteAddr net.UDPAddr
 	PubKey     security.NoisePublicKey
 }
 
-func (p PeerInfo) String() string {
+func (p Info) String() string {
 	return fmt.Sprintf("ip:[%v],addr:[%v]", p.IP, p.RemoteAddr)
 }
 
-type PeerPacket struct {
+type Packet struct {
 	Header packet.Header
-	Peers  []PeerInfo
+	Peers  []Info
 }
 
-func NewPeerPacket(userId string) PeerPacket {
+func NewPacket(userId string) Packet {
 	h, _ := packet.NewHeader(util.MsgTypeQueryPeer, userId)
-	return PeerPacket{
+	return Packet{
 		Header: h,
 		Peers:  nil,
 	}
 }
 
-func Encode(peerPacket PeerPacket) ([]byte, error) {
+func Encode(peerPacket Packet) ([]byte, error) {
 	buff := make([]byte, packet.FvpnPktBuffSize)
 	headerBuff, err := packet.Encode(peerPacket.Header)
 	if err != nil {
@@ -70,20 +70,18 @@ func Encode(peerPacket PeerPacket) ([]byte, error) {
 	return buff[:idx], err
 }
 
-func Decode(buff []byte) (peerPacket PeerPacket, err error) {
+func Decode(buff []byte) (peerPacket Packet, err error) {
 	h, err := packet.Decode(buff)
 	if err != nil {
-		return PeerPacket{}, err
+		return Packet{}, err
 	}
-
-	peerPacket = PeerPacket{}
+	peerPacket = Packet{}
 	peerPacket.Header = h
 	buf := bytes.NewReader(buff[packet.HeaderBuffSize:])
-	//err = binary.Read(buf, binary.BigEndian, &peerPacket)
 	d := gob.NewDecoder(buf)
 	err = d.Decode(&peerPacket.Peers)
 	if err != nil {
-		return PeerPacket{}, err
+		return Packet{}, err
 	}
 
 	return peerPacket, nil

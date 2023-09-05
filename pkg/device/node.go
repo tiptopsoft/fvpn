@@ -23,7 +23,6 @@ import (
 	"github.com/tiptopsoft/fvpn/pkg/device/conn"
 	"github.com/tiptopsoft/fvpn/pkg/log"
 	"github.com/tiptopsoft/fvpn/pkg/packet"
-	"github.com/tiptopsoft/fvpn/pkg/packet/register"
 	"github.com/tiptopsoft/fvpn/pkg/security"
 	"github.com/tiptopsoft/fvpn/pkg/tun"
 	"github.com/tiptopsoft/fvpn/pkg/util"
@@ -142,23 +141,6 @@ func getRegistryUrl(registryUrl string) (string, string, error) {
 		endpoint = fmt.Sprintf("%s:%d", ip, addr.Port)
 	}
 	return ip, endpoint, nil
-}
-
-func (n *Node) nodeRegister() error {
-	rPkt := register.NewPacket()
-	n.userId = rPkt.UserId
-	copy(rPkt.PubKey[:], n.pubKey[:])
-	buff, err := register.Encode(rPkt)
-	if err != nil {
-		return nil
-	}
-
-	size := len(buff)
-	f := NewFrame()
-	f.Peer = n.relay
-	copy(f.Packet[:size], buff)
-	n.PutPktToOutbound(f)
-	return nil
 }
 
 func Start(cfg *util.Config) error {

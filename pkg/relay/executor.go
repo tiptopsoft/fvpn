@@ -93,11 +93,11 @@ func (r *RegServer) serverUdpHandler() device.HandlerFunc {
 			r.PutPktToOutbound(frame)
 		case util.MsgTypeQueryPeer:
 			peers := r.cache.Lists(frame.UidString())
-			peerAck := peer.NewPeerPacket(frame.UidString())
+			peerAck := peer.NewPacket(frame.UidString())
 
 			if len(peers) > 0 {
 				for ip, value := range peers {
-					info := peer.PeerInfo{
+					info := peer.Info{
 						IP:         net.ParseIP(ip),
 						RemoteAddr: *value.Peer.GetEndpoint().DstIP(),
 					}

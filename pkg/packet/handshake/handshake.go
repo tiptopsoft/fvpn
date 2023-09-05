@@ -20,23 +20,23 @@ import (
 	"github.com/tiptopsoft/fvpn/pkg/util"
 )
 
-type HandShakePacket struct {
+type Packet struct {
 	Header packet.Header
 	PubKey [32]byte //dh public key, generate from curve25519
 }
 
-func NewPacket(msgType uint16, userId string) HandShakePacket {
+func NewPacket(msgType uint16, userId string) Packet {
 	headerPacket, _ := packet.NewHeader(msgType, userId)
-	return HandShakePacket{
+	return Packet{
 		Header: headerPacket,
 	}
 }
 
-func Encode(np HandShakePacket) ([]byte, error) {
+func Encode(np Packet) ([]byte, error) {
 	b := make([]byte, packet.HandshakeBuffSize)
 	headerBuff, err := packet.Encode(np.Header)
 	if err != nil {
-		return nil, errors.New("encode common packet failed")
+		return nil, errors.New("encode header failed")
 	}
 	idx := 0
 	idx = packet.EncodeBytes(b, headerBuff, idx)
@@ -45,11 +45,11 @@ func Encode(np HandShakePacket) ([]byte, error) {
 	return b, nil
 }
 
-func Decode(msgType uint16, buff []byte) (HandShakePacket, error) {
+func Decode(msgType uint16, buff []byte) (Packet, error) {
 	res := NewPacket(msgType, util.Info().GetUserId())
 	h, err := packet.Decode(buff)
 	if err != nil {
-		return HandShakePacket{}, errors.New("decode common packet failed")
+		return Packet{}, errors.New("decode header failed")
 	}
 	idx := 0
 	res.Header = h

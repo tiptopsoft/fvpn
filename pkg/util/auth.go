@@ -16,19 +16,13 @@ package util
 
 import "sync"
 
-//var (
-//	Info = &user{
-//		userId: "123456789abcdef0",
-//	}
-//)
-
 type UserFunc interface {
 	GetUserId() string
 	SetUserId(userId string) error
 	SetUserInfo(username, password string) error
 }
 
-// User user username password to login, then will receive userId
+// User username password to login, then will receive userId
 type user struct {
 	lock     sync.Mutex
 	username string
