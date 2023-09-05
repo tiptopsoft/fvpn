@@ -104,7 +104,7 @@ func (c *local) Set(userId, ip string, peer *Peer) error {
 
 func (c *local) Get(userId, ip string) (*Peer, error) {
 	if userId == "" {
-		userId = util.UCTL.UserId
+		userId = util.Info().GetUserId()
 	}
 
 	peerMap := c.peers[userId]

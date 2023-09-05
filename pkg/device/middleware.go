@@ -32,8 +32,8 @@ func AuthCheck() func(handler Handler) Handler {
 			//
 			//client := http.New("http://211.159.225.186:443")
 			//req := new(http.LoginRequest)
-			//req.Username = username
-			//req.Password = password
+			//req.username = username
+			//req.password = password
 			//loginResp, err := client.Login(*req)
 			//if err != nil {
 			//	return errors.New("user should login first")

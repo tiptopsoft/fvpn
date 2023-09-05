@@ -254,7 +254,7 @@ func (c *client) Init(appId string) (*InitResponse, error) {
 		Password: info.Password,
 	}
 
-	err = util.UCTL.SetUserId(info.UserId)
+	err = util.Info().SetUserId(info.UserId)
 	if err != nil {
 		return nil, err
 	}

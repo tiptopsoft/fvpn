@@ -87,7 +87,7 @@ func NewNode(iface tun.Device, conn conn.Interface, cfg *util.NodeCfg) (*Node, e
 		cfg:    cfg,
 	}
 	n.net.conn = conn
-	n.netCtl = NewNetworkManager(util.UCTL.UserId)
+	n.netCtl = NewNetworkManager(util.Info().GetUserId())
 	privateKey, err := security.NewPrivateKey()
 
 	n.peers.peers = make(map[security.NoisePublicKey]*Peer, 1)
@@ -113,13 +113,13 @@ func (n *Node) initRelay() error {
 		return err
 	}
 
-	n.relay = n.NewPeer(util.UCTL.UserId, ip, n.privateKey.NewPubicKey(), n.cache)
+	n.relay = n.NewPeer(util.Info().GetUserId(), ip, n.privateKey.NewPubicKey(), n.cache)
 	n.relay.isRelay = true
 	n.relay.node = n
 	n.relay.SetEndpoint(conn.NewEndpoint(endpoint))
 	n.relay.SetMode(1)
 	n.relay.Start()
-	return n.cache.Set(util.UCTL.UserId, n.relay.GetEndpoint().DstIP().IP.String(), n.relay)
+	return n.cache.Set(util.Info().GetUserId(), n.relay.GetEndpoint().DstIP().IP.String(), n.relay)
 
 }
 
@@ -257,7 +257,7 @@ func (n *Node) ReadFromTun() {
 		}
 		logger.Debugf("node %s receive %d byte, srcIP: %v, dstIP: %v", n.device.Name(), size, ipHeader.SrcIP, ipHeader.DstIP)
 
-		peer, err := n.cache.Get(util.UCTL.UserId, ipHeader.DstIP.String())
+		peer, err := n.cache.Get(util.Info().GetUserId(), ipHeader.DstIP.String())
 		if err != nil || peer == nil {
 			if n.cfg.EnableRelay() {
 				frame.Peer = n.relay
@@ -277,7 +277,7 @@ func (n *Node) ReadFromTun() {
 		frame.SrcIP = n.device.Addr()
 		frame.DstIP = ipHeader.DstIP
 
-		h, _ := packet.NewHeader(util.MsgTypePacket, util.UCTL.UserId)
+		h, _ := packet.NewHeader(util.MsgTypePacket, util.Info().GetUserId())
 		frame.UserId = h.UserId
 		h.SrcIP = frame.SrcIP
 		h.DstIP = frame.DstIP
@@ -363,7 +363,7 @@ func (n *Node) udpProcess() {
 
 // sendListPackets send a packet list all nodes in current user
 func (n *Node) sendListPackets() {
-	h, _ := packet.NewHeader(util.MsgTypeQueryPeer, util.UCTL.UserId)
+	h, _ := packet.NewHeader(util.MsgTypeQueryPeer, util.Info().GetUserId())
 	hpkt, err := packet.Encode(h)
 	if err != nil {
 		logger.Errorf("send list packet failed %v", err)

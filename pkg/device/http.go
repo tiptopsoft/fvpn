@@ -46,7 +46,7 @@ func (n *Node) joinNet() gin.HandlerFunc {
 		}
 
 		if req.CIDR != "" {
-			err = n.netCtl.JoinNet(util.UCTL.UserId, req.CIDR)
+			err = n.netCtl.JoinNet(util.Info().GetUserId(), req.CIDR)
 			if err != nil {
 				ctx.JSON(500, HttpError(err.Error()))
 				return
@@ -77,7 +77,7 @@ func (n *Node) leaveNet() gin.HandlerFunc {
 		}
 
 		if req.CIDR != "" {
-			err = n.netCtl.LeaveNet(util.UCTL.UserId, req.CIDR)
+			err = n.netCtl.LeaveNet(util.Info().GetUserId(), req.CIDR)
 			if err != nil {
 				ctx.JSON(500, HttpError(err.Error()))
 				return

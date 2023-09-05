@@ -16,11 +16,11 @@ package util
 
 import "sync"
 
-var (
-	UCTL = &user{
-		UserId: "123456789abcdef0",
-	}
-)
+//var (
+//	Info = &user{
+//		userId: "123456789abcdef0",
+//	}
+//)
 
 type UserFunc interface {
 	GetUserId() string
@@ -31,12 +31,12 @@ type UserFunc interface {
 // User user username password to login, then will receive userId
 type user struct {
 	lock     sync.Mutex
-	Username string
-	Password string
-	UserId   string
+	username string
+	password string
+	userId   string
 }
 
-func NewUser() UserFunc {
+func Info() UserFunc {
 	return &user{}
 }
 
@@ -45,20 +45,20 @@ var (
 )
 
 func (u *user) GetUserId() string {
-	return u.UserId
+	return u.userId
 }
 
 func (u *user) SetUserId(userId string) error {
 	u.lock.Lock()
 	defer u.lock.Unlock()
-	u.UserId = userId
+	u.userId = userId
 	return nil
 }
 
 func (u *user) SetUserInfo(username, password string) error {
 	u.lock.Lock()
 	defer u.lock.Unlock()
-	u.Username = username
-	u.Password = password
+	u.username = username
+	u.password = password
 	return nil
 }

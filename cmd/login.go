@@ -67,7 +67,7 @@ func runLogin(opts loginOptions) error {
 
 	if opts.Password == "" {
 		if opts.Username == "" {
-			opts.Username, _ = readLine("Username: ", false)
+			opts.Username, _ = readLine("username: ", false)
 		}
 
 		if opts.Username == "" {
@@ -77,7 +77,7 @@ func runLogin(opts loginOptions) error {
 				opts.Password = token
 			}
 		} else {
-			if password, err := readLine("Password: ", true); err != nil {
+			if password, err := readLine("password: ", true); err != nil {
 				return errors.New("password required")
 			} else {
 				opts.Password = password

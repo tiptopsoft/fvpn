@@ -82,7 +82,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 				return err
 			}
 
-			p := n.NewPeer(util.UCTL.UserId, frame.SrcIP.String(), headerPkt.PubKey, n.cache)
+			p := n.NewPeer(util.Info().GetUserId(), frame.SrcIP.String(), headerPkt.PubKey, n.cache)
 			p.node = n
 
 			//if just one node behind Symmetric nat, also update endpoint to build p2p

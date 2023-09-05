@@ -136,7 +136,7 @@ func (p *Peer) SetEndpoint(ep conn.Endpoint) {
 }
 
 func (p *Peer) handshake(dstIP net.IP) {
-	hpkt := handshake.NewPacket(util.HandShakeMsgType, util.UCTL.UserId)
+	hpkt := handshake.NewPacket(util.HandShakeMsgType, util.Info().GetUserId())
 	hpkt.Header.SrcIP = p.node.device.Addr()
 	hpkt.Header.DstIP = dstIP
 	hpkt.PubKey = p.pubKey
@@ -196,6 +196,6 @@ func (p *Peer) close() {
 	p.keepaliveCh <- 1
 	p.status = false
 	p.isTry.Store(false)
-	p.cache.Set(util.UCTL.UserId, p.ip, p)
+	p.cache.Set(util.Info().GetUserId(), p.ip, p)
 	logger.Debugf("================Peer stop signal have send to Peer: %v", p.GetEndpoint().DstToString())
 }
