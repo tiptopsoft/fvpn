@@ -28,3 +28,5 @@ DstIP   net.IP //16
 - UserId: user info, is a 10bit data
 - SrcIP: ip of source node
 - DstIP: dest of node
+
+## NetworkID

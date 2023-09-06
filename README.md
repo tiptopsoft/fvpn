@@ -58,7 +58,22 @@ use make command:
 ```shell
 cd fvpn && make build
 ```
+
 will create exec file under bin folder.
+
+## Running
+
+when you have build fvpn or download from release, you can start fvpn using command follow:
+
+```shell
+fvpn node
+```
+
+if you want let fvpn running as demon, use '-d'
+
+```shell
+fvpn node -d
+```
 
 ## Contributions
 

@@ -1,6 +1,6 @@
 ## Install
 
-Download fvpn package from [download](https://tiptopsoft.cn)
+Download fvpn package from [release](https://github.com/tiptopsoft/fvpn/releases)
 
 ## MAC OS & linux
 
@@ -44,4 +44,4 @@ Now you can check your device status on [dashboard](https://www.tiptopsoft.cn)
 
 ## windows
 
-coming soon
+windows now also using command tools. should have admin privileges.

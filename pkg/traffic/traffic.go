@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	normalSize = 1024 * 1024 * 1024 * 5 //2GB
+	defaultSize = 1024 * 1024 * 1024 * 2 //2GB
 
 )
 
