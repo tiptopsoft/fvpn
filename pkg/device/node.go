@@ -118,8 +118,7 @@ func (n *Node) initRelay() error {
 	n.relay.SetEndpoint(conn.NewEndpoint(endpoint))
 	n.relay.SetMode(1)
 	n.relay.Start()
-	return n.cache.Set(util.Info().GetUserId(), n.relay.GetEndpoint().DstIP().IP.String(), n.relay)
-
+	return nil
 }
 
 func getRegistryUrl(registryUrl string) (string, string, error) {
@@ -447,8 +446,6 @@ func (n *Node) NewPeer(uid, ip string, pk security.NoisePublicKey, cache Interfa
 	p.cache = cache
 	p.queue.outBound = NewOutBoundQueue()
 	p.queue.inBound = NewInBoundQueue()
-
-	cache.Set(uid, ip, p)
 	logger.Debugf("created Peer for : %v, Peer: [%v]", ip, p.GetEndpoint())
 	return p
 }

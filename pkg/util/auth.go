@@ -16,6 +16,10 @@ package util
 
 import "sync"
 
+var (
+	defaultUser = &user{}
+)
+
 type UserFunc interface {
 	GetUserId() string
 	SetUserId(userId string) error
@@ -31,7 +35,7 @@ type user struct {
 }
 
 func Info() UserFunc {
-	return &user{}
+	return defaultUser
 }
 
 var (

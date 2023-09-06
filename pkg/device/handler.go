@@ -146,25 +146,20 @@ func (n *Node) handleQueryPeers(frame *Frame) {
 	peers, _ := peer.Decode(frame.Packet[:])
 	logger.Debugf("list peers from registry: %v", peers.Peers)
 	for _, info := range peers.Peers {
-		ip := info.IP.String()
+		dstIP := info.IP.String()
 		uid := frame.UidString()
-		if ip == n.device.IPToString() {
-			//go over if ip is local ip
+		if dstIP == n.device.IPToString() {
+			//go over if dstIP is local dstIP
 			continue
 		}
 
 		addr := info.RemoteAddr.String()
-		p := n.NewPeer(uid, ip, n.privateKey.NewPubicKey(), n.cache) //now has no pubKey
+		p := n.NewPeer(uid, dstIP, n.privateKey.NewPubicKey(), n.cache) //now has no pubKey
 		if p.GetEndpoint() == nil {
 			p.SetEndpoint(conn.NewEndpoint(addr))
 		}
 		p.node = n
 		p.mode = 1
-		err := n.cache.Set(uid, ip, p)
-		if err != nil {
-			return
-		}
-
 		if !p.GetStatus() {
 			p.Start()
 		}

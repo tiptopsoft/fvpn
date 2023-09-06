@@ -16,7 +16,6 @@ package device
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/tiptopsoft/fvpn/pkg/util"
 	"io"
@@ -48,14 +47,14 @@ func Login(username, password string, cfg *util.NodeCfg) error {
 		}
 		file, err = os.Create(path)
 	} else {
-		file, err = os.OpenFile(path, os.O_RDWR, 0755)
+		file, err = os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0755)
 	}
 	defer file.Close()
 	var local util.LocalConfig
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&local)
 	if err != nil && err != io.EOF {
-		return errors.New("login failed")
+		return err
 	}
 
 	appId := local.AppId

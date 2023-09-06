@@ -94,6 +94,7 @@ func (p *Peer) Start() {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	p.SetStatus(true)
+	p.node.cache.Set(util.Info().GetUserId(), p.ip, p)
 	if p.mode == 1 {
 		go func() {
 			timer := time.NewTimer(time.Second * 0)

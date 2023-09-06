@@ -25,7 +25,6 @@ import (
 	"os"
 )
 
-// Join a networkId will be created tun device. and will be assigned a IP which can be found in our website.
 type loginOptions struct {
 	Username string
 	Password string
@@ -60,11 +59,6 @@ func runLogin(opts loginOptions) error {
 	if err != nil {
 		return err
 	}
-
-	//s := &client.Peer{
-	//	Config: config,
-	//}
-
 	if opts.Password == "" {
 		if opts.Username == "" {
 			opts.Username, _ = readLine("username: ", false)
@@ -85,8 +79,6 @@ func runLogin(opts loginOptions) error {
 		}
 	}
 
-	//check whether has been login TODO
-
 	err = device.Login(opts.Username, opts.Password, config.NodeCfg)
 	if err != nil {
 		return err
@@ -97,24 +89,13 @@ func runLogin(opts loginOptions) error {
 
 }
 
-//func readLine(prompt string, slient bool) (string, error) {
-//	fmt.Print(prompt)
-//	reader := bufio.NewReader(os.Stdin)
-//	line, _, err := reader.ReadLine()
-//	if err != nil {
-//		panic(err)
-//		return "", err
-//	}
-//
-//	return string(line), err
-//}
-
 func readLine(prompt string, slient bool) (string, error) {
 	fmt.Print(prompt)
 	if slient {
 		fd := os.Stdin.Fd()
 		state, err := term.SaveState(fd)
 		if err != nil {
+			fmt.Println(err)
 			return "", err
 		}
 		term.DisableEcho(fd, state)
