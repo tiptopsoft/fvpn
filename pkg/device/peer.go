@@ -28,7 +28,6 @@ import (
 )
 
 type Peer struct {
-	isTry       atomic.Bool
 	node        *Node
 	mode        int
 	ip          string
@@ -43,15 +42,9 @@ type Peer struct {
 	lock        sync.Mutex
 	status      bool
 	pubKey      security.NoisePublicKey
-	bind        conn.Interface
 	endpoint    conn.Endpoint //
 	cache       Interface
-
-	queue struct {
-		outBound *OutBoundQueue // data to write to dst Peer
-		inBound  *InBoundQueue  // data write to tun
-	}
-	cipher security.Codec
+	cipher      security.Codec
 }
 
 func (p *Peer) GetIP() string {
@@ -104,10 +97,7 @@ func (p *Peer) Start() {
 				case <-p.keepaliveCh:
 					return
 				case <-timer.C:
-					if p.isRelay {
-						p.handshake(net.ParseIP(p.ip))
-						p.keepalive()
-					} else if !p.node.cfg.Relay.Force {
+					if p.isRelay || !p.node.cfg.Relay.Force {
 						p.handshake(net.ParseIP(p.ip))
 						p.keepalive()
 					}
@@ -162,10 +152,6 @@ func (p *Peer) handshake(dstIP net.IP) {
 	p.node.PutPktToOutbound(f)
 }
 
-func (p *Peer) PutPktToOutbound(pkt *Frame) {
-	p.queue.outBound.c <- pkt
-}
-
 func (p *Peer) keepalive() {
 	pkt, err := packet.NewHeader(util.KeepaliveMsgType, "")
 	if err != nil {
@@ -202,7 +188,7 @@ func (p *Peer) close() {
 	p.sendCh <- 1
 	p.keepaliveCh <- 1
 	p.status = false
-	p.isTry.Store(false)
+	//p.isTry.Store(false)
 	p.cache.Set(util.Info().GetUserId(), p.ip, p)
-	logger.Debugf("================Peer stop signal have send to Peer: %v", p.GetEndpoint().DstToString())
+	logger.Debugf("peer stop signal have send to Peer: %v", p.GetEndpoint().DstToString())
 }

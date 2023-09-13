@@ -55,6 +55,6 @@ func ExecCommand(name string, commands ...string) error {
 		fmt.Println(err)
 		return err
 	}
-	fmt.Println(string(output))
+	fmt.Print(string(output))
 	return nil
 }

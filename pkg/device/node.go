@@ -433,7 +433,7 @@ func (n *Node) NewPeer(uid, ip string, pk security.NoisePublicKey, cache Interfa
 	logger.Debugf("will create Peer for userId: %v, ip: %v", uid, ip)
 
 	p := new(Peer)
-	p.isTry.Store(true)
+	//p.isTry.Store(true)
 	p.st = time.Now()
 
 	p.ip = ip
@@ -442,8 +442,6 @@ func (n *Node) NewPeer(uid, ip string, pk security.NoisePublicKey, cache Interfa
 	p.keepaliveCh = make(chan int, 1)
 	p.pubKey = pk
 	p.cache = cache
-	p.queue.outBound = NewOutBoundQueue()
-	p.queue.inBound = NewInBoundQueue()
 	logger.Debugf("created Peer for : %v, Peer: [%v]", ip, p.GetEndpoint())
 	return p
 }
