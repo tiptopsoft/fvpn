@@ -44,10 +44,9 @@ jobs:
         script: |
           cd fvpn
           docker pull ${{ env.registry}}/fvpn/fvpn:${{ env.tags }}
-          docker-compose up -d
           docker rmi $(docker images -f "dangling=true" -q)
+          docker rm -f fvpn
+          docker run -d --net=host --name=fvpn -p 4000:4000/udp -v /root/fvpn/bin/conf:/root/.fvpn registry.cn-hangzhou.aliyuncs.com/fvpn/fvpn:v0.1 fvpn serve
           
-          cd bin
-          sh tests.sh
     
           

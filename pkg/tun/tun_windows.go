@@ -1,4 +1,4 @@
-// Copyright 2023 Tiptopsoft, Inc.
+// Copyright 2023 TiptopSoft, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"github.com/tiptopsoft/fvpn/pkg/tun/winipcfg"
 	"golang.org/x/sys/windows"
-	"golang.zx2c4.com/wintun"
 	"net"
 	"net/netip"
 	"os"
