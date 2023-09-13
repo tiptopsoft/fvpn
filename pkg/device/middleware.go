@@ -16,6 +16,7 @@ package device
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/tiptopsoft/fvpn/pkg/packet"
 	"github.com/tiptopsoft/fvpn/pkg/util"
@@ -87,6 +88,12 @@ func Encode() func(Handler) Handler {
 				buff := frame.Packet[offset:frame.Size]
 				peer := frame.GetPeer()
 				logger.Debugf("Peer is :%v, data before encode: %v", peer.GetEndpoint().DstIP(), buff)
+				if peer.GetCodec() == nil {
+					logger.Debugf("")
+				}
+				if peer.GetCodec() == nil {
+					return errors.New("node has not built success yet")
+				}
 				encoded, err := peer.GetCodec().Encode(buff)
 				if err != nil {
 					return err

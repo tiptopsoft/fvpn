@@ -233,21 +233,19 @@ func (n *Node) ReadFromTun() {
 			logger.Error(err)
 			continue
 		}
-		if ipHeader.DstIP.String() == n.device.Addr().String() {
+		dstIP := ipHeader.DstIP.String()
+		if dstIP == n.device.Addr().String() {
+			n.PutPktToInbound(frame)
 			continue
 		}
 		logger.Debugf("node %s receive %d byte, srcIP: %v, dstIP: %v", n.device.Name(), size, ipHeader.SrcIP, ipHeader.DstIP)
-
-		peer, err := n.cache.Get(util.Info().GetUserId(), ipHeader.DstIP.String())
-		if err != nil || peer == nil {
-			if n.cfg.EnableRelay() {
-				frame.Peer = n.relay
-			} else {
-				//drop
-				continue
-			}
+		if n.cfg.Relay.Force {
+			frame.Peer = n.relay
 		} else {
-			if !peer.GetP2P() {
+			if peer, err := n.cache.Get(util.Info().GetUserId(), dstIP); err != nil || peer == nil {
+				//drop peer is not online
+				continue
+			} else if !peer.GetP2P() && n.cfg.EnableRelay() {
 				frame.Peer = n.relay
 			} else {
 				frame.Peer = peer
@@ -369,7 +367,7 @@ func (n *Node) WriteToUDP() {
 			logger.Debugf("before give to Peer, data type: [%v], cost: [%v]", dataType, dt)
 			//pkt.Peer.PutPktToOutbound(pkt)
 			peer := pkt.Peer
-			send, err := pkt.Peer.node.net.conn.Send(pkt.Packet[:pkt.Size], pkt.Peer.GetEndpoint())
+			send, err := n.net.conn.Send(pkt.Packet[:pkt.Size], pkt.Peer.GetEndpoint())
 			if err != nil {
 				logger.Error(err)
 				continue

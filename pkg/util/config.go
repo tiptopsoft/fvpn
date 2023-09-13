@@ -72,6 +72,7 @@ type Auth struct {
 
 type Relay struct {
 	Enable bool `mapstructure:"enable"`
+	Force  bool `mapstructure:"force"`
 }
 
 func (cfg *NodeCfg) EnableRelay() bool {
@@ -135,6 +136,7 @@ func InitConfig() (config *Config, err error) {
 	viper.SetDefault("node.HttpListen", ":6662")
 	viper.SetDefault("node.Registry", "tiptopsoft.cn")
 	viper.SetDefault("node.Relay.Enable", true)
+	viper.SetDefault("node.Relay.Force", false)
 	viper.SetDefault("node.log.debug", false)
 	viper.SetDefault("node.IPV6.Enable", false)
 	viper.SetDefault("node.Udp", "udp4")

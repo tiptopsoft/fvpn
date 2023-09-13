@@ -22,6 +22,7 @@ import (
 	"github.com/tiptopsoft/fvpn/pkg/packet"
 	"github.com/tiptopsoft/fvpn/pkg/packet/handshake"
 	"github.com/tiptopsoft/fvpn/pkg/packet/peer"
+	"github.com/tiptopsoft/fvpn/pkg/security"
 	"github.com/tiptopsoft/fvpn/pkg/util"
 	"net"
 )
@@ -115,12 +116,20 @@ func (r *RegServer) serverUdpHandler() device.HandlerFunc {
 			newFrame.Size = len(buff)
 			r.PutPktToOutbound(newFrame)
 		case util.HandShakeMsgType:
+			srcIP := frame.SrcIP.String()
+			uid := frame.UidString()
+			pktBuf, err := handshake.Decode(util.HandShakeMsgTypeAck, frame.Buff)
+			if err != nil {
+				return err
+			}
 			node := new(device.Node)
-			p := node.NewPeer(frame.UidString(), frame.SrcIP.String(), r.key.privateKey.NewPubicKey(), r.cache)
+			p := node.NewPeer(uid, srcIP, r.key.privateKey.NewPubicKey(), r.cache)
 			p.SetEndpoint(conn.NewEndpoint(frame.RemoteAddr.String()))
-			r.cache.Set(frame.UidString(), frame.SrcIP.String(), p)
+			p.SetCodec(security.New(r.key.privateKey, pktBuf.PubKey))
+			logger.Infof("registry build p2p with node: %v success", srcIP)
+			r.cache.Set(uid, srcIP, p)
 			//build handshakeAck resp
-			pkt := handshake.NewPacket(util.HandShakeMsgTypeAck, frame.UidString())
+			pkt := handshake.NewPacket(util.HandShakeMsgTypeAck, uid)
 			pkt.Header.SrcIP = frame.DstIP
 			pkt.Header.DstIP = frame.SrcIP
 			pkt.PubKey = r.key.privateKey.NewPubicKey()

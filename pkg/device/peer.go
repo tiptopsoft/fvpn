@@ -104,8 +104,14 @@ func (p *Peer) Start() {
 				case <-p.keepaliveCh:
 					return
 				case <-timer.C:
-					p.handshake(net.ParseIP(p.ip))
-					p.keepalive()
+					if p.isRelay {
+						p.handshake(net.ParseIP(p.ip))
+						p.keepalive()
+					} else if !p.node.cfg.Relay.Force {
+						p.handshake(net.ParseIP(p.ip))
+						p.keepalive()
+					}
+
 					timer.Reset(time.Second * 10)
 				}
 			}
