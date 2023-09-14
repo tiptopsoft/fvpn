@@ -200,14 +200,14 @@ func (n *Node) up() error {
 		}
 	}()
 
-	go func() {
-		err := n.HttpServer()
-		if err != nil {
-			logger.Errorf("start http failed. %v", err)
-		}
-	}()
-	n.wg.Wait()
-	return nil
+	//go func() {
+	return n.HttpServer()
+	//if err != nil {
+	//	logger.Errorf("start http failed. %v", err)
+	//}
+	////}()
+	//n.wg.Wait()
+	//return nil
 }
 
 func (n *Node) Close() error {
@@ -289,23 +289,21 @@ func (n *Node) ReadFromUdp() {
 	}()
 	for {
 		limitChan <- true
-		go n.udpProcess()
+		ctx := context.Background()
+		ctx = context.WithValue(ctx, "cache", n.cache)
+		frame := NewFrame()
+		size, remoteAddr, err := n.net.conn.Conn().ReadFromUDP(frame.Buff[:])
+		if err != nil {
+			logger.Error(err)
+		}
+		frame.Size = size
+		frame.RemoteAddr = remoteAddr
+		go n.udpProcess(ctx, frame)
 	}
 }
 
-func (n *Node) udpProcess() {
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, "cache", n.cache)
-	frame := NewFrame()
-	size, remoteAddr, err := n.net.conn.Conn().ReadFromUDP(frame.Buff[:])
-	frame.ST = time.Now()
-	copy(frame.Packet[:size], frame.Buff[:size])
-	if err != nil {
-		logger.Error(err)
-	}
-	frame.Size = size
-	frame.RemoteAddr = remoteAddr
-
+func (n *Node) udpProcess(ctx context.Context, frame *Frame) {
+	copy(frame.Packet[:frame.Size], frame.Buff[:frame.Size])
 	hpkt, err := util.GetPacketHeader(frame.Buff[:])
 	if err != nil {
 		logger.Error(err)
@@ -313,9 +311,9 @@ func (n *Node) udpProcess() {
 	dataType := util.GetFrameTypeName(hpkt.Flags)
 	if dataType == "" {
 		//drop
-		logger.Debugf("got invalid data. size: %d", size)
+		logger.Debugf("got invalid data. size: %d", frame.Size)
 	}
-	logger.Debugf("udp receive %d byte from %s, data type: [%v]", size, remoteAddr, dataType)
+	logger.Debugf("udp receive %d byte from %s, data type: [%v]", frame.SrcIP, frame.RemoteAddr, dataType)
 
 	frame.SrcIP = hpkt.SrcIP //192.168.0.1->192.168.0.2 srcIP =1, dstIP =2
 	frame.DstIP = hpkt.DstIP
