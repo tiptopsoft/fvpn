@@ -104,7 +104,6 @@ func (r *RegServer) RoutineInBound(id int) {
 		select {
 		case pkt := <-r.queue.inBound.GetPktFromInbound():
 			r.handleInPackets(pkt, id)
-		default:
 
 		}
 

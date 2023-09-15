@@ -372,7 +372,6 @@ func (n *Node) WriteToUDP() {
 			}
 			t := time.Since(pkt.ST)
 			logger.Debugf("node has send [%v] packets to %s from p2p: [%v], data type: [%v], cost: [%v]", send, peer.GetEndpoint().DstToString(), peer.p2p, util.GetFrameTypeName(pkt.FrameType), t)
-		default:
 
 		}
 	}
