@@ -23,6 +23,7 @@ import (
 	"github.com/tiptopsoft/fvpn/pkg/device/conn"
 	"github.com/tiptopsoft/fvpn/pkg/log"
 	"github.com/tiptopsoft/fvpn/pkg/packet"
+	"github.com/tiptopsoft/fvpn/pkg/pprof"
 	"github.com/tiptopsoft/fvpn/pkg/security"
 	"github.com/tiptopsoft/fvpn/pkg/tun"
 	"github.com/tiptopsoft/fvpn/pkg/util"
@@ -200,14 +201,11 @@ func (n *Node) up() error {
 		}
 	}()
 
-	//go func() {
+	go func() {
+		pprof.Pprof()
+	}()
+
 	return n.HttpServer()
-	//if err != nil {
-	//	logger.Errorf("start http failed. %v", err)
-	//}
-	////}()
-	//n.wg.Wait()
-	//return nil
 }
 
 func (n *Node) Close() error {

@@ -1,7 +1,6 @@
 package conn
 
 import (
-	"golang.org/x/sys/unix"
 	"syscall"
 )
 
@@ -12,9 +11,8 @@ func init() {
 		// links or high latency links.
 		func(network, address string, c syscall.RawConn) error {
 			return c.Control(func(fd uintptr) {
-				// Set up to *mem_max
-				_ = unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_RCVBUF, socketBufferSize)
-				_ = unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_SNDBUF, socketBufferSize)
+				_ = windows.SetsockoptInt(windows.Handle(fd), windows.SOL_SOCKET, windows.SO_RCVBUF, socketBufferSize)
+				_ = windows.SetsockoptInt(windows.Handle(fd), windows.SOL_SOCKET, windows.SO_SNDBUF, socketBufferSize)
 			})
 		})
 }

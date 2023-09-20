@@ -15,6 +15,7 @@
 package conn
 
 import (
+	"context"
 	"fmt"
 	"net"
 )
@@ -87,5 +88,11 @@ func (s *Default) Conn() *net.UDPConn {
 }
 
 func listen(network string, addr *net.UDPAddr) (*net.UDPConn, error) {
-	return net.ListenUDP(network, addr)
+	//return net.ListenUDP(network, addr)
+	packConn, err := ListenConfig().ListenPacket(context.Background(), network, addr.String())
+	if err != nil {
+		return nil, err
+	}
+
+	return packConn.(*net.UDPConn), nil
 }
