@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"github.com/tiptopsoft/fvpn/pkg/device"
 	"github.com/tiptopsoft/fvpn/pkg/device/conn"
-	"github.com/tiptopsoft/fvpn/pkg/packet"
 	"github.com/tiptopsoft/fvpn/pkg/packet/handshake"
 	"github.com/tiptopsoft/fvpn/pkg/packet/peer"
 	"github.com/tiptopsoft/fvpn/pkg/security"
@@ -30,17 +29,19 @@ import (
 func (r *RegServer) ReadFromUdp() {
 	logger.Infof("start a udp loop")
 	for {
+		buffPtr := r.pool.Get()
+
 		ctx := context.Background()
 		ctx = context.WithValue(ctx, "cache", r.cache)
 		frame := device.NewFrame()
+		frame.Packet = *buffPtr
 		frame.Ctx = ctx
-		n, addr, err := r.conn.ReadFromUDP(frame.Buff[:])
+		n, addr, err := r.conn.ReadFromUDP(frame.Packet[:])
 		if err != nil || n < 0 {
 			logger.Error("no data exists")
 			continue
 		}
-		copy(frame.Packet, frame.Buff)
-		packetHeader, err := util.GetPacketHeader(frame.Buff[:])
+		packetHeader, err := util.GetPacketHeader(frame.Packet[:])
 		if err != nil {
 			logger.Errorf("get header falied. %v", err)
 			continue
@@ -74,15 +75,15 @@ func (r *RegServer) writeUdpHandler() device.HandlerFunc {
 func (r *RegServer) serverUdpHandler() device.HandlerFunc {
 	return func(ctx context.Context, frame *device.Frame) error {
 		switch frame.FrameType {
-		case util.MsgTypeRegisterSuper:
-			err := r.register(frame)
-			h, err := packet.NewHeader(util.MsgTypeRegisterAck, frame.NetworkId)
-			if err != nil {
-				logger.Errorf("build resp failed. err: %v", err)
-			}
-			f, _ := packet.Encode(h)
-			frame.Packet = f
-			break
+		//case util.MsgTypeRegisterSuper:
+		//	err := r.register(frame)
+		//	h, err := packet.NewHeader(util.MsgTypeRegisterAck, frame.NetworkId)
+		//	if err != nil {
+		//		logger.Errorf("build resp failed. err: %v", err)
+		//	}
+		//	f, _ := packet.Encode(h)
+		//	frame.Packet = f
+		//	break
 		case util.MsgTypePacket:
 			p, err := r.cache.Get(frame.UidString(), frame.DstIP.String())
 			if err != nil || p == nil {
@@ -107,18 +108,22 @@ func (r *RegServer) serverUdpHandler() device.HandlerFunc {
 			}
 
 			buff, _ := peer.Encode(peerAck)
+			r.pool.Put(&frame.Packet)
 
 			newFrame := device.NewFrame()
-			copy(newFrame.Packet, buff)
+			buffPtr := r.pool.Get()
+			newFrame.Packet = *buffPtr
+			copy(newFrame.Packet[:], buff)
 			newFrame.UserId = frame.UserId
 			newFrame.RemoteAddr = frame.RemoteAddr
 			newFrame.FrameType = util.MsgTypeQueryPeer
 			newFrame.Size = len(buff)
 			r.PutPktToOutbound(newFrame)
+			r.pool.Put(buffPtr)
 		case util.HandShakeMsgType:
 			srcIP := frame.SrcIP.String()
 			uid := frame.UidString()
-			pktBuf, err := handshake.Decode(util.HandShakeMsgTypeAck, frame.Buff)
+			pktBuf, err := handshake.Decode(util.HandShakeMsgTypeAck, frame.Packet[:])
 			if err != nil {
 				return err
 			}

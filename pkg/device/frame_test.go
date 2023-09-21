@@ -24,7 +24,7 @@ func TestNewFrame(t *testing.T) {
 	s := "abc"
 	buff := []byte(s)
 	size := len(buff)
-	copy(f.Packet, buff)
+	copy(f.Packet[:], buff)
 
 	fmt.Println("packet: ", f.Packet)
 

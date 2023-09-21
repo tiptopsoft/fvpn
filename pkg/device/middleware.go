@@ -68,10 +68,8 @@ func Decode() func(Handler) Handler {
 				if err != nil {
 					return err
 				}
-				frame.Clear()
-				copy(frame.Packet[0:offset], frame.Buff[0:offset])
-				copy(frame.Packet[offset:], decoded)
 				frame.Size = len(decoded) + offset
+				copy(frame.Packet[offset:frame.Size], decoded)
 				logger.Debugf("data after decode: %v", frame.Packet[:frame.Size])
 			}
 			return next.Handle(ctx, frame)
@@ -98,8 +96,8 @@ func Encode() func(Handler) Handler {
 				if err != nil {
 					return err
 				}
-				copy(frame.Packet[offset:], encoded)
 				frame.Size = offset + len(encoded)
+				copy(frame.Packet[offset:frame.Size], encoded)
 				logger.Debugf("data after encode: %v", frame.Packet[:frame.Size])
 				if err != nil {
 					return err

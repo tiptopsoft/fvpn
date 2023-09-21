@@ -27,8 +27,8 @@ type Frame struct {
 	Ctx context.Context
 	ST  time.Time
 	sync.Mutex
-	Buff       []byte
-	Packet     []byte
+	Buff       [packet.FvpnPktBuffSize]byte
+	Packet     [packet.FvpnPktBuffSize]byte
 	Size       int
 	NetworkId  string
 	UserId     [8]byte
@@ -47,17 +47,15 @@ func (f *Frame) GetPeer() *Peer {
 func NewFrame() *Frame {
 	return &Frame{
 		Ctx:     context.Background(),
-		Buff:    make([]byte, packet.FvpnPktBuffSize),
-		Packet:  make([]byte, packet.FvpnPktBuffSize),
 		Encrypt: true,
 		ST:      time.Now(),
 	}
 }
 
-func (f *Frame) Clear() {
-	buf := make([]byte, packet.FvpnPktBuffSize)
-	copy(f.Packet, buf)
-}
+//func (f *Frame) Clear() {
+//	buf := make([]byte, packet.FvpnPktBuffSize)
+//	copy(f.Packet, buf)
+//}
 
 func (f *Frame) UidString() string {
 	return hex.EncodeToString(f.UserId[:])

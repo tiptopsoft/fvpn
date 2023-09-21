@@ -36,7 +36,7 @@ import (
 
 var (
 	logger    = log.Log()
-	limitChan = make(chan bool, 1000)
+	limitChan = make(chan bool, 10000)
 )
 
 // Node is a dev in any os.
@@ -61,6 +61,8 @@ type Node struct {
 		outBound *OutBoundQueue //after encrypt
 		inBound  *InBoundQueue  //after decrypt
 	}
+
+	pool *PacketPool
 
 	netCtl     NetworkManager
 	tunHandler Handler
@@ -87,6 +89,7 @@ func NewNode(iface tun.Device, conn conn.Interface, cfg *util.NodeCfg) (*Node, e
 		cfg:    cfg,
 	}
 	n.net.conn = conn
+	n.pool = NewPool()
 	n.netCtl = NewNetworkManager(util.Info().GetUserId())
 	privateKey, err := security.NewPrivateKey()
 
@@ -215,24 +218,30 @@ func (n *Node) Close() error {
 
 func (n *Node) ReadFromTun() {
 	for {
+		buffPtr := n.pool.Get()
+		buff := *(buffPtr)
 		ctx := context.Background()
 		frame := NewFrame()
+		frame.Packet = buff
 		ctx = context.WithValue(ctx, "cache", n.cache)
 		frame.UserId = n.userId
 		frame.FrameType = util.MsgTypePacket
-		size, err := n.device.Read(frame.Buff[:])
+		size, err := n.device.Read(frame.Packet[:])
 		frame.ST = time.Now()
 		if err != nil {
 			logger.Error(err)
+			n.pool.Put(buffPtr)
 			continue
 		}
-		ipHeader, err := util.GetIPFrameHeader(frame.Buff[:])
+		ipHeader, err := util.GetIPFrameHeader(frame.Packet[:])
 		if err != nil {
 			logger.Error(err)
+			n.pool.Put(buffPtr)
 			continue
 		}
 		dstIP := ipHeader.DstIP.String()
 		if dstIP == n.device.Addr().String() {
+			n.pool.Put(buffPtr)
 			n.PutPktToInbound(frame)
 			continue
 		}
@@ -242,6 +251,7 @@ func (n *Node) ReadFromTun() {
 		} else {
 			if peer, err := n.cache.Get(util.Info().GetUserId(), dstIP); err != nil || peer == nil {
 				//drop peer is not online
+				n.pool.Put(buffPtr)
 				continue
 			} else if !peer.GetP2P() && n.cfg.EnableRelay() {
 				frame.Peer = n.relay
@@ -261,11 +271,12 @@ func (n *Node) ReadFromTun() {
 		headerBuff, err := packet.Encode(h)
 		if err != nil {
 			logger.Error(err)
+			n.pool.Put(buffPtr)
 			continue
 		}
 
+		copy(frame.Packet[packet.HeaderBuffSize:], frame.Packet[:])
 		copy(frame.Packet[:packet.HeaderBuffSize], headerBuff)
-		copy(frame.Packet[packet.HeaderBuffSize:], frame.Buff[:])
 		frame.Size = size + packet.HeaderBuffSize
 		if !n.cfg.Encrypt.Enable {
 			frame.Encrypt = false
@@ -274,9 +285,11 @@ func (n *Node) ReadFromTun() {
 		err = n.tunHandler.Handle(ctx, frame)
 		if err != nil {
 			logger.Error(err)
+			n.pool.Put(buffPtr)
 			continue
 		}
 
+		n.pool.Put(buffPtr)
 	}
 }
 
@@ -286,23 +299,24 @@ func (n *Node) ReadFromUdp() {
 		logger.Debugf("udp thread exited")
 	}()
 	for {
-		limitChan <- true
+		buffPtr := n.pool.Get()
 		ctx := context.Background()
 		ctx = context.WithValue(ctx, "cache", n.cache)
 		frame := NewFrame()
-		size, remoteAddr, err := n.net.conn.Conn().ReadFromUDP(frame.Buff[:])
+		frame.Packet = *buffPtr
+		size, remoteAddr, err := n.net.conn.Conn().ReadFromUDP(frame.Packet[:])
 		if err != nil {
 			logger.Error(err)
 		}
 		frame.Size = size
 		frame.RemoteAddr = remoteAddr
-		go n.udpProcess(ctx, frame)
+		n.udpProcess(ctx, frame)
+		n.pool.Put(buffPtr)
 	}
 }
 
 func (n *Node) udpProcess(ctx context.Context, frame *Frame) {
-	copy(frame.Packet[:frame.Size], frame.Buff[:frame.Size])
-	hpkt, err := util.GetPacketHeader(frame.Buff[:])
+	hpkt, err := util.GetPacketHeader(frame.Packet[:])
 	if err != nil {
 		logger.Error(err)
 	}
@@ -333,7 +347,6 @@ func (n *Node) udpProcess(ctx context.Context, frame *Frame) {
 	}
 	dt := time.Since(frame.ST)
 	logger.Debugf("udp receive process finished, dataType: [%v], cost: [%v]", dataType, dt)
-	<-limitChan
 }
 
 // sendListPackets send a packet list all nodes in current user
@@ -347,7 +360,7 @@ func (n *Node) sendListPackets() {
 	frame := NewFrame()
 	frame.Peer = n.relay
 	frame.DstIP = n.relay.GetEndpoint().DstIP().IP
-	copy(frame.Packet, hpkt)
+	copy(frame.Packet[:], hpkt)
 	frame.Size = len(hpkt)
 	frame.UserId = h.UserId
 	frame.FrameType = util.MsgTypeQueryPeer

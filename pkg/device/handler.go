@@ -61,7 +61,6 @@ func (n *Node) tunInHandler() HandlerFunc {
 // Handle union udp handler
 func (n *Node) udpInHandler() HandlerFunc {
 	return func(ctx context.Context, frame *Frame) error {
-		//dest := ctx.Value("destAddr").(string)
 		buff := frame.Packet[:]
 		headerBuff, err := packet.Decode(buff)
 		if err != nil {
@@ -76,7 +75,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 			n.PutPktToInbound(frame)
 		case util.HandShakeMsgType:
 			//cache dst Peer when receive a handshake
-			headerPkt, err := handshake.Decode(util.HandShakeMsgType, frame.Buff)
+			headerPkt, err := handshake.Decode(util.HandShakeMsgType, frame.Packet[:])
 			if err != nil {
 				logger.Errorf("invalid handshake packet: %v", err)
 				return err
@@ -116,7 +115,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 			srcIP := frame.SrcIP.String()
 			uid := frame.UidString()
 			p, err := n.cache.Get(uid, srcIP)
-			pkt, err := handshake.Decode(util.HandShakeMsgTypeAck, frame.Buff)
+			pkt, err := handshake.Decode(util.HandShakeMsgTypeAck, frame.Packet[:])
 			if err != nil {
 				return err
 			}

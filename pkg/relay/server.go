@@ -43,6 +43,8 @@ type RegServer struct {
 		inBound  *device.InBoundQueue
 	}
 
+	pool *device.PacketPool
+
 	key struct {
 		privateKey security.NoisePrivateKey
 		pubKey     security.NoisePublicKey
@@ -56,6 +58,7 @@ func (r *RegServer) Start() error {
 	var err error
 	r.queue.outBound = device.NewOutBoundQueue()
 	r.queue.inBound = device.NewInBoundQueue()
+	r.pool = device.NewPool()
 	if r.key.privateKey, err = security.NewPrivateKey(); err != nil {
 		return err
 	}
