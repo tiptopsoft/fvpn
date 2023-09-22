@@ -1,6 +1,7 @@
 package conn
 
 import (
+	"golang.org/x/sys/windows"
 	"syscall"
 )
 

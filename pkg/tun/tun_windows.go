@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/tiptopsoft/fvpn/pkg/tun/winipcfg"
 	"golang.org/x/sys/windows"
+	"golang.zx2c4.com/wintun"
 	"net"
 	"net/netip"
 	"os"

@@ -440,6 +440,7 @@ func (n *Node) NewPeer(uid, ip string, pk security.NoisePublicKey, cache Interfa
 	p := new(Peer)
 	//p.isTry.Store(true)
 	p.st = time.Now()
+	p.node = n
 
 	p.ip = ip
 	p.checkCh = make(chan int, 1)

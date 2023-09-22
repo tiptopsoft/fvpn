@@ -188,7 +188,6 @@ func (p *Peer) close() {
 	p.sendCh <- 1
 	p.keepaliveCh <- 1
 	p.status = false
-	//p.isTry.Store(false)
 	p.cache.Set(util.Info().GetUserId(), p.ip, p)
 	logger.Debugf("peer stop signal have send to Peer: %v", p.GetEndpoint().DstToString())
 }

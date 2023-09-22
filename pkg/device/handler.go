@@ -121,11 +121,11 @@ func (n *Node) udpInHandler() HandlerFunc {
 			}
 			ep := conn.NewEndpoint(frame.RemoteAddr.String())
 			p.SetEndpoint(ep)
+			p.SetCodec(security.New(n.privateKey, pkt.PubKey))
 			if !p.p2p {
 				p.SetP2P(true)
 				logger.Infof("node [%v] build a p2p to node [%v]", frame.DstIP, frame.SrcIP)
 			}
-			p.SetCodec(security.New(n.privateKey, pkt.PubKey))
 			err = n.cache.Set(uid, srcIP, p)
 			if !p.GetStatus() {
 				p.Start()
@@ -153,11 +153,9 @@ func (n *Node) handleQueryPeers(frame *Frame) {
 		}
 
 		addr := info.RemoteAddr.String()
-		p := n.NewPeer(uid, dstIP, n.privateKey.NewPubicKey(), n.cache) //now has no pubKey
-		if p.GetEndpoint() == nil {
-			p.SetEndpoint(conn.NewEndpoint(addr))
-		}
-		p.node = n
+		p := n.NewPeer(uid, dstIP, n.privateKey.NewPubicKey(), n.cache)
+		p.SetEndpoint(conn.NewEndpoint(addr))
+
 		p.mode = 1
 		if !p.GetStatus() {
 			p.Start()
