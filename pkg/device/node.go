@@ -35,8 +35,7 @@ import (
 )
 
 var (
-	logger    = log.Log()
-	limitChan = make(chan bool, 10000)
+	logger = log.Log()
 )
 
 // Node is a dev in any os.
@@ -51,7 +50,7 @@ type Node struct {
 		conn conn.Interface
 	}
 
-	//peers is all peers releated to this device
+	//peers is all peers related to this device
 	peers struct {
 		lock  sync.Mutex
 		peers map[security.NoisePublicKey]*Peer //dst
@@ -68,7 +67,6 @@ type Node struct {
 	tunHandler Handler
 	udpHandler Handler
 	relay      *Peer
-	wg         sync.WaitGroup
 	userId     [8]byte
 	cache      Interface
 }
@@ -81,9 +79,9 @@ func (n *Node) PutPktToInbound(pkt *Frame) {
 	n.queue.inBound.c <- pkt
 }
 
-func NewNode(iface tun.Device, conn conn.Interface, cfg *util.NodeCfg) (*Node, error) {
+func NewNode(device tun.Device, conn conn.Interface, cfg *util.NodeCfg) (*Node, error) {
 	n := &Node{
-		device: iface,
+		device: device,
 		cache:  NewCache(cfg.Driver),
 		mode:   1,
 		cfg:    cfg,
@@ -105,7 +103,6 @@ func NewNode(iface tun.Device, conn conn.Interface, cfg *util.NodeCfg) (*Node, e
 
 	n.tunHandler = WithMiddlewares(n.tunInHandler(), AuthCheck(), n.AllowNetwork(), Encode())
 	n.udpHandler = WithMiddlewares(n.udpInHandler(), AuthCheck(), Decode())
-	n.wg.Add(1)
 
 	return n, nil
 }
@@ -177,7 +174,6 @@ func Start(cfg *util.Config) error {
 }
 
 func (n *Node) up() error {
-	defer n.wg.Done()
 	port, err := n.net.conn.Open(uint16(n.cfg.Listen))
 	logger.Infof("fvpn started at: %d", port)
 	if err != nil {
@@ -204,9 +200,11 @@ func (n *Node) up() error {
 		}
 	}()
 
-	go func() {
-		pprof.Pprof()
-	}()
+	if n.cfg.PProf.Enable {
+		go func() {
+			pprof.Pprof()
+		}()
+	}
 
 	return n.HttpServer()
 }
@@ -227,7 +225,6 @@ func (n *Node) ReadFromTun() {
 		frame.UserId = n.userId
 		frame.FrameType = util.MsgTypePacket
 		size, err := n.device.Read(frame.Packet[:])
-		frame.ST = time.Now()
 		if err != nil {
 			logger.Error(err)
 			n.pool.Put(buffPtr)

@@ -49,9 +49,14 @@ type NodeCfg struct {
 	Encrypt Encrypt `mapstructure:"encrypt"`
 	Auth    Auth    `mapstructure:"auth"`
 	Relay   Relay   `mapstructure:"relay"`
+	PProf   PProf   `mapstructure:"pprof"`
 	Log     LogCfg  `mapstructure:"log"`
 	IPV6    IPV6Cfg `mapstructure:"ipv6"`
 	Driver  string  `mapstructure:"driver"`
+}
+
+type PProf struct {
+	Enable bool `mapstructure:"enable"`
 }
 
 type IPV6Cfg struct {
@@ -139,6 +144,7 @@ func InitConfig() (config *Config, err error) {
 	viper.SetDefault("node.Relay.Force", false)
 	viper.SetDefault("node.log.debug", false)
 	viper.SetDefault("node.IPV6.Enable", false)
+	viper.SetDefault("node.PProf.Enable", false)
 	viper.SetDefault("node.Udp", "udp4")
 	viper.SetDefault("node.Encrypt.Enable", true)
 	viper.SetDefault("node.Auth.Enable", true)
