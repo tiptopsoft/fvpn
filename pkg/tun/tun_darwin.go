@@ -82,6 +82,11 @@ func New() (Device, error) {
 		break
 	}
 
+	err = unix.SetNonblock(int(fd), true)
+	if err != nil {
+		return nil, err
+	}
+
 	tun := &NativeTun{
 		file: os.NewFile(uintptr(fd), name),
 		Fd:   0,

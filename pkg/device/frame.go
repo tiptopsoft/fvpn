@@ -17,7 +17,6 @@ package device
 import (
 	"context"
 	"encoding/hex"
-	"github.com/tiptopsoft/fvpn/pkg/packet"
 	"net"
 	"sync"
 	"time"
@@ -27,8 +26,8 @@ type Frame struct {
 	Ctx context.Context
 	ST  time.Time
 	sync.Mutex
-	Buff       [packet.FvpnPktBuffSize]byte
-	Packet     [packet.FvpnPktBuffSize]byte
+	Buff       []byte
+	Packet     []byte
 	Size       int
 	NetworkId  string
 	UserId     [8]byte

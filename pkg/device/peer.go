@@ -89,23 +89,10 @@ func (p *Peer) Start() {
 	p.SetStatus(true)
 	p.node.cache.Set(util.Info().GetUserId(), p.ip, p)
 	if p.mode == 1 {
-		go func() {
-			timer := time.NewTimer(time.Second * 0)
-			defer timer.Stop()
-			for {
-				select {
-				case <-p.keepaliveCh:
-					return
-				case <-timer.C:
-					if p.isRelay || !p.node.cfg.Relay.Force {
-						p.handshake(net.ParseIP(p.ip))
-						p.keepalive()
-					}
-
-					timer.Reset(time.Second * 10)
-				}
-			}
-		}()
+		if p.isRelay || !p.node.cfg.Relay.Force {
+			p.handshake(net.ParseIP(p.ip))
+			p.sendListPackets()
+		}
 
 		go func() {
 			timer := time.NewTimer(time.Second * 30)
@@ -143,13 +130,60 @@ func (p *Peer) handshake(dstIP net.IP) {
 	}
 
 	size := len(buff)
-	f := NewFrame()
+	f := p.node.GetFrame()
+	f.ST = time.Now()
 	copy(f.Packet[:size], buff)
 	f.Size = size
 	f.FrameType = util.HandShakeMsgType
 	f.Peer = p
 	logger.Debugf("sending handshake pubkey to: %v, pubKey: %v, remote address: [%v], type: [%v]", dstIP.String(), p.pubKey, p.GetEndpoint().DstToString(), util.GetFrameTypeName(util.HandShakeMsgType))
-	p.node.PutPktToOutbound(f)
+
+	go func() {
+		timer := time.NewTimer(time.Second * 0)
+		defer timer.Stop()
+		for {
+			select {
+			case <-p.keepaliveCh:
+				return
+			case <-timer.C:
+				p.sendBuffer(f, p.GetEndpoint())
+				timer.Reset(time.Second * 10)
+			}
+		}
+	}()
+}
+
+// sendListPackets send a packet list all nodes in current user
+func (p *Peer) sendListPackets() {
+	h, _ := packet.NewHeader(util.MsgTypeQueryPeer, util.Info().GetUserId())
+	hpkt, err := packet.Encode(h)
+	if err != nil {
+		logger.Errorf("send list packet failed %v", err)
+		return
+	}
+	frame := p.node.GetFrame()
+	frame.Peer = p
+	frame.DstIP = p.GetEndpoint().DstIP().IP
+	copy(frame.Packet[:], hpkt)
+	frame.Size = len(hpkt)
+	frame.UserId = h.UserId
+	frame.FrameType = util.MsgTypeQueryPeer
+
+	go func() {
+		timer := time.NewTimer(time.Second * 5)
+		for {
+			select {
+			case <-timer.C:
+				p.sendBuffer(frame, frame.Peer.GetEndpoint())
+				timer.Reset(time.Second * 5)
+			}
+		}
+	}()
+
+}
+
+func (p *Peer) sendBuffer(frame *Frame, endpoint conn.Endpoint) {
+	_, _ = p.node.net.conn.Send(frame.Packet[:frame.Size], endpoint)
 }
 
 func (p *Peer) keepalive() {
@@ -162,7 +196,8 @@ func (p *Peer) keepalive() {
 		return
 	}
 	size := len(buff)
-	f := NewFrame()
+	f := p.node.GetFrame()
+	f.ST = time.Now()
 	f.Peer = p
 	copy(f.Packet[:size], buff)
 	f.Size = size

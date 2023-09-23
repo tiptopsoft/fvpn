@@ -65,19 +65,19 @@ func TestCurve(t *testing.T) {
 	frame := device.NewFrame()
 	h, _ := packet.NewHeader(util.MsgTypePacket, "123456")
 	headerBuff, _ := packet.Encode(h)
-	copy(frame.Packet, headerBuff)
+	copy(frame.Packet[:], headerBuff)
 	copy(frame.Packet[44:], sBuff)
 	size := len(headerBuff) + len(sBuff)
 
 	st := time.Now()
-	fmt.Println("before encoded: ", frame.Packet[:size])
+	fmt.Println("before encoded: ", size)
 
 	encodedBuff, err := cip1.Encode(frame.Packet[:size])
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println("After encoded: ", encodedBuff[:len(encodedBuff)])
+	fmt.Println("After encoded: ", len(encodedBuff))
 	et := time.Since(st)
 	fmt.Println("cost: ", et)
 

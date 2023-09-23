@@ -43,7 +43,10 @@ type RegServer struct {
 		inBound  *device.InBoundQueue
 	}
 
-	pool *device.PacketPool
+	pools struct {
+		buffPool  *device.MemoryPool
+		framePool *device.MemoryPool
+	}
 
 	key struct {
 		privateKey security.NoisePrivateKey
@@ -58,7 +61,7 @@ func (r *RegServer) Start() error {
 	var err error
 	r.queue.outBound = device.NewOutBoundQueue()
 	r.queue.inBound = device.NewInBoundQueue()
-	r.pool = device.NewPool()
+	r.pools.buffPool, r.pools.framePool = device.InitPools()
 	if r.key.privateKey, err = security.NewPrivateKey(); err != nil {
 		return err
 	}
@@ -115,6 +118,7 @@ func (r *RegServer) RoutineInBound(id int) {
 func (r *RegServer) handleInPackets(pkt *device.Frame, id int) {
 	defer func() {
 		logger.Debugf("handing in packet success in %d routine finished", id)
+		r.PutFrame(pkt)
 	}()
 
 	err := r.readHandler.Handle(pkt.Context(), pkt)

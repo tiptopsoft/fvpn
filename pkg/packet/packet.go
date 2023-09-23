@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	FvpnPktBuffSize = 2048
+	FvpnPktBuffSize = 3000
 )
 
 const (

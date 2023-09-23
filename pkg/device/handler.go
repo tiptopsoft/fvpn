@@ -103,14 +103,15 @@ func (n *Node) udpInHandler() HandlerFunc {
 				return err
 			}
 
-			newFrame := NewFrame()
+			newFrame := n.GetFrame()
 			newFrame.Size = len(buff)
 			newFrame.Peer = p
 			newFrame.UserId = frame.UserId
 			newFrame.FrameType = util.HandShakeMsgTypeAck
 			newFrame.DstIP = frame.SrcIP
 			copy(newFrame.Packet[:newFrame.Size], buff)
-			n.PutPktToOutbound(newFrame)
+			n.PutFrame(frame)
+			p.sendBuffer(newFrame, newFrame.GetPeer().GetEndpoint())
 		case util.HandShakeMsgTypeAck:
 			srcIP := frame.SrcIP.String()
 			uid := frame.UidString()

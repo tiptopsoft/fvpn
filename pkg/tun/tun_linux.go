@@ -76,6 +76,11 @@ func New() (Device, error) {
 	//	return nil, err
 	//}
 
+	err = unix.SetNonblock(int(fd), true)
+	if err != nil {
+		return nil, err
+	}
+
 	return &NativeTun{
 		name: name, // size is 16
 		file: os.NewFile(uintptr(fd), name),

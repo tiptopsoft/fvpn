@@ -29,21 +29,21 @@ import (
 func (r *RegServer) ReadFromUdp() {
 	logger.Infof("start a udp loop")
 	for {
-		buffPtr := r.pool.Get()
 
 		ctx := context.Background()
 		ctx = context.WithValue(ctx, "cache", r.cache)
-		frame := device.NewFrame()
-		frame.Packet = *buffPtr
+		frame := r.GetFrame()
 		frame.Ctx = ctx
 		n, addr, err := r.conn.ReadFromUDP(frame.Packet[:])
 		if err != nil || n < 0 {
 			logger.Error("no data exists")
+			r.PutFrame(frame)
 			continue
 		}
 		packetHeader, err := util.GetPacketHeader(frame.Packet[:])
 		if err != nil {
 			logger.Errorf("get header falied. %v", err)
+			r.PutFrame(frame)
 			continue
 		}
 
@@ -108,18 +108,17 @@ func (r *RegServer) serverUdpHandler() device.HandlerFunc {
 			}
 
 			buff, _ := peer.Encode(peerAck)
-			r.pool.Put(&frame.Packet)
+			//r.PutBuffer(&frame.Packet)
+			//r.PutFrame(frame)
 
-			newFrame := device.NewFrame()
-			buffPtr := r.pool.Get()
-			newFrame.Packet = *buffPtr
+			newFrame := r.GetFrame()
 			copy(newFrame.Packet[:], buff)
 			newFrame.UserId = frame.UserId
 			newFrame.RemoteAddr = frame.RemoteAddr
 			newFrame.FrameType = util.MsgTypeQueryPeer
 			newFrame.Size = len(buff)
 			r.PutPktToOutbound(newFrame)
-			r.pool.Put(buffPtr)
+			r.PutFrame(newFrame)
 		case util.HandShakeMsgType:
 			srcIP := frame.SrcIP.String()
 			uid := frame.UidString()
@@ -143,10 +142,11 @@ func (r *RegServer) serverUdpHandler() device.HandlerFunc {
 				return err
 			}
 
-			newFrame := device.NewFrame()
+			newFrame := r.GetFrame()
 			newFrame.Size = len(buff)
 			newFrame.RemoteAddr = frame.RemoteAddr
 			copy(newFrame.Packet[:newFrame.Size], buff)
+			r.PutFrame(frame)
 			r.PutPktToOutbound(newFrame)
 		}
 
