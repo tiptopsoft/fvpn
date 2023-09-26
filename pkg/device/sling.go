@@ -195,6 +195,39 @@ func (c *ClientManager) LeaveFvpnLocal(req LeaveRequest) (*LeaveResponse, error)
 	return &result, nil
 }
 
+func (c *ClientManager) ListNetworks() (*NetworkResponse, error) {
+	resp := new(Response)
+	//First, read the config.json to get username and password to get token
+	info, err := util.GetLocalUserInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	loginRequest := LoginRequest{
+		Username: info.Username,
+		Password: info.Password,
+	}
+
+	tokenResp, err := c.ConsoleClient.Tokens(loginRequest)
+	if err != nil {
+		return nil, err
+	}
+	_, err = c.ConsoleClient.sling.New().Get("/api/v1/network/list").Set("token", tokenResp.Token).Receive(&resp, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	jsonStr, err := json.Marshal(resp.Result)
+	if err != nil {
+		return nil, errors.New("invalid result")
+	}
+
+	var result NetworkResponse
+	err = json.Unmarshal(jsonStr, &result)
+
+	return &result, nil
+}
+
 func (c *client) Login(req LoginRequest) (*LoginResponse, error) {
 	resp := new(Response)
 	_, err := c.sling.New().Post("api/v1/users/login").BodyJSON(req).Receive(resp, resp)

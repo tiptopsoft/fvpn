@@ -46,6 +46,18 @@ type LeaveResponse struct {
 	JoinResponse
 }
 
+type NetworkResponse struct {
+	Total     int       `json:"total,omitempty"`
+	Size      int       `json:"size,omitempty"`
+	Available int       `json:"available,omitempty"`
+	List      []Network `json:"list"`
+}
+
+type Network struct {
+	Name      string
+	NetworkId string
+}
+
 type InitResponse struct {
 	IP    string `json:"ip"`
 	Mask  string `json:"mask"`

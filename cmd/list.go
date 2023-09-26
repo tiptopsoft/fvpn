@@ -1,6 +1,10 @@
 package cmd
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+	"github.com/tiptopsoft/fvpn/pkg/device"
+	"github.com/tiptopsoft/fvpn/pkg/util"
+)
 
 type listOptions struct {
 }
@@ -26,6 +30,9 @@ func listCmd() *cobra.Command {
 }
 
 func runList(options listOptions) error {
-
-	return nil
+	cfg, err := util.InitConfig()
+	if err != nil {
+		return err
+	}
+	return device.RunListNetworks(cfg)
 }
