@@ -1,5 +1,5 @@
 #!/bin/bash
-for goos in "darwin" "linux"
+for goos in "darwin" "linux" "windows"
 do
   for arch in "arm64" "amd64"
     do

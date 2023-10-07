@@ -23,10 +23,7 @@ import (
 )
 
 type joinOptions struct {
-	*util.NodeCfg
-	StarConfigFilePath string
-	addr               string
-	networkId          string
+	networkId string
 }
 
 func joinCmd() *cobra.Command {

@@ -46,7 +46,6 @@ func registryCmd() *cobra.Command {
 }
 
 func runSuper(opts *RegOptions) error {
-
 	config, err := util.InitConfig()
 	if err != nil {
 		return err

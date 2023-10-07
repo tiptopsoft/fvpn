@@ -22,7 +22,6 @@ import (
 )
 
 type upOptions struct {
-	*util.NodeCfg
 	Daemon bool
 }
 
@@ -54,7 +53,7 @@ func nodeCmd() *cobra.Command {
 
 				log.Print("fvpn started")
 			}
-			return runNode(&opts)
+			return runNode()
 		},
 	}
 
@@ -65,7 +64,7 @@ func nodeCmd() *cobra.Command {
 }
 
 // runEdge run a client up
-func runNode(opts *upOptions) error {
+func runNode() error {
 	config, err := util.InitConfig()
 	if err != nil {
 		return err

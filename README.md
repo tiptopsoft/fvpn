@@ -5,6 +5,8 @@ so
 on to communicate with each other, as if they all reside in the same physical data center or cloud region,
 default each pair node will build p2p connection, all your node will compose a private network mesh.
 
+## Benchmark
+
 ## Quick start
 
 - register on our website: https://www.tiptopsoft.cn

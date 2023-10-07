@@ -23,13 +23,11 @@ import (
 
 // Join a networkId will be created tun device. and will be assigned a IP which can be found in our website.
 type leaveOptions struct {
-	*util.NodeCfg
-	StarConfigFilePath string
-	NetworkId          string
+	NetworkId string
 }
 
 func leaveCmd() *cobra.Command {
-	var opts joinOptions
+	var opts leaveOptions
 	var cmd = &cobra.Command{
 		Use:          "leave",
 		SilenceUsage: true,
@@ -51,17 +49,17 @@ you can join it again`,
 		},
 	}
 	fs := cmd.Flags()
-	fs.StringVarP(&opts.networkId, "id", "", "", "network id")
+	fs.StringVarP(&opts.NetworkId, "id", "", "", "network id")
 
 	return cmd
 }
 
 // runJoin join a network cmd
 func runLeave(args []string) error {
-
 	cfg, err := util.InitConfig()
 	if err != nil {
 		return err
 	}
+
 	return device.RunLeaveNetwork(cfg, args[0])
 }
