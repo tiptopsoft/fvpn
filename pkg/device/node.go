@@ -290,7 +290,9 @@ func (n *Node) ReadFromUdp() {
 		frame := n.GetFrame()
 		size, remoteAddr, err := n.net.conn.Conn().ReadFromUDP(frame.Packet[:])
 		if err != nil {
-			logger.Error(err)
+			logger.Errorf("udp read remote failed, err: %v", err)
+			n.PutFrame(frame)
+			return
 		}
 		frame.Size = size
 		frame.RemoteAddr = remoteAddr
@@ -306,11 +308,13 @@ func (n *Node) udpProcess(ctx context.Context, frame *Frame) {
 	dataType := util.GetFrameTypeName(hpkt.Flags)
 	if dataType == "" {
 		//drop
-		logger.Debugf("got invalid data. size: %d", frame.Size)
+		logger.Errorf("got unknown data. size: %d", frame.Size)
+		n.PutFrame(frame)
+		return
 	}
 	logger.Debugf("udp receive %d byte from %s, data type: [%v]", frame.Size, frame.RemoteAddr, dataType)
 
-	frame.SrcIP = hpkt.SrcIP //192.168.0.1->192.168.0.2 srcIP =1, dstIP =2
+	frame.SrcIP = hpkt.SrcIP
 	frame.DstIP = hpkt.DstIP
 	frame.UserId = hpkt.UserId
 	frame.FrameType = hpkt.Flags
@@ -326,7 +330,9 @@ func (n *Node) udpProcess(ctx context.Context, frame *Frame) {
 
 	err = n.udpHandler.Handle(ctx, frame)
 	if err != nil {
-		logger.Error(err)
+		logger.Errorf("udp handler error: %v", err)
+		n.PutFrame(frame)
+		return
 	}
 	dt := time.Since(frame.ST)
 	logger.Debugf("udp receive process finished, dataType: [%v], cost: [%v]", dataType, dt)

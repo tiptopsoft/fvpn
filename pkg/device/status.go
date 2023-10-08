@@ -16,7 +16,9 @@ package device
 
 import (
 	"fmt"
+	"github.com/olekukonko/tablewriter"
 	"github.com/tiptopsoft/fvpn/pkg/util"
+	"os"
 )
 
 func Status(cfg *util.NodeCfg) error {
@@ -26,11 +28,14 @@ func Status(cfg *util.NodeCfg) error {
 		return err
 	}
 
-	if resp == nil || resp.Status == "" {
-		fmt.Println("fvpn not running, please check")
-	} else {
-		fmt.Println(fmt.Sprintf("Status: %s, Version: %s", resp.Status, resp.Version))
+	var data [][]string
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Status", "Version"})
+	if resp != nil {
+		data = append(data, []string{fmt.Sprintf("%s", resp.Status), resp.Version})
 	}
+	table.AppendBulk(data)
+	table.Render()
 	return nil
 }
 

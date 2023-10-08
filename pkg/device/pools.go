@@ -32,6 +32,7 @@ func InitPools() (buffPool *MemoryPool, framePool *MemoryPool) {
 			Ctx:        nil,
 			Mutex:      sync.Mutex{},
 			Packet:     make([]byte, packet.FvpnPktBuffSize),
+			Buff:       make([]byte, packet.FvpnPktBuffSize),
 			Size:       0,
 			NetworkId:  "",
 			UserId:     [8]byte{},
@@ -83,5 +84,9 @@ func (n *Node) PutFrame(framePtr *Frame) {
 	framePtr.NetworkId = ""
 	framePtr.SrcIP = nil
 	framePtr.DstIP = nil
+	framePtr.Packet = framePtr.Buff
+	framePtr.Peer = nil
+	framePtr.RemoteAddr = nil
+	framePtr.FrameType = 0
 	n.pools.framePool.Put(framePtr)
 }

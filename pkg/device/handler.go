@@ -67,7 +67,6 @@ func (n *Node) udpInHandler() HandlerFunc {
 			return err
 		}
 
-		//frame.FrameType = headerBuff.Flags
 		switch headerBuff.Flags {
 		case util.MsgTypeQueryPeer:
 			n.handleQueryPeers(frame)
@@ -112,6 +111,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 			copy(newFrame.Packet[:newFrame.Size], buff)
 			n.PutFrame(frame)
 			p.sendBuffer(newFrame, newFrame.GetPeer().GetEndpoint())
+			n.PutFrame(newFrame)
 		case util.HandShakeMsgTypeAck:
 			srcIP := frame.SrcIP.String()
 			uid := frame.UidString()
@@ -135,7 +135,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 			if err != nil {
 				return err
 			}
-		case util.KeepaliveMsgType:
+			n.PutFrame(frame)
 		}
 
 		return nil
@@ -143,6 +143,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 }
 
 func (n *Node) handleQueryPeers(frame *Frame) {
+	defer n.PutFrame(frame)
 	peers, _ := peer.Decode(frame.Packet[:])
 	logger.Debugf("list peers from registry: %v", peers.Peers)
 	for _, info := range peers.Peers {

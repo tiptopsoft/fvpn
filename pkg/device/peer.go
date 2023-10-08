@@ -88,10 +88,12 @@ func (p *Peer) Start() {
 	defer p.lock.Unlock()
 	p.SetStatus(true)
 	p.node.cache.Set(util.Info().GetUserId(), p.ip, p)
+	if p.isRelay {
+		p.sendListPackets()
+	}
 	if p.mode == 1 {
 		if p.isRelay || !p.node.cfg.Relay.Force {
 			p.handshake(net.ParseIP(p.ip))
-			p.sendListPackets()
 		}
 
 		go func() {
