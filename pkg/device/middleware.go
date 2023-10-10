@@ -55,7 +55,6 @@ func Decode() func(Handler) Handler {
 			if frame.FrameType == util.MsgTypePacket && frame.Encrypt {
 				offset := packet.HeaderBuffSize
 				buff := frame.Packet[offset:frame.Size]
-				//cache := ctx.Value("cache").(CacheFunc)
 				peer := frame.GetPeer()
 				if peer == nil {
 					return fmt.Errorf("dst ip: %v Peer not found", frame.DstIP.String())

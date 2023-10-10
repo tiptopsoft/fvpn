@@ -41,7 +41,7 @@ func InitPools() (buffPool *MemoryPool, framePool *MemoryPool) {
 			DstIP:      nil,
 			FrameType:  0,
 			Peer:       nil,
-			Encrypt:    false,
+			Encrypt:    true,
 		}
 		return frame
 	})

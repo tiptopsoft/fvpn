@@ -215,21 +215,21 @@ func (n *Node) ReadFromTun() {
 		ctx = context.WithValue(ctx, "cache", n.cache)
 		frame.UserId = n.userId
 		frame.FrameType = util.MsgTypePacket
-		size, err := n.device.Read(frame.Packet[:])
+		size, err := n.device.Read(frame.Packet[:], packet.HeaderBuffSize)
+		frame.Size = size + packet.HeaderBuffSize
 		if err != nil {
 			logger.Error(err)
 			//n.PutBuffer(buffPtr)
 			n.PutFrame(frame)
 			continue
 		}
-		ipHeader, err := util.GetIPFrameHeader(frame.Packet[:])
+		ipHeader, err := util.GetIPFrameHeader(frame.Packet[packet.HeaderBuffSize:])
 		if err != nil {
 			logger.Error(err)
 			continue
 		}
 		dstIP := ipHeader.DstIP.String()
 		if dstIP == n.device.Addr().String() {
-			n.PutFrame(frame)
 			n.PutPktToInbound(frame)
 			continue
 		}
@@ -263,9 +263,7 @@ func (n *Node) ReadFromTun() {
 			continue
 		}
 
-		copy(frame.Packet[packet.HeaderBuffSize:], frame.Packet[:])
 		copy(frame.Packet[:packet.HeaderBuffSize], headerBuff)
-		frame.Size = size + packet.HeaderBuffSize
 		if !n.cfg.Encrypt.Enable {
 			frame.Encrypt = false
 		}
@@ -359,7 +357,7 @@ func (n *Node) WriteToDevice() {
 		select {
 		case pkt := <-n.queue.inBound.c:
 			if pkt.FrameType == util.MsgTypePacket {
-				size, err := n.device.Write(pkt.Packet[packet.HeaderBuffSize:pkt.Size])
+				size, err := n.device.Write(pkt.Packet[:pkt.Size], packet.HeaderBuffSize)
 				if err != nil {
 					logger.Error(err)
 					continue

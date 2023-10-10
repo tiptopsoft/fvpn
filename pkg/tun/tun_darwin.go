@@ -99,22 +99,23 @@ func New() (Device, error) {
 
 // Read is a hack to work around the first 4 bytes "packet
 // information" because there doesn't seem to be an IFF_NO_PI for darwin.
-func (tun *NativeTun) Read(buff []byte) (n int, err error) {
-	size := len(buff) + 4
-	buf := make([]byte, size)
-	n, err = tun.file.Read(buf)
+func (tun *NativeTun) Read(buff []byte, offset int) (n int, err error) {
+	//size := len(buff) + 4
+	//buf := make([]byte, size)
+	n, err = tun.file.Read(buff[offset-4:])
 	//
 	if n <= 0 {
 		return 0, err
 	}
-	copy(buff[:], buf[4:size])
+	//copy(buff[:], buf[4:size])
 	return n - 4, err
 }
 
-func (tun *NativeTun) Write(buff []byte) (int, error) {
-	size := len(buff) + 4
-	buf := make([]byte, size)
-	copy(buf[4:], buff[:])
+func (tun *NativeTun) Write(buff []byte, offset int) (int, error) {
+	//size := len(buff) + 4
+	//buf := make([]byte, size)
+	//copy(buf[4:], buff[:])
+	buf := buff[offset-4:]
 	buf[0] = 0x00
 	buf[1] = 0x00
 	buf[2] = 0x00
@@ -127,7 +128,7 @@ func (tun *NativeTun) Write(buff []byte) (int, error) {
 		return 0, unix.EAFNOSUPPORT
 	}
 
-	n, err := tun.file.Write(buf[:size])
+	n, err := tun.file.Write(buf[:])
 	return n, err
 }
 

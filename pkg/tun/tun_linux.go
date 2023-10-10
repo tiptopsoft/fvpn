@@ -89,8 +89,8 @@ func New() (Device, error) {
 	}, nil
 }
 
-func (tun *NativeTun) Read(buff []byte) (n int, err error) {
-	n, err = tun.file.Read(buff)
+func (tun *NativeTun) Read(buff []byte, offset int) (n int, err error) {
+	n, err = tun.file.Read(buff[offset:])
 	return n, err
 }
 
@@ -108,9 +108,9 @@ func (tun *NativeTun) SetMTU(mtu int) error {
 	return nil
 }
 
-func (tun *NativeTun) Write(buff []byte) (int, error) {
+func (tun *NativeTun) Write(buff []byte, offset int) (int, error) {
 	tun.lock.Lock()
 	defer tun.lock.Unlock()
-	n, err := tun.file.Write(buff[:])
+	n, err := tun.file.Write(buff[offset:])
 	return n, err
 }

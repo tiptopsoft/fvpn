@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"github.com/tiptopsoft/fvpn/pkg/tun/winipcfg"
 	"golang.org/x/sys/windows"
-	"golang.zx2c4.com/wintun"
 	"net"
 	"net/netip"
 	"os"
@@ -121,7 +120,7 @@ func CreateTun(ifname string, requestedGUID *windows.GUID, mtu int) (Device, err
 
 // Note: Read() and Write() assume the caller comes only from a single thread; there's no locking.
 
-func (tun *adapter) Read(buff []byte) (int, error) {
+func (tun *adapter) Read(buff []byte, offset int) (int, error) {
 	if tun.close.Load() {
 		return 0, os.ErrClosed
 	}
@@ -133,7 +132,7 @@ func (tun *adapter) Read(buff []byte) (int, error) {
 		switch err {
 		case nil:
 			size := len(packet)
-			copy(buff[:], packet)
+			copy(buff[offset:], packet)
 			tun.session.ReleaseReceivePacket(packet)
 			return size, nil
 		case windows.ERROR_NO_MORE_ITEMS:
@@ -148,20 +147,20 @@ func (tun *adapter) Read(buff []byte) (int, error) {
 	}
 }
 
-func (tun *adapter) Write(buff []byte) (int, error) {
+func (tun *adapter) Write(buff []byte, offset int) (int, error) {
 	tun.running.Add(1)
 	defer tun.running.Done()
 	if tun.close.Load() {
 		return 0, os.ErrClosed
 	}
 
-	packetSize := len(buff)
+	packetSize := len(buff[offset:])
 
 	packet, err := tun.session.AllocateSendPacket(packetSize)
 	switch err {
 	case nil:
 		// TODO: Explore options to eliminate this copy.
-		copy(packet, buff[:])
+		copy(packet, buff[offset:])
 		tun.session.SendPacket(packet)
 		return len(buff), nil
 	case windows.ERROR_HANDLE_EOF:
