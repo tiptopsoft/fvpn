@@ -206,26 +206,23 @@ func (n *Node) Close() error {
 }
 
 func (n *Node) ReadFromTun() {
+	newHeader, _ := packet.NewHeader(util.MsgTypePacket, util.Info().GetUserId())
 	for {
-		//buffPtr := n.GetBuffer()
-		//buff := *(buffPtr)
 		ctx := context.Background()
 		frame := n.GetFrame()
-		//frame.Packet = buff
-		ctx = context.WithValue(ctx, "cache", n.cache)
 		frame.UserId = n.userId
 		frame.FrameType = util.MsgTypePacket
 		size, err := n.device.Read(frame.Packet[:], packet.HeaderBuffSize)
 		frame.Size = size + packet.HeaderBuffSize
 		if err != nil {
 			logger.Error(err)
-			//n.PutBuffer(buffPtr)
 			n.PutFrame(frame)
 			continue
 		}
 		ipHeader, err := util.GetIPFrameHeader(frame.Packet[packet.HeaderBuffSize:])
 		if err != nil {
 			logger.Error(err)
+			n.PutFrame(frame)
 			continue
 		}
 		dstIP := ipHeader.DstIP.String()
@@ -252,18 +249,16 @@ func (n *Node) ReadFromTun() {
 		frame.SrcIP = n.device.Addr()
 		frame.DstIP = ipHeader.DstIP
 
-		h, _ := packet.NewHeader(util.MsgTypePacket, util.Info().GetUserId())
-		frame.UserId = h.UserId
-		h.SrcIP = frame.SrcIP
-		h.DstIP = frame.DstIP
-		headerBuff, err := packet.Encode(h)
-		if err != nil {
+		frame.UserId = newHeader.UserId
+		newHeader.SrcIP = frame.SrcIP
+		newHeader.DstIP = frame.DstIP
+		if _, err = newHeader.Encode(frame.Packet[:]); err != nil {
 			logger.Error(err)
 			n.PutFrame(frame)
 			continue
 		}
 
-		copy(frame.Packet[:packet.HeaderBuffSize], headerBuff)
+		//copy(frame.Packet[:packet.HeaderBuffSize], headerBuff)
 		if !n.cfg.Encrypt.Enable {
 			frame.Encrypt = false
 		}
@@ -284,7 +279,6 @@ func (n *Node) ReadFromUdp() {
 	}()
 	for {
 		ctx := context.Background()
-		ctx = context.WithValue(ctx, "cache", n.cache)
 		frame := n.GetFrame()
 		size, remoteAddr, err := n.net.conn.Conn().ReadFromUDP(frame.Packet[:])
 		if err != nil {
@@ -418,4 +412,8 @@ func (n *Node) NewPeer(uid, ip string, pk security.NoisePublicKey, cache Interfa
 	p.cache = cache
 	logger.Debugf("created Peer for : %v, Peer: [%v]", ip, p.GetEndpoint())
 	return p
+}
+
+func (n *Node) lookupPeer() {
+
 }

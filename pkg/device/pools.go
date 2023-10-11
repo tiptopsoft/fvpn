@@ -16,6 +16,7 @@ package device
 
 import (
 	"github.com/tiptopsoft/fvpn/pkg/packet"
+	"golang.org/x/crypto/chacha20poly1305"
 	"sync"
 	"time"
 )
@@ -46,6 +47,10 @@ func InitPools() (buffPool *MemoryPool, framePool *MemoryPool) {
 		return frame
 	})
 
+	buffPool = NewPool(func() any {
+		buff := make([]byte, chacha20poly1305.NonceSize)
+		return &buff
+	})
 	return
 }
 
@@ -65,11 +70,11 @@ func (p *MemoryPool) Put(x any) {
 	p.pool.Put(x)
 }
 
-func (n *Node) GetBuffer() *[packet.FvpnPktBuffSize]byte {
-	return n.pools.buffPool.Get().(*[packet.FvpnPktBuffSize]byte)
+func (n *Node) GetBuffer() *[chacha20poly1305.NonceSize]byte {
+	return n.pools.buffPool.Get().(*[chacha20poly1305.NonceSize]byte)
 }
 
-func (n *Node) PutBuffer(buffPtr *[packet.FvpnPktBuffSize]byte) {
+func (n *Node) PutBuffer(buffPtr *[chacha20poly1305.NonceSize]byte) {
 	n.pools.buffPool.Put(buffPtr)
 }
 

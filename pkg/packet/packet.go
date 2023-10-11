@@ -46,9 +46,9 @@ func EncodeUint8(dst []byte, src uint8, idx int) int {
 }
 
 func EncodeUint16(dst []byte, src uint16, idx int) int {
-	var b = make([]byte, 2)
-	binary.BigEndian.PutUint16(b, src)
-	copy(dst[idx:idx+2], b[:])
+	//var b = make([]byte, 2)
+	binary.BigEndian.PutUint16(dst[idx:idx+2], src)
+	//copy(dst[idx:idx+2], b[:])
 	idx += 2
 	return idx
 }

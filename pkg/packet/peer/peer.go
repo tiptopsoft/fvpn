@@ -49,25 +49,19 @@ func NewPacket(userId string) Packet {
 	}
 }
 
-func Encode(peerPacket Packet) ([]byte, error) {
-	buff := make([]byte, packet.FvpnPktBuffSize)
-	headerBuff, err := packet.Encode(peerPacket.Header)
+func (p Packet) Encode(buff []byte) (int, error) {
+	idx, err := p.Header.Encode(buff[:packet.HeaderBuffSize])
 	if err != nil {
-		return nil, errors.New("encode common packet failed")
+		return 0, errors.New("encode common packet failed")
 	}
-	idx := 0
-	idx = packet.EncodeBytes(buff, headerBuff, idx)
 	buf := &bytes.Buffer{}
 	b := gob.NewEncoder(buf)
-	//err := binary.Write(buf, binary.BigEndian, peerPacket)
-	err = b.Encode(peerPacket.Peers)
-	if err != nil {
-		return nil, err
+	if err := b.Encode(p.Peers); err != nil {
+		return 0, err
 	}
 
 	idx = packet.EncodeBytes(buff, buf.Bytes(), idx)
-
-	return buff[:idx], err
+	return idx, err
 }
 
 func Decode(buff []byte) (peerPacket Packet, err error) {

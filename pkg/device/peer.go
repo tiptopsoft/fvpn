@@ -122,20 +122,17 @@ func (p *Peer) SetEndpoint(ep conn.Endpoint) {
 }
 
 func (p *Peer) handshake(dstIP net.IP) {
+	var err error
 	hpkt := handshake.NewPacket(util.HandShakeMsgType, util.Info().GetUserId())
 	hpkt.Header.SrcIP = p.node.device.Addr()
 	hpkt.Header.DstIP = dstIP
 	hpkt.PubKey = p.pubKey
-	buff, err := handshake.Encode(hpkt)
-	if err != nil {
+	f := p.node.GetFrame()
+	if f.Size, err = hpkt.Encode(f.Packet[:]); err != nil {
 		return
 	}
 
-	size := len(buff)
-	f := p.node.GetFrame()
 	f.ST = time.Now()
-	copy(f.Packet[:size], buff)
-	f.Size = size
 	f.FrameType = util.HandShakeMsgType
 	f.Peer = p
 	logger.Debugf("sending handshake pubkey to: %v, pubKey: %v, remote address: [%v], type: [%v]", dstIP.String(), p.pubKey, p.GetEndpoint().DstToString(), util.GetFrameTypeName(util.HandShakeMsgType))
@@ -157,17 +154,15 @@ func (p *Peer) handshake(dstIP net.IP) {
 
 // sendListPackets send a packet list all nodes in current user
 func (p *Peer) sendListPackets() {
+	var err error
 	h, _ := packet.NewHeader(util.MsgTypeQueryPeer, util.Info().GetUserId())
-	hpkt, err := packet.Encode(h)
-	if err != nil {
+	frame := p.node.GetFrame()
+	if frame.Size, err = h.Encode(frame.Packet); err != nil {
 		logger.Errorf("send list packet failed %v", err)
 		return
 	}
-	frame := p.node.GetFrame()
 	frame.Peer = p
 	frame.DstIP = p.GetEndpoint().DstIP().IP
-	copy(frame.Packet[:], hpkt)
-	frame.Size = len(hpkt)
 	frame.UserId = h.UserId
 	frame.FrameType = util.MsgTypeQueryPeer
 
@@ -188,25 +183,25 @@ func (p *Peer) sendBuffer(frame *Frame, endpoint conn.Endpoint) {
 	_, _ = p.node.net.conn.Send(frame.Packet[:frame.Size], endpoint)
 }
 
-func (p *Peer) keepalive() {
-	pkt, err := packet.NewHeader(util.KeepaliveMsgType, "")
-	if err != nil {
-		return
-	}
-	buff, err := packet.Encode(pkt)
-	if err != nil {
-		return
-	}
-	size := len(buff)
-	f := p.node.GetFrame()
-	f.ST = time.Now()
-	f.Peer = p
-	copy(f.Packet[:size], buff)
-	f.Size = size
-	f.FrameType = util.KeepaliveMsgType
-
-	p.node.PutPktToOutbound(f)
-}
+//func (p *Peer) keepalive() {
+//	pkt, err := packet.NewHeader(util.KeepaliveMsgType, "")
+//	if err != nil {
+//		return
+//	}
+//	buff, err := packet.Encode(pkt)
+//	if err != nil {
+//		return
+//	}
+//	size := len(buff)
+//	f := p.node.GetFrame()
+//	f.ST = time.Now()
+//	f.Peer = p
+//	copy(f.Packet[:size], buff)
+//	f.Size = size
+//	f.FrameType = util.KeepaliveMsgType
+//
+//	p.node.PutPktToOutbound(f)
+//}
 
 func (p *Peer) check() bool {
 	if p.isRelay || p.p2p {

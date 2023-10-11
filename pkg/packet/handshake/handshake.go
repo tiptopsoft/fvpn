@@ -32,17 +32,15 @@ func NewPacket(msgType uint16, userId string) Packet {
 	}
 }
 
-func Encode(np Packet) ([]byte, error) {
-	b := make([]byte, packet.HandshakeBuffSize)
-	headerBuff, err := packet.Encode(np.Header)
+func (np Packet) Encode(buff []byte) (int, error) {
+	b := buff[:packet.HandshakeBuffSize]
+	idx, err := np.Header.Encode(b)
 	if err != nil {
-		return nil, errors.New("encode header failed")
+		return 0, errors.New("encode header failed")
 	}
-	idx := 0
-	idx = packet.EncodeBytes(b, headerBuff, idx)
 	idx = packet.EncodeBytes(b, np.PubKey[:], idx)
 
-	return b, nil
+	return idx, nil
 }
 
 func Decode(msgType uint16, buff []byte) (Packet, error) {

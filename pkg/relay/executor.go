@@ -74,6 +74,7 @@ func (r *RegServer) writeUdpHandler() device.HandlerFunc {
 // serverUdpHandler  core self handler
 func (r *RegServer) serverUdpHandler() device.HandlerFunc {
 	return func(ctx context.Context, frame *device.Frame) error {
+		var err error
 		switch frame.FrameType {
 		//case util.MsgTypeRegisterSuper:
 		//	err := r.register(frame)
@@ -107,16 +108,14 @@ func (r *RegServer) serverUdpHandler() device.HandlerFunc {
 				}
 			}
 
-			buff, _ := peer.Encode(peerAck)
-			//r.PutBuffer(&frame.Packet)
-			//r.PutFrame(frame)
-
 			newFrame := r.GetFrame()
-			copy(newFrame.Packet[:], buff)
+			if newFrame.Size, err = peerAck.Encode(newFrame.Packet[:]); err != nil {
+				return err
+			}
+
 			newFrame.UserId = frame.UserId
 			newFrame.RemoteAddr = frame.RemoteAddr
 			newFrame.FrameType = util.MsgTypeQueryPeer
-			newFrame.Size = len(buff)
 			r.PutPktToOutbound(newFrame)
 			r.PutFrame(newFrame)
 		case util.HandShakeMsgType:
@@ -130,22 +129,17 @@ func (r *RegServer) serverUdpHandler() device.HandlerFunc {
 			p := node.NewPeer(uid, srcIP, r.key.privateKey.NewPubicKey(), r.cache)
 			p.SetEndpoint(conn.NewEndpoint(frame.RemoteAddr.String()))
 			p.SetCodec(security.New(r.key.privateKey, pktBuf.PubKey))
-			logger.Infof("registry build p2p with node: %v success", srcIP)
 			r.cache.Set(uid, srcIP, p)
 			//build handshakeAck resp
 			pkt := handshake.NewPacket(util.HandShakeMsgTypeAck, uid)
 			pkt.Header.SrcIP = frame.DstIP
 			pkt.Header.DstIP = frame.SrcIP
 			pkt.PubKey = r.key.privateKey.NewPubicKey()
-			buff, err := handshake.Encode(pkt)
-			if err != nil {
+			newFrame := r.GetFrame()
+			if newFrame.Size, err = pkt.Encode(newFrame.Packet); err != nil {
 				return err
 			}
-
-			newFrame := r.GetFrame()
-			newFrame.Size = len(buff)
 			newFrame.RemoteAddr = frame.RemoteAddr
-			copy(newFrame.Packet[:newFrame.Size], buff)
 			r.PutFrame(frame)
 			r.PutPktToOutbound(newFrame)
 		}

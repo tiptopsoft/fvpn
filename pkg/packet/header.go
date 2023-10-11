@@ -50,16 +50,16 @@ func NewHeader(msgType uint16, userId string) (Header, error) {
 	return h, nil
 }
 
-func Encode(h Header) ([]byte, error) {
+func (h Header) Encode(buff []byte) (int, error) {
 	idx := 0
-	b := make([]byte, HeaderBuffSize)
+	b := buff[:HeaderBuffSize]
 	idx = EncodeUint8(b, h.Version, idx)
 	idx = EncodeUint8(b, h.TTL, idx)
 	idx = EncodeUint16(b, h.Flags, idx)
 	idx = EncodeBytes(b, h.UserId[:], idx)
 	idx = EncodeBytes(b, h.SrcIP[:], idx)
 	idx = EncodeBytes(b, h.DstIP[:], idx)
-	return b, nil
+	return HeaderBuffSize, nil
 }
 
 func Decode(buff []byte) (h Header, err error) {

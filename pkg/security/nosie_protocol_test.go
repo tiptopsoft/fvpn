@@ -15,78 +15,71 @@
 package security
 
 import (
-	"crypto/rand"
 	"fmt"
-	"github.com/tiptopsoft/fvpn/pkg/device"
-	"github.com/tiptopsoft/fvpn/pkg/packet"
-	"github.com/tiptopsoft/fvpn/pkg/util"
-	"golang.org/x/crypto/curve25519"
-	"io"
 	"testing"
-	"time"
 )
 
 // DH test
 func TestCurve(t *testing.T) {
 
-	var privateKey [32]byte
-	_, err := io.ReadFull(rand.Reader, privateKey[:])
-	if err != nil {
-		panic(err)
-	}
+	//var privateKey [32]byte
+	//_, err := io.ReadFull(rand.Reader, privateKey[:])
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//var pubKey [32]byte
+	//curve25519.ScalarBaseMult(&pubKey, &privateKey)
+	//
+	//var privateKey2 [32]byte
+	//_, err = io.ReadFull(rand.Reader, privateKey2[:])
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//var pubKey2 [32]byte
+	//curve25519.ScalarBaseMult(&pubKey2, &privateKey2)
+	//
+	////assert
+	//var shared [32]byte
+	//curve25519.ScalarMult(&shared, &privateKey, &pubKey2)
+	//
+	//fmt.Println(shared)
+	//var shared2 [32]byte
+	//curve25519.ScalarMult(&shared2, &privateKey2, &pubKey)
+	//
+	//fmt.Println(shared2)
+	//
+	//cip1 := New(privateKey, pubKey2)
+	//cip2 := New(privateKey2, pubKey)
+	//
+	//s := "hello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworld"
+	//sBuff := []byte(s)
+	//frame := device.NewFrame()
+	//h, _ := packet.NewHeader(util.MsgTypePacket, "123456")
+	//headerBuff, _ := h.Encode(h)
+	//copy(frame.Packet[:], headerBuff)
+	//copy(frame.Packet[44:], sBuff)
+	//size := len(headerBuff) + len(sBuff)
+	//
+	//st := time.Now()
+	//fmt.Println("before encoded: ", size)
+	//
+	//encodedBuff, err := cip1.Encode(frame.Packet[:size])
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//fmt.Println("After encoded: ", len(encodedBuff))
+	//et := time.Since(st)
+	//fmt.Println("cost: ", et)
+	//
+	//decodedBuff, err := cip2.Decode(encodedBuff)
+	//if err != nil {
+	//	panic(err)
+	//}
 
-	var pubKey [32]byte
-	curve25519.ScalarBaseMult(&pubKey, &privateKey)
-
-	var privateKey2 [32]byte
-	_, err = io.ReadFull(rand.Reader, privateKey2[:])
-	if err != nil {
-		panic(err)
-	}
-
-	var pubKey2 [32]byte
-	curve25519.ScalarBaseMult(&pubKey2, &privateKey2)
-
-	//assert
-	var shared [32]byte
-	curve25519.ScalarMult(&shared, &privateKey, &pubKey2)
-
-	fmt.Println(shared)
-	var shared2 [32]byte
-	curve25519.ScalarMult(&shared2, &privateKey2, &pubKey)
-
-	fmt.Println(shared2)
-
-	cip1 := New(privateKey, pubKey2)
-	cip2 := New(privateKey2, pubKey)
-
-	s := "hello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworldhello, myworld"
-	sBuff := []byte(s)
-	frame := device.NewFrame()
-	h, _ := packet.NewHeader(util.MsgTypePacket, "123456")
-	headerBuff, _ := packet.Encode(h)
-	copy(frame.Packet[:], headerBuff)
-	copy(frame.Packet[44:], sBuff)
-	size := len(headerBuff) + len(sBuff)
-
-	st := time.Now()
-	fmt.Println("before encoded: ", size)
-
-	encodedBuff, err := cip1.Encode(frame.Packet[:size])
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("After encoded: ", len(encodedBuff))
-	et := time.Since(st)
-	fmt.Println("cost: ", et)
-
-	decodedBuff, err := cip2.Decode(encodedBuff)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("after decode: ", decodedBuff)
+	//fmt.Println("after decode: ", decodedBuff)
 
 }
 

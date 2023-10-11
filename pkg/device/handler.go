@@ -97,18 +97,16 @@ func (n *Node) udpInHandler() HandlerFunc {
 			pkt.Header.SrcIP = frame.DstIP
 			pkt.Header.DstIP = frame.SrcIP
 			pkt.PubKey = n.privateKey.NewPubicKey()
-			buff, err := handshake.Encode(pkt)
-			if err != nil {
+
+			newFrame := n.GetFrame()
+			if newFrame.Size, err = pkt.Encode(newFrame.Packet[:]); err != nil {
 				return err
 			}
 
-			newFrame := n.GetFrame()
-			newFrame.Size = len(buff)
 			newFrame.Peer = p
 			newFrame.UserId = frame.UserId
 			newFrame.FrameType = util.HandShakeMsgTypeAck
 			newFrame.DstIP = frame.SrcIP
-			copy(newFrame.Packet[:newFrame.Size], buff)
 			n.PutFrame(frame)
 			p.sendBuffer(newFrame, newFrame.GetPeer().GetEndpoint())
 			n.PutFrame(newFrame)
