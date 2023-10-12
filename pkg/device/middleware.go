@@ -16,9 +16,7 @@ package device
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"github.com/tiptopsoft/fvpn/pkg/packet"
 	"github.com/tiptopsoft/fvpn/pkg/util"
 )
 
@@ -44,64 +42,6 @@ func AuthCheck() func(handler Handler) Handler {
 			//	return errors.New("token is nil, please login again")
 			//}
 
-			return next.Handle(ctx, frame)
-		})
-	}
-}
-
-func Decode() func(Handler) Handler {
-	return func(next Handler) Handler {
-		return HandlerFunc(func(ctx context.Context, frame *Frame) error {
-			if frame.FrameType == util.MsgTypePacket && frame.Encrypt {
-				offset := packet.HeaderBuffSize
-				buff := frame.Packet[offset:frame.Size]
-				peer := frame.GetPeer()
-				if peer == nil {
-					return fmt.Errorf("dst ip: %v Peer not found", frame.DstIP.String())
-				}
-
-				logger.Debugf("use src Peer: [%v] to decode", peer.GetEndpoint().DstIP().String())
-
-				logger.Debugf("data before decode: %v", buff)
-				decoded, err := peer.GetCodec().Decode(buff)
-				if err != nil {
-					return err
-				}
-				frame.Size = len(decoded) + offset
-				copy(frame.Packet[offset:frame.Size], decoded)
-				logger.Debugf("data after decode: %v", frame.Packet[:frame.Size])
-			}
-			return next.Handle(ctx, frame)
-		})
-	}
-}
-
-// Encode Middleware encrypt use exchangeKey
-func Encode() func(Handler) Handler {
-	return func(next Handler) Handler {
-		return HandlerFunc(func(ctx context.Context, frame *Frame) error {
-			if frame.FrameType == util.MsgTypePacket && frame.Encrypt {
-				offset := packet.HeaderBuffSize
-				buff := frame.Packet[offset:frame.Size]
-				peer := frame.GetPeer()
-				logger.Debugf("Peer is :%v, data before encode: %v", peer.GetEndpoint().DstIP(), buff)
-				if peer.GetCodec() == nil {
-					logger.Debugf("")
-				}
-				if peer.GetCodec() == nil {
-					return errors.New("node has not built success yet")
-				}
-				encoded, err := peer.GetCodec().Encode(buff)
-				if err != nil {
-					return err
-				}
-				frame.Size = offset + len(encoded)
-				copy(frame.Packet[offset:frame.Size], encoded)
-				logger.Debugf("data after encode: %v", frame.Packet[:frame.Size])
-				if err != nil {
-					return err
-				}
-			}
 			return next.Handle(ctx, frame)
 		})
 	}

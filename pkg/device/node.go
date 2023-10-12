@@ -15,14 +15,12 @@
 package device
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/tiptopsoft/fvpn/pkg/device/conn"
 	"github.com/tiptopsoft/fvpn/pkg/log"
-	"github.com/tiptopsoft/fvpn/pkg/packet"
 	"github.com/tiptopsoft/fvpn/pkg/pprof"
 	"github.com/tiptopsoft/fvpn/pkg/security"
 	"github.com/tiptopsoft/fvpn/pkg/tun"
@@ -57,8 +55,10 @@ type Node struct {
 	}
 
 	queue struct {
-		outBound *OutBoundQueue //after encrypt
-		inBound  *InBoundQueue  //after decrypt
+		outBound     *OutBoundQueue //after encrypt
+		inBound      *InBoundQueue  //after decrypt
+		encryptBound *EncryptQueue
+		decryptBound *DecryptQueue
 	}
 
 	pools struct {
@@ -78,8 +78,16 @@ func (n *Node) PutPktToOutbound(pkt *Frame) {
 	n.queue.outBound.c <- pkt
 }
 
+func (n *Node) PutPktToEncryptBound(pkt *Frame) {
+	n.queue.encryptBound.c <- pkt
+}
+
 func (n *Node) PutPktToInbound(pkt *Frame) {
 	n.queue.inBound.c <- pkt
+}
+
+func (n *Node) PutPktToDecryptBound(pkt *Frame) {
+	n.queue.decryptBound.c <- pkt
 }
 
 func NewNode(device tun.Device, conn conn.Interface, cfg *util.NodeCfg) (*Node, error) {
@@ -203,167 +211,6 @@ func (n *Node) up() error {
 func (n *Node) Close() error {
 	close(n.queue.outBound.c)
 	return nil
-}
-
-func (n *Node) ReadFromTun() {
-	newHeader, _ := packet.NewHeader(util.MsgTypePacket, util.Info().GetUserId())
-	for {
-		ctx := context.Background()
-		frame := n.GetFrame()
-		frame.UserId = n.userId
-		frame.FrameType = util.MsgTypePacket
-		size, err := n.device.Read(frame.Packet[:], packet.HeaderBuffSize)
-		frame.Size = size + packet.HeaderBuffSize
-		if err != nil {
-			logger.Error(err)
-			n.PutFrame(frame)
-			continue
-		}
-		ipHeader, err := util.GetIPFrameHeader(frame.Packet[packet.HeaderBuffSize:])
-		if err != nil {
-			logger.Error(err)
-			n.PutFrame(frame)
-			continue
-		}
-		dstIP := ipHeader.DstIP.String()
-		if dstIP == n.device.Addr().String() {
-			n.PutPktToInbound(frame)
-			continue
-		}
-		logger.Debugf("node %s receive %d byte, srcIP: %v, dstIP: %v", n.device.Name(), size, ipHeader.SrcIP, ipHeader.DstIP)
-		if n.cfg.Relay.Force {
-			frame.Peer = n.relay
-		} else {
-			if peer, err := n.cache.Get(util.Info().GetUserId(), dstIP); err != nil || peer == nil {
-				//drop peer is not online
-				n.PutFrame(frame)
-				continue
-			} else if !peer.GetP2P() && n.cfg.EnableRelay() {
-				frame.Peer = n.relay
-			} else {
-				frame.Peer = peer
-			}
-		}
-
-		logger.Debugf("frame's Peer is :%v", frame.Peer.GetEndpoint().DstToString())
-		frame.SrcIP = n.device.Addr()
-		frame.DstIP = ipHeader.DstIP
-
-		frame.UserId = newHeader.UserId
-		newHeader.SrcIP = frame.SrcIP
-		newHeader.DstIP = frame.DstIP
-		if _, err = newHeader.Encode(frame.Packet[:]); err != nil {
-			logger.Error(err)
-			n.PutFrame(frame)
-			continue
-		}
-
-		//copy(frame.Packet[:packet.HeaderBuffSize], headerBuff)
-		if !n.cfg.Encrypt.Enable {
-			frame.Encrypt = false
-		}
-
-		err = n.tunHandler.Handle(ctx, frame)
-		if err != nil {
-			logger.Error(err)
-			n.PutFrame(frame)
-			continue
-		}
-	}
-}
-
-func (n *Node) ReadFromUdp() {
-	logger.Debugf("start thread to handle udp packet")
-	defer func() {
-		logger.Debugf("udp thread exited")
-	}()
-	for {
-		ctx := context.Background()
-		frame := n.GetFrame()
-		size, remoteAddr, err := n.net.conn.Conn().ReadFromUDP(frame.Packet[:])
-		if err != nil {
-			logger.Errorf("udp read remote failed, err: %v", err)
-			n.PutFrame(frame)
-			return
-		}
-		frame.Size = size
-		frame.RemoteAddr = remoteAddr
-		n.udpProcess(ctx, frame)
-	}
-}
-
-func (n *Node) udpProcess(ctx context.Context, frame *Frame) {
-	hpkt, err := util.GetPacketHeader(frame.Packet[:])
-	if err != nil {
-		logger.Error(err)
-	}
-	dataType := util.GetFrameTypeName(hpkt.Flags)
-	if dataType == "" {
-		//drop
-		logger.Errorf("got unknown data. size: %d", frame.Size)
-		n.PutFrame(frame)
-		return
-	}
-	logger.Debugf("udp receive %d byte from %s, data type: [%v]", frame.Size, frame.RemoteAddr, dataType)
-
-	frame.SrcIP = hpkt.SrcIP
-	frame.DstIP = hpkt.DstIP
-	frame.UserId = hpkt.UserId
-	frame.FrameType = hpkt.Flags
-
-	frame.Peer, err = n.cache.Get(frame.UserIdString(), frame.SrcIP.String())
-	if err != nil || !frame.Peer.GetP2P() {
-		frame.Peer = n.relay
-	}
-
-	if !n.cfg.Encrypt.Enable {
-		frame.Encrypt = false
-	}
-
-	err = n.udpHandler.Handle(ctx, frame)
-	if err != nil {
-		logger.Errorf("udp handler error: %v", err)
-		n.PutFrame(frame)
-		return
-	}
-	dt := time.Since(frame.ST)
-	logger.Debugf("udp receive process finished, dataType: [%v], cost: [%v]", dataType, dt)
-}
-
-func (n *Node) WriteToUDP() {
-	for {
-		select {
-		case pkt := <-n.queue.outBound.c:
-			peer := pkt.Peer
-			send, err := n.net.conn.Send(pkt.Packet[:pkt.Size], pkt.Peer.GetEndpoint())
-			if err != nil {
-				logger.Error(err)
-				continue
-			}
-			logger.Debugf("node has send [%v] packets to %s from p2p: [%v], data type: [%v]", send, peer.GetEndpoint().DstToString(), peer.p2p, util.GetFrameTypeName(pkt.FrameType))
-			n.PutFrame(pkt)
-		}
-	}
-}
-
-func (n *Node) WriteToDevice() {
-	for {
-		select {
-		case pkt := <-n.queue.inBound.c:
-			if pkt.FrameType == util.MsgTypePacket {
-				size, err := n.device.Write(pkt.Packet[:pkt.Size], packet.HeaderBuffSize)
-				if err != nil {
-					logger.Error(err)
-					continue
-				}
-
-				t := time.Since(pkt.ST)
-				logger.Debugf("node write %d byte to %s, cost: [%v]", size, n.device.Name(), t)
-				n.PutFrame(pkt)
-			}
-
-		}
-	}
 }
 
 // appId is a unique identify for a node

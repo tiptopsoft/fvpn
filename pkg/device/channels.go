@@ -34,6 +34,16 @@ type InBoundQueue struct {
 	wg sync.WaitGroup
 }
 
+type EncryptQueue struct {
+	c  chan *Frame
+	wg sync.WaitGroup
+}
+
+type DecryptQueue struct {
+	c  chan *Frame
+	wg sync.WaitGroup
+}
+
 type handshakeBound struct {
 	c  chan *Frame
 	wg sync.WaitGroup
@@ -70,6 +80,32 @@ func (o *InBoundQueue) GetPktFromInbound() chan *Frame {
 
 func NewInBoundQueue() *InBoundQueue {
 	q := &InBoundQueue{
+		c: make(chan *Frame, QueueOutboundSize),
+	}
+	q.wg.Add(1)
+	go func() {
+		q.wg.Wait()
+		close(q.c)
+	}()
+
+	return q
+}
+
+func NewEncryptBoundQueue() *EncryptQueue {
+	q := &EncryptQueue{
+		c: make(chan *Frame, QueueOutboundSize),
+	}
+	q.wg.Add(1)
+	go func() {
+		q.wg.Wait()
+		close(q.c)
+	}()
+
+	return q
+}
+
+func NewDecryptBoundQueue() *DecryptQueue {
+	q := &DecryptQueue{
 		c: make(chan *Frame, QueueOutboundSize),
 	}
 	q.wg.Add(1)

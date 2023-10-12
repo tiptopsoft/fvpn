@@ -62,7 +62,7 @@ func (c *cipher) Encode(content []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	encoded := cip.Seal(nil, c.nonce, content, nil)
+	encoded := cip.Seal(content[:0], c.nonce, content, nil)
 	logger.Debugf("---after encode: %v", encoded)
 	return encoded, nil
 }
@@ -74,7 +74,7 @@ func (c *cipher) Decode(cipherBuff []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	decoded, err := cip.Open(nil, c.nonce, cipherBuff, nil)
+	decoded, err := cip.Open(cipherBuff[:0], c.nonce, cipherBuff, nil)
 	logger.Debugf("---after decode: %v", decoded)
 	return decoded, err
 }
