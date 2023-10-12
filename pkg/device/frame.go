@@ -43,21 +43,13 @@ func (f *Frame) GetPeer() *Peer {
 	return f.Peer
 }
 
-func NewFrame() *Frame {
-	return &Frame{
-		Ctx:     context.Background(),
-		Encrypt: true,
-		ST:      time.Now(),
+var userId string
+
+func (f *Frame) UserIdString() string {
+	if userId == "" {
+		userId = hex.EncodeToString(f.UserId[:])
 	}
-}
-
-//func (f *Frame) Clear() {
-//	buf := make([]byte, packet.FvpnPktBuffSize)
-//	copy(f.Packet, buf)
-//}
-
-func (f *Frame) UidString() string {
-	return hex.EncodeToString(f.UserId[:])
+	return userId
 }
 
 func (f *Frame) Context() context.Context {

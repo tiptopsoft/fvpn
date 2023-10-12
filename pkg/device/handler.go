@@ -89,11 +89,11 @@ func (n *Node) udpInHandler() HandlerFunc {
 				//更新peer
 				ep := conn.NewEndpoint(frame.RemoteAddr.String())
 				p.SetEndpoint(ep)
-				n.cache.Set(frame.UidString(), frame.SrcIP.String(), p)
+				n.cache.Set(frame.UserIdString(), frame.SrcIP.String(), p)
 			}
 
 			//build handshake ack
-			pkt := handshake.NewPacket(util.HandShakeMsgTypeAck, frame.UidString())
+			pkt := handshake.NewPacket(util.HandShakeMsgTypeAck, frame.UserIdString())
 			pkt.Header.SrcIP = frame.DstIP
 			pkt.Header.DstIP = frame.SrcIP
 			pkt.PubKey = n.privateKey.NewPubicKey()
@@ -112,7 +112,7 @@ func (n *Node) udpInHandler() HandlerFunc {
 			n.PutFrame(newFrame)
 		case util.HandShakeMsgTypeAck:
 			srcIP := frame.SrcIP.String()
-			uid := frame.UidString()
+			uid := frame.UserIdString()
 			p, err := n.cache.Get(uid, srcIP)
 			pkt, err := handshake.Decode(util.HandShakeMsgTypeAck, frame.Packet[:])
 			if err != nil {
@@ -146,7 +146,7 @@ func (n *Node) handleQueryPeers(frame *Frame) {
 	logger.Debugf("list peers from registry: %v", peers.Peers)
 	for _, info := range peers.Peers {
 		dstIP := info.IP.String()
-		uid := frame.UidString()
+		uid := frame.UserIdString()
 		if dstIP == n.device.IPToString() {
 			//go over if dstIP is local dstIP
 			continue

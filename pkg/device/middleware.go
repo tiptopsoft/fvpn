@@ -113,7 +113,7 @@ func (n *Node) AllowNetwork() func(Handler) Handler {
 		return HandlerFunc(func(ctx context.Context, frame *Frame) error {
 			if frame.FrameType == util.MsgTypePacket {
 				ip := frame.DstIP.String()
-				b := n.netCtl.Access(frame.UidString(), ip)
+				b := n.netCtl.Access(frame.UserIdString(), ip)
 				if !b {
 					return fmt.Errorf("no access to destination: [%v]", ip)
 				}

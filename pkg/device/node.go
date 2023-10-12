@@ -311,7 +311,7 @@ func (n *Node) udpProcess(ctx context.Context, frame *Frame) {
 	frame.UserId = hpkt.UserId
 	frame.FrameType = hpkt.Flags
 
-	frame.Peer, err = n.cache.Get(frame.UidString(), frame.SrcIP.String())
+	frame.Peer, err = n.cache.Get(frame.UserIdString(), frame.SrcIP.String())
 	if err != nil || !frame.Peer.GetP2P() {
 		frame.Peer = n.relay
 	}
