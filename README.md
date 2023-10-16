@@ -7,7 +7,8 @@ default each pair node will build p2p connection, all your node will compose a p
 
 ## Benchmark
 
-Zerotier and fvpn compare under the same network environment, fvpn is more stable and faster than zerotier, Both use p2p
+compare zerotier with fvpn under the same environment, fvpn is more stable and faster than zerotier, Both use
+p2p
 connection:
 
 | Name     | Transfer Data                               |

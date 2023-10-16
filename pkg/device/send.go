@@ -112,11 +112,12 @@ func Encode() func(Handler) Handler {
 				if peer.GetCodec() == nil {
 					return errors.New("node has not built success yet")
 				}
-				if _, err := peer.GetCodec().Encode(buff); err != nil {
+				if encoded, err := peer.GetCodec().Encode(buff); err != nil {
 					return err
+				} else {
+					frame.Size = offset + len(encoded)
+					copy(frame.Packet[offset:frame.Size], buff)
 				}
-				frame.Size = offset + len(buff)
-				//copy(frame.Packet[offset:frame.Size], buff)
 				logger.Debugf("data after encode: %v", frame.Packet[:frame.Size])
 			}
 			return next.Handle(ctx, frame)
