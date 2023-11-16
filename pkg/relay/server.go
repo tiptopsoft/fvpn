@@ -19,6 +19,7 @@ import (
 	"github.com/tiptopsoft/fvpn/pkg/device"
 	"github.com/tiptopsoft/fvpn/pkg/security"
 	"github.com/tiptopsoft/fvpn/pkg/util"
+	"golang.org/x/net/ipv4"
 	"net"
 	"runtime"
 	"sync"
@@ -81,6 +82,11 @@ func (r *RegServer) start(address string) error {
 	if err != nil {
 		return err
 	}
+
+	if err = ipv4.NewPacketConn(c).SetControlMessage(ipv4.FlagDst, true); err != nil {
+		return err
+	}
+
 	r.conn = c.(*net.UDPConn)
 	logger.Debugf("server start at: %s", address)
 

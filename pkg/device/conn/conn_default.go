@@ -17,6 +17,8 @@ package conn
 import (
 	"context"
 	"fmt"
+	"golang.org/x/net/ipv4"
+	"golang.org/x/net/ipv6"
 	"net"
 )
 
@@ -47,6 +49,10 @@ func (s *Default) Open(port uint16) (uint16, error) {
 		return 0, nil
 	}
 
+	pktInfo1 := ipv4.NewPacketConn(s.v4conn)
+	if err = pktInfo1.SetControlMessage(ipv4.FlagDst, true); err != nil {
+		return 0, err
+	}
 	addr := s.v4conn.LocalAddr()
 	listenAddr, err := net.ResolveUDPAddr(
 		addr.Network(),
@@ -59,6 +65,10 @@ func (s *Default) Open(port uint16) (uint16, error) {
 	ipv6Addr := &net.UDPAddr{IP: net.IPv6zero, Port: int(port)}
 
 	s.v6conn, err = listen("udp6", ipv6Addr)
+	pktInfo2 := ipv6.NewPacketConn(s.v6conn)
+	if err = pktInfo2.SetControlMessage(ipv6.FlagDst, true); err != nil {
+		return 0, err
+	}
 
 	if err != nil {
 		return 0, fmt.Errorf("open bind failed, error: %v", err)
